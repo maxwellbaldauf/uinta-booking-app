@@ -1,0 +1,96 @@
+/* Design tokens ported from Project A (app/globals.css) so the two apps read
+   as one brand. Plain CSS custom properties, no framework. */
+
+:root {
+  --color-bg: #ffffff;
+  --color-bg-subtle: #f7f8fa;
+  --color-fg: #14171a;
+  --color-fg-muted: #5b6470;
+  --color-border: #e1e4e8;
+  --color-primary: #0f6e8c;
+  --color-primary-fg: #ffffff;
+  --color-danger: #c0392b;
+  --color-danger-bg: #fdecea;
+  --color-success: #1e8e5a;
+  --color-success-bg: #e6f7ef;
+  --color-warning: #8a5a00;
+  --color-warning-bg: #fdf3e0;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+
+  --radius: 8px;
+  --max-width: 30rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-bg: #121417;
+    --color-bg-subtle: #1a1d21;
+    --color-fg: #edeff1;
+    --color-fg-muted: #9aa4af;
+    --color-border: #2a2e33;
+    --color-primary: #4fb3d0;
+    --color-primary-fg: #0c1618;
+    --color-danger: #e57368;
+    --color-danger-bg: #3a1f1c;
+    --color-success: #4fcf94;
+    --color-success-bg: #163829;
+    --color-warning: #e0b34f;
+    --color-warning-bg: #3a2f14;
+  }
+
+  html {
+    color-scheme: dark;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  max-width: 100vw;
+  overflow-x: hidden;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  color: var(--color-fg);
+  background: var(--color-bg);
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  line-height: 1.5;
+}
+
+a {
+  color: var(--color-primary);
+}
+
+input,
+select,
+textarea,
+button {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+/* Mobile-first content column shared by every page. */
+.page {
+  width: 100%;
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: var(--space-5) var(--space-4) var(--space-6);
+}
