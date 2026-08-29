@@ -4,24 +4,23 @@ import {
   ensureStripeCustomerForRow,
   createCardSetupIntent,
 } from "@/lib/stripe/payments";
-import { findCustomerByPaymentSetupToken } from "@/lib/customers";
+import {
+  findCustomerByPaymentSetupToken,
+  matchCustomerByEmailOrPhone,
+} from "@/lib/customers";
 
 export const runtime = "nodejs";
 
 // Creates (or reuses) a Stripe Customer and returns a card-only SetupIntent
-// client secret for Stripe Elements. Three callers:
+// client secret for Stripe Elements. Two callers:
 //
-//   new_customer      booking flow, no customers row yet — the returned
-//                     stripeCustomerId is carried into createBooking
-//   existing_customer a matched customer / per-property override during booking
-//   setup_token       the imported-customer payment page (spec §6)
-//
-// Each branch does its own authorization: new_customer needs only a valid
-// email; the others resolve a real customer row (setup_token also checks
-// expiry) before touching Stripe.
+//   booking       the booking flow. Re-matches the customer by email/phone
+//                 server-side: reuse their Stripe id, lazily create one for a
+//                 matched-but-never-charged customer, or create a fresh one.
+//                 The client never holds a customer id.
+//   setup_token   the imported-customer payment page (spec §6).
 type Body =
-  | { context: "new_customer"; email: string; name?: string; phone?: string }
-  | { context: "existing_customer"; customerId: string }
+  | { context: "booking"; email: string; name?: string; phone?: string }
   | { context: "setup_token"; token: string };
 
 function isEmail(v: unknown): v is string {
@@ -39,26 +38,25 @@ export async function POST(req: Request) {
   try {
     let stripeCustomerId: string;
 
-    if (body.context === "new_customer") {
+    if (body.context === "booking") {
       if (!isEmail(body.email)) {
         return NextResponse.json(
           { error: "A valid email is required" },
           { status: 400 }
         );
       }
-      stripeCustomerId = await createStripeCustomerForBooking({
-        email: body.email,
-        name: body.name,
-        phone: body.phone,
-      });
-    } else if (body.context === "existing_customer") {
-      if (typeof body.customerId !== "string" || !body.customerId) {
-        return NextResponse.json(
-          { error: "customerId is required" },
-          { status: 400 }
-        );
+      const matched = await matchCustomerByEmailOrPhone(body.email, body.phone);
+      if (matched?.stripe_customer_id) {
+        stripeCustomerId = matched.stripe_customer_id;
+      } else if (matched) {
+        ({ stripeCustomerId } = await ensureStripeCustomerForRow(matched.id));
+      } else {
+        stripeCustomerId = await createStripeCustomerForBooking({
+          email: body.email,
+          name: body.name,
+          phone: body.phone,
+        });
       }
-      ({ stripeCustomerId } = await ensureStripeCustomerForRow(body.customerId));
     } else if (body.context === "setup_token") {
       const customer = await findCustomerByPaymentSetupToken(body.token);
       if (!customer) {

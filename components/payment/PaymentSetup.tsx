@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { loadStripe, type Stripe } from "@stripe/stripe-js";
 import {
   Elements,
@@ -22,8 +22,7 @@ import { buttonStyle, ErrorBanner } from "@/components/ui/form";
 // ---------------------------------------------------------------------------
 
 export type SetupIntentRequest =
-  | { context: "new_customer"; email: string; name?: string; phone?: string }
-  | { context: "existing_customer"; customerId: string }
+  | { context: "booking"; email: string; name?: string; phone?: string }
   | { context: "setup_token"; token: string };
 
 export type PaymentSetupResult = {
@@ -112,6 +111,20 @@ export function PaymentSetup(props: Props) {
 
   const stripe = getStripePromise();
 
+  // Stable options object — a new one each render makes <Elements> churn and,
+  // in a parent that re-renders (the booking flow), can disturb the mounted
+  // PaymentElement / reset sibling state.
+  const elementsOptions = useMemo(
+    () =>
+      clientSecret
+        ? {
+            clientSecret,
+            appearance: { theme: "stripe" as const, variables: { borderRadius: "8px" } },
+          }
+        : undefined,
+    [clientSecret]
+  );
+
   if (!stripe) {
     return (
       <ErrorBanner>
@@ -122,7 +135,7 @@ export function PaymentSetup(props: Props) {
 
   if (initError) return <ErrorBanner>{initError}</ErrorBanner>;
 
-  if (!clientSecret || !stripeCustomerId) {
+  if (!elementsOptions || !stripeCustomerId) {
     return (
       <p style={{ color: "var(--color-fg-muted)", fontSize: 14 }}>
         Loading secure payment form…
@@ -131,13 +144,7 @@ export function PaymentSetup(props: Props) {
   }
 
   return (
-    <Elements
-      stripe={stripe}
-      options={{
-        clientSecret,
-        appearance: { theme: "stripe", variables: { borderRadius: "8px" } },
-      }}
-    >
+    <Elements stripe={stripe} options={elementsOptions}>
       <CardForm
         stripeCustomerId={stripeCustomerId}
         onComplete={props.onComplete}

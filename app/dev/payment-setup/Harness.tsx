@@ -14,10 +14,10 @@ import {
   ErrorBanner,
 } from "@/components/ui/form";
 
-type Mode = "new_customer" | "setup_token";
+type Mode = "booking" | "setup_token";
 
 export function Harness() {
-  const [mode, setMode] = useState<Mode>("new_customer");
+  const [mode, setMode] = useState<Mode>("booking");
   const [email, setEmail] = useState(`dev+${Date.now()}@example.test`);
   const [seed, setSeed] = useState<{ token: string; customerId: string } | null>(
     null
@@ -43,8 +43,8 @@ export function Harness() {
   }
 
   const request: SetupIntentRequest | null =
-    mode === "new_customer"
-      ? { context: "new_customer", email }
+    mode === "booking"
+      ? { context: "booking", email }
       : seed
       ? { context: "setup_token", token: seed.token }
       : null;
@@ -81,7 +81,7 @@ export function Harness() {
       </h1>
 
       <div style={{ display: "flex", gap: "var(--space-2)", marginBottom: "var(--space-4)" }}>
-        {(["new_customer", "setup_token"] as Mode[]).map((m) => (
+        {(["booking", "setup_token"] as Mode[]).map((m) => (
           <button
             key={m}
             onClick={() => {
@@ -101,7 +101,7 @@ export function Harness() {
         ))}
       </div>
 
-      {mode === "new_customer" && (
+      {mode === "booking" && (
         <div style={{ marginBottom: "var(--space-4)" }}>
           <Field label="Email">
             <input
