@@ -51,6 +51,10 @@ function getStripePromise(): Promise<Stripe | null> | null {
   return stripePromise;
 }
 
+type SetupIntentResult =
+  | { ok: true; clientSecret: string; stripeCustomerId: string }
+  | { ok: false; error: string };
+
 export function PaymentSetup(props: Props) {
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [stripeCustomerId, setStripeCustomerId] = useState<string | null>(null);
@@ -58,39 +62,51 @@ export function PaymentSetup(props: Props) {
 
   // Serialize the request so the effect refires only if the request changes.
   const requestKey = JSON.stringify(props.request);
+  const inflightRef = useRef<{ key: string; result: Promise<SetupIntentResult> } | null>(null);
 
   useEffect(() => {
-    // React 18 strict mode double-invokes this in dev: the first pass is
-    // cancelled by the cleanup, the second sets state. That creates one
-    // throwaway SetupIntent in dev (harmless — unconfirmed SetupIntents
-    // expire on their own); production runs the effect once.
-    let cancelled = false;
+    // React 18 strict mode double-invokes effects in dev, and a double-click or
+    // a remount shouldn't create two SetupIntents (each would get its own
+    // Stripe Customer — see the note in lib/stripe/payments.ts). Cache the
+    // in-flight request by key so both invocations await the same one.
+    if (inflightRef.current?.key !== requestKey) {
+      inflightRef.current = {
+        key: requestKey,
+        result: (async (): Promise<SetupIntentResult> => {
+          try {
+            const res = await fetch("/api/payment/setup-intent", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: requestKey,
+            });
+            const data = await res.json();
+            return res.ok
+              ? { ok: true, clientSecret: data.clientSecret, stripeCustomerId: data.stripeCustomerId }
+              : { ok: false, error: data?.error ?? "Could not start card setup." };
+          } catch {
+            return { ok: false, error: "Could not reach the payment service." };
+          }
+        })(),
+      };
+    }
+
+    let active = true;
     setClientSecret(null);
     setStripeCustomerId(null);
     setInitError(null);
 
-    (async () => {
-      try {
-        const res = await fetch("/api/payment/setup-intent", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: requestKey,
-        });
-        const data = await res.json();
-        if (cancelled) return;
-        if (!res.ok) {
-          setInitError(data?.error ?? "Could not start card setup.");
-          return;
-        }
-        setClientSecret(data.clientSecret);
-        setStripeCustomerId(data.stripeCustomerId);
-      } catch {
-        if (!cancelled) setInitError("Could not reach the payment service.");
+    inflightRef.current.result.then((r) => {
+      if (!active) return;
+      if (!r.ok) {
+        setInitError(r.error);
+        return;
       }
-    })();
+      setClientSecret(r.clientSecret);
+      setStripeCustomerId(r.stripeCustomerId);
+    });
 
     return () => {
-      cancelled = true;
+      active = false;
     };
   }, [requestKey]);
 

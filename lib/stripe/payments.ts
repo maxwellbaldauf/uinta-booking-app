@@ -30,6 +30,12 @@ export async function createStripeCustomerForBooking(input: {
 
 // Resolve (or lazily create) the Stripe Customer for an existing Supabase
 // customers row, writing stripe_customer_id back if we had to create it.
+//
+// Race-safe: two concurrent callers (a double-click, two tabs, or React strict
+// mode in dev) must not each create a Stripe Customer and end up with the row
+// pointing at one while a SetupIntent was made against the other. The write is
+// a conditional claim (WHERE stripe_customer_id IS NULL); the loser adopts the
+// winner's customer and deletes its own.
 export async function ensureStripeCustomerForRow(customerId: string): Promise<{
   stripeCustomerId: string;
   email: string | null;
@@ -46,22 +52,39 @@ export async function ensureStripeCustomerForRow(customerId: string): Promise<{
     return { stripeCustomerId: row.stripe_customer_id, email: row.email };
   }
 
-  const customer = await getStripe().customers.create({
+  const created = await getStripe().customers.create({
     email: row.email ?? undefined,
     name: row.full_name ?? undefined,
     phone: row.phone ?? undefined,
     metadata: { supabase_customer_id: row.id },
   });
 
-  const { error: updateError } = await supabase
+  const { data: claimed, error: claimError } = await supabase
     .from("customers")
-    .update({ stripe_customer_id: customer.id })
-    .eq("id", row.id);
-  if (updateError) {
-    throw new Error(`Failed to save stripe_customer_id: ${updateError.message}`);
+    .update({ stripe_customer_id: created.id })
+    .eq("id", row.id)
+    .is("stripe_customer_id", null)
+    .select("stripe_customer_id")
+    .maybeSingle();
+  if (claimError) {
+    throw new Error(`Failed to save stripe_customer_id: ${claimError.message}`);
   }
 
-  return { stripeCustomerId: customer.id, email: row.email };
+  if (claimed?.stripe_customer_id === created.id) {
+    return { stripeCustomerId: created.id, email: row.email };
+  }
+
+  // Another caller claimed the slot first — discard our customer and adopt theirs.
+  await getStripe().customers.del(created.id).catch(() => {});
+  const { data: winner } = await supabase
+    .from("customers")
+    .select("stripe_customer_id, email")
+    .eq("id", row.id)
+    .single();
+  if (!winner?.stripe_customer_id) {
+    throw new Error("Could not resolve a Stripe customer for this row");
+  }
+  return { stripeCustomerId: winner.stripe_customer_id, email: winner.email };
 }
 
 export async function createCardSetupIntent(
