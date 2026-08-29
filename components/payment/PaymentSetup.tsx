@@ -56,20 +56,19 @@ export function PaymentSetup(props: Props) {
   const [stripeCustomerId, setStripeCustomerId] = useState<string | null>(null);
   const [initError, setInitError] = useState<string | null>(null);
 
-  // Serialize the request so the effect fires once per distinct request. A
-  // SetupIntent shouldn't be created twice for the same mount (React 18 strict
-  // mode double-invokes effects), so key off the request rather than [].
+  // Serialize the request so the effect refires only if the request changes.
   const requestKey = JSON.stringify(props.request);
-  const requestedKeyRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (requestedKeyRef.current === requestKey) return;
-    requestedKeyRef.current = requestKey;
+    // React 18 strict mode double-invokes this in dev: the first pass is
+    // cancelled by the cleanup, the second sets state. That creates one
+    // throwaway SetupIntent in dev (harmless — unconfirmed SetupIntents
+    // expire on their own); production runs the effect once.
+    let cancelled = false;
     setClientSecret(null);
     setStripeCustomerId(null);
     setInitError(null);
 
-    let cancelled = false;
     (async () => {
       try {
         const res = await fetch("/api/payment/setup-intent", {
