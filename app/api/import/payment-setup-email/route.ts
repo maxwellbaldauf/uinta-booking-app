@@ -9,17 +9,24 @@ export const runtime = "nodejs";
 // imported customer: mint a fresh payment_setup_token, store it, and email the
 // customer a /pay/[token] link (spec §6 + §8.2).
 //
-// Auth: the import script runs with the shared service-role key; require it as
-// a bearer token here. Both apps use the same Supabase project, so the value is
-// already synced — no extra secret to manage.
+// Auth: a dedicated IMPORT_API_SECRET as a bearer token. Scoped to this one
+// endpoint so a leak of it can't do anything else — set the same value in
+// Project A's env for the import script.
 //
 // POST { customerId }  ->  { ok, token } | { ok: true, skipped } | { error }
 const TOKEN_TTL_DAYS = 21;
 
+function timingSafeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return diff === 0;
+}
+
 export async function POST(req: Request) {
-  const auth = req.headers.get("authorization") ?? "";
-  const expected = `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`;
-  if (!process.env.SUPABASE_SERVICE_ROLE_KEY || auth !== expected) {
+  const secret = process.env.IMPORT_API_SECRET;
+  const presented = (req.headers.get("authorization") ?? "").replace(/^Bearer\s+/i, "");
+  if (!secret || !timingSafeEqual(presented, secret)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
