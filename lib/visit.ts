@@ -95,11 +95,15 @@ export async function getVisitByToken(token: string): Promise<Visit | null> {
 }
 
 // Open windows for rescheduling this visit — route-matched only, same as
-// booking (spec §3). Empty if the property has no coordinates.
+// booking (spec §3). Empty if the property has no coordinates. Passes the
+// job's own id so get_available_slots doesn't treat it as its own route match
+// (which pinned the picker to the visit's current date).
 export async function getRescheduleSlots(visit: Visit) {
   if (visit.latitude == null || visit.longitude == null) return [];
-  const slots = await getOfferedSlots(visit.latitude, visit.longitude);
-  // Don't offer the window it's already in.
+  const slots = await getOfferedSlots(visit.latitude, visit.longitude, {
+    excludeJobId: visit.jobId,
+  });
+  // Don't offer the exact window it's already in.
   return slots
     .filter((s) => !(s.slotDate === visit.scheduledDate && s.arrivalBlock === visit.arrivalBlock))
     .map((s) => ({ slotDate: s.slotDate, arrivalBlock: s.arrivalBlock, blockLabel: s.blockLabel }));

@@ -43,7 +43,8 @@ export async function rescheduleVisit(
       visit.latitude,
       visit.longitude,
       choice.slotDate,
-      choice.arrivalBlock
+      choice.arrivalBlock,
+      { excludeJobId: visit.jobId }
     );
     if (!fresh) {
       return { ok: false, error: "That time was just taken. Please pick another.", slotTaken: true };

@@ -27,11 +27,20 @@ export type OfferedSlot = {
 //   * otherwise a today block is offered only with >= 1 hour of notice
 //     (now + 60 min must still be before the block's start)
 // Future-dated slots pass through untouched. This filter only ever removes.
-export async function getOfferedSlots(lat: number, lng: number): Promise<OfferedSlot[]> {
+//
+// excludeJobId: rescheduling — the job being moved must not count as its own
+// nearby match (it would pin the picker to that job's current date) or occupy
+// its own block.
+export async function getOfferedSlots(
+  lat: number,
+  lng: number,
+  opts?: { excludeJobId?: string }
+): Promise<OfferedSlot[]> {
   const supabase = createAdminClient();
   const { data, error } = await supabase.rpc("get_available_slots", {
     target_lat: lat,
     target_lng: lng,
+    ...(opts?.excludeJobId ? { exclude_job_id: opts.excludeJobId } : {}),
   });
   if (error) throw new Error(`get_available_slots failed: ${error.message}`);
 
@@ -67,15 +76,16 @@ function toOffered(r: RawSlot): OfferedSlot {
 }
 
 // Is a specific (date, block) still in the freshly-computed offer set? Used by
-// createBooking to re-validate the customer's choice right before insert, so a
-// slot someone else grabbed mid-flow is caught.
+// createBooking and rescheduleVisit to re-validate the customer's choice right
+// before writing, so a slot someone else grabbed mid-flow is caught.
 export async function slotStillAvailable(
   lat: number,
   lng: number,
   slotDate: string,
-  arrivalBlock: number
+  arrivalBlock: number,
+  opts?: { excludeJobId?: string }
 ): Promise<OfferedSlot | null> {
-  const fresh = await getOfferedSlots(lat, lng);
+  const fresh = await getOfferedSlots(lat, lng, opts);
   return (
     fresh.find((s) => s.slotDate === slotDate && s.arrivalBlock === arrivalBlock) ?? null
   );

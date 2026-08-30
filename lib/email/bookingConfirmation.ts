@@ -6,6 +6,7 @@ import { buildBookingIcs } from "@/lib/ics";
 import { arrivalBlockLabel, ARRIVAL_BLOCKS } from "@/lib/schedule/blocks";
 import { formatVisitDate } from "@/lib/format";
 import { denverLocalToUtc } from "@/lib/time/denver";
+import { getAppBaseUrl } from "@/lib/url";
 import type { BuiltEmail } from "@/lib/email/types";
 
 type JobRow = {
@@ -62,7 +63,7 @@ export async function buildBookingConfirmationEmail(
   const address = property?.address ?? "";
   const name = customer.full_name?.trim() || "there";
 
-  const baseUrl = (process.env.APP_BASE_URL ?? "").replace(/\/$/, "");
+  const baseUrl = getAppBaseUrl();
   const manageUrl = job.access_token ? `${baseUrl}/visit/${job.access_token}` : baseUrl;
 
   const start = block ? denverLocalToUtc(job.scheduled_date, block.startsAt) : new Date();

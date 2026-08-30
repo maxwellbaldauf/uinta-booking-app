@@ -14,7 +14,11 @@ export const viewport: Viewport = {
   initialScale: 1,
 };
 
-const PLAUSIBLE_DOMAIN = process.env.NEXT_PUBLIC_PLAUSIBLE_DOMAIN;
+// Only load analytics in production with a configured domain — no dev noise.
+const PLAUSIBLE_DOMAIN =
+  process.env.NODE_ENV === "production"
+    ? process.env.NEXT_PUBLIC_PLAUSIBLE_DOMAIN
+    : undefined;
 
 export default function RootLayout({
   children,
