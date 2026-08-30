@@ -15,7 +15,23 @@ export type ContactPrefill = Partial<{
   from: string;
 }>;
 
+const FROM_INTRO: Record<string, { title: string; body: string }> = {
+  out_of_area: {
+    title: "Outside our service area",
+    body: "Your address is outside where we currently service. Leave your details and we'll reach out if that changes.",
+  },
+  no_availability: {
+    title: "No openings right now",
+    body: "We don't have an open arrival window at the moment. Send your details and we'll get you scheduled.",
+  },
+  geocode_failed: {
+    title: "We couldn't find that address",
+    body: "Double-check the address below (or add a landmark) and we'll follow up.",
+  },
+};
+
 export function ContactForm({ prefill }: { prefill: ContactPrefill }) {
+  const intro = prefill.from ? FROM_INTRO[prefill.from] : undefined;
   const [f, setF] = useState({
     fullName: prefill.name ?? "",
     email: prefill.email ?? "",
@@ -64,9 +80,9 @@ export function ContactForm({ prefill }: { prefill: ContactPrefill }) {
       onSubmit={handleSubmit}
       style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}
     >
-      <h1 style={{ fontSize: 22, margin: 0 }}>Contact us</h1>
+      <h1 style={{ fontSize: 22, margin: 0 }}>{intro ? intro.title : "Contact us"}</h1>
       <p style={{ color: "var(--color-fg-muted)", margin: 0 }}>
-        Not ready to book, or have a question? Send us a note.
+        {intro ? intro.body : "Not ready to book, or have a question? Send us a note."}
       </p>
 
       <Field label="Your name">
