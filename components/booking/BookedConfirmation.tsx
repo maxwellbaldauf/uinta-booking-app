@@ -2,19 +2,7 @@
 
 import Link from "next/link";
 import { buttonStyle } from "@/components/ui/form";
-
-function formatSlotDate(iso: string): string {
-  const [y, m, d] = iso.split("-").map(Number);
-  const dt = new Date(Date.UTC(y, m - 1, d));
-  const wd = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"][
-    dt.getUTCDay()
-  ];
-  const mo = [
-    "January", "February", "March", "April", "May", "June",
-    "July", "August", "September", "October", "November", "December",
-  ][dt.getUTCMonth()];
-  return `${wd}, ${mo} ${d}`;
-}
+import { formatSlotDate } from "@/components/booking/SlotGrid";
 
 export function BookedConfirmation({
   scheduledDate,

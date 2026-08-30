@@ -25,11 +25,18 @@ function flatten<T>(v: T | T[] | null | undefined): T | null {
   return Array.isArray(v) ? v[0] ?? null : v ?? null;
 }
 
+export type ConfirmationVariant = "new" | "rescheduled";
+
 // Assemble the confirmation email (spec §8.1): date, arrival window, address,
 // price, magic link, .ics invite. Split from the send so it can be previewed.
+// `variant: "rescheduled"` re-sends after a magic-link reschedule — same
+// content, updated heading, and an .ics SEQUENCE bump so calendars replace the
+// existing entry rather than add a duplicate (stable UID does the matching).
 export async function buildBookingConfirmationEmail(
-  jobId: string
+  jobId: string,
+  opts?: { variant?: ConfirmationVariant }
 ): Promise<BuiltEmail | { error: string }> {
+  const variant: ConfirmationVariant = opts?.variant ?? "new";
   const supabase = createAdminClient();
   const { data, error } = await supabase
     .from("jobs")
@@ -69,11 +76,17 @@ export async function buildBookingConfirmationEmail(
     location: address,
     organizerEmail: settings.business_email,
     organizerName: settings.business_name,
+    // Monotonic (minutes since epoch) so a rescheduled invite always outranks
+    // the previous one in calendar clients. "new" stays at 0.
+    sequence: variant === "rescheduled" ? Math.floor(Date.now() / 60000) : 0,
   });
+
+  const headline =
+    variant === "rescheduled" ? "Your visit has been rescheduled." : "Your cleaning is booked.";
 
   const inner = `
     <p style="margin:0 0 12px;">Hi ${escapeHtml(name)},</p>
-    <p style="margin:0 0 4px;font-size:16px;font-weight:700;">Your cleaning is booked.</p>
+    <p style="margin:0 0 4px;font-size:16px;font-weight:700;">${escapeHtml(headline)}</p>
     <p style="margin:0 0 12px;color:#5b6470;">Your card isn&rsquo;t charged until after the visit.</p>
     ${detailsTable([
       { label: "Date", value: dateLong },
@@ -82,11 +95,11 @@ export async function buildBookingConfirmationEmail(
       { label: "Price", value: `${priceText} per visit` },
     ])}
     ${buttonRow(manageUrl, "Reschedule or cancel")}
-    <p style="margin:12px 0 0;color:#5b6470;font-size:13px;">A calendar invite is attached. Your reschedule / cancel link expires the day after the visit.</p>
+    <p style="margin:12px 0 0;color:#5b6470;font-size:13px;">An updated calendar invite is attached. Your reschedule / cancel link expires the day after the visit.</p>
   `;
 
   const html = renderEmail({
-    title: "Your Uinta Ice Co cleaning is booked",
+    title: variant === "rescheduled" ? "Your Uinta Ice Co visit was rescheduled" : "Your Uinta Ice Co cleaning is booked",
     preheader: `${dateLong}, ${windowLabel} — ${address}`,
     inner,
   });
@@ -94,7 +107,9 @@ export async function buildBookingConfirmationEmail(
   const text = [
     `Hi ${name},`,
     ``,
-    `Your Uinta Ice Co cleaning is booked.`,
+    variant === "rescheduled"
+      ? `Your Uinta Ice Co visit has been rescheduled.`
+      : `Your Uinta Ice Co cleaning is booked.`,
     ``,
     `Date:           ${dateLong}`,
     `Arrival window: ${windowLabel}`,
@@ -112,7 +127,10 @@ export async function buildBookingConfirmationEmail(
   return {
     to: customer.email,
     replyTo: settings.business_email ?? undefined,
-    subject: `Your Uinta Ice Co cleaning is booked — ${formatVisitDate(job.scheduled_date)}`,
+    subject:
+      variant === "rescheduled"
+        ? `Your Uinta Ice Co visit was moved — ${formatVisitDate(job.scheduled_date)}`
+        : `Your Uinta Ice Co cleaning is booked — ${formatVisitDate(job.scheduled_date)}`,
     html,
     text,
     attachments: [{ filename: "uinta-ice-visit.ics", content: Buffer.from(ics, "utf-8") }],
@@ -123,7 +141,7 @@ export async function buildBookingConfirmationEmail(
 // confirmation_sent_at on true. Never throws.
 export async function sendBookingConfirmationEmail(
   jobId: string,
-  opts?: { overrideTo?: string }
+  opts?: { overrideTo?: string; variant?: ConfirmationVariant }
 ): Promise<boolean> {
   try {
     const resend = getResend();
@@ -131,7 +149,7 @@ export async function sendBookingConfirmationEmail(
       console.error("sendBookingConfirmationEmail: Resend not configured", { jobId });
       return false;
     }
-    const built = await buildBookingConfirmationEmail(jobId);
+    const built = await buildBookingConfirmationEmail(jobId, { variant: opts?.variant });
     if ("error" in built) {
       console.error("sendBookingConfirmationEmail:", built.error, { jobId });
       return false;
