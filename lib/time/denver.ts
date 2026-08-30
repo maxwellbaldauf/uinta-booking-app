@@ -61,8 +61,17 @@ export function addDaysToISODate(isoDate: string, days: number): string {
 // The UTC instant of 00:00 America/Denver on the given plain date, as an ISO
 // string. Used to stamp access_token_expires_at against a scheduled_date.
 export function denverMidnightUtcISO(isoDate: string): string {
+  return denverLocalToUtc(isoDate, "00:00").toISOString();
+}
+
+// The UTC instant of a given Denver wall-clock date + time. "2026-08-29" +
+// "07:00" -> the Date for 13:00Z (MDT) or 14:00Z (MST). Used for .ics
+// DTSTART/DTEND. Fine near DST boundaries for this app's purposes — an
+// arrival window is never scheduled across the 2am transition.
+export function denverLocalToUtc(isoDate: string, time: string): Date {
   const [y, m, d] = isoDate.split("-").map(Number);
-  const naiveMidnightUTC = new Date(Date.UTC(y, m - 1, d, 0, 0, 0));
-  const offsetMinutes = denverUtcOffsetMinutes(naiveMidnightUTC);
-  return new Date(naiveMidnightUTC.getTime() - offsetMinutes * 60000).toISOString();
+  const [hh = 0, mm = 0] = time.split(":").map(Number);
+  const naive = new Date(Date.UTC(y, m - 1, d, hh, mm, 0));
+  const offsetMinutes = denverUtcOffsetMinutes(naive);
+  return new Date(naive.getTime() - offsetMinutes * 60000);
 }

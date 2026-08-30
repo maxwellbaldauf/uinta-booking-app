@@ -9,7 +9,9 @@ import {
   resolveConfirmedSetupIntent,
   setStripeDefaultPaymentMethod,
 } from "@/lib/stripe/payments";
-import { addDaysToISODate, denverMidnightUtcISO } from "@/lib/time/denver";
+import { addDaysToISODate, denverMidnightUtcISO, todayDenverISODate } from "@/lib/time/denver";
+import { sendBookingConfirmationEmail } from "@/lib/email/bookingConfirmation";
+import { sendSameDayBookingAlert } from "@/lib/email/sameDayAlert";
 
 export class SlotUnavailableError extends Error {}
 
@@ -237,10 +239,22 @@ export async function createBookingRecord(
   if (jobError || !job) {
     throw new Error(`Could not book the visit: ${jobError?.message}`);
   }
+  const jobId = (job as { id: string }).id;
 
-  // TODO(step 3): send the confirmation email (+ .ics + magic link), set
-  // confirmation_sent_at, and — if chosenSlot.slotDate is today — fire the
-  // same-day owner alert email.
+  // Confirmation email + .ics (spec §8.1). Non-blocking — the job exists
+  // whether or not the email lands; only stamp confirmation_sent_at on success.
+  const sent = await sendBookingConfirmationEmail(jobId);
+  if (sent) {
+    await supabase
+      .from("jobs")
+      .update({ confirmation_sent_at: new Date().toISOString() })
+      .eq("id", jobId);
+  }
+
+  // Same-day owner alert — a booking for today can land with an hour's notice.
+  if (chosenSlot.slotDate === todayDenverISODate()) {
+    await sendSameDayBookingAlert(jobId);
+  }
 
   return {
     token,
