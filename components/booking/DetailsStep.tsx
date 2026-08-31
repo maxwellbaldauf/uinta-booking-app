@@ -10,6 +10,8 @@ export type BookingDetails = {
   address: string;
   iceMakerBrand: string;
   iceMakerModel: string;
+  // Opt-in to the separate daily-quotes email list (Kit). Never gates submit.
+  quotesOptIn: boolean;
 };
 
 const EMPTY: BookingDetails = {
@@ -19,6 +21,7 @@ const EMPTY: BookingDetails = {
   address: "",
   iceMakerBrand: "",
   iceMakerModel: "",
+  quotesOptIn: false,
 };
 
 export function DetailsStep({
@@ -50,6 +53,7 @@ export function DetailsStep({
       address: d.address.trim(),
       iceMakerBrand: d.iceMakerBrand.trim(),
       iceMakerModel: d.iceMakerModel.trim(),
+      quotesOptIn: d.quotesOptIn,
     });
   }
 
@@ -97,6 +101,57 @@ export function DetailsStep({
       <Field label="Ice maker model" hint="Optional">
         <input style={inputStyle} value={d.iceMakerModel} onChange={set("iceMakerModel")} />
       </Field>
+
+      {/* Separate opt-in for a personal daily-quotes email list (Kit, not our
+          booking emails). Dashed card + "Optional" eyebrow + muted text keep it
+          visually distinct from the required payment-authorization checkbox. */}
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: 6,
+          padding: "var(--space-3)",
+          border: "1px dashed var(--color-border)",
+          borderRadius: "var(--radius)",
+          background: "var(--color-bg-subtle)",
+        }}
+      >
+        <span
+          style={{
+            fontSize: 11,
+            fontWeight: 700,
+            letterSpacing: "0.06em",
+            textTransform: "uppercase",
+            color: "var(--color-fg-muted)",
+          }}
+        >
+          Optional
+        </span>
+        <label
+          style={{
+            display: "flex",
+            gap: 10,
+            alignItems: "flex-start",
+            fontSize: 13,
+            lineHeight: 1.5,
+            color: "var(--color-fg-muted)",
+          }}
+        >
+          <input
+            type="checkbox"
+            checked={d.quotesOptIn}
+            onChange={(e) =>
+              setD((prev) => ({ ...prev, quotesOptIn: e.target.checked }))
+            }
+            style={{ marginTop: 2, width: 16, height: 16, flexShrink: 0 }}
+          />
+          <span>
+            Send me &ldquo;The 1% Better Starts with You&rdquo; &mdash; a daily
+            email cycling through the 100 best quotes of all time, on the belief
+            that absorbing the best 100 over and over beats skimming a thousand.
+          </span>
+        </label>
+      </div>
 
       {error && <ErrorBanner>{error}</ErrorBanner>}
 

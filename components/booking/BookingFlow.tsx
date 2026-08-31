@@ -82,6 +82,7 @@ export function BookingFlow() {
         chosenSlot: { slotDate: choice.slot.slotDate, arrivalBlock: choice.slot.arrivalBlock },
         useExistingCard: choice.useExistingCard,
         payment: pay ? { setupIntentId: pay.setupIntentId, stripeCustomerId: pay.stripeCustomerId } : undefined,
+        quotesOptIn: d.quotesOptIn,
       });
       setResult(res);
 

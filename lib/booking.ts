@@ -12,6 +12,7 @@ import {
 import { addDaysToISODate, denverMidnightUtcISO, todayDenverISODate } from "@/lib/time/denver";
 import { sendBookingConfirmationEmail } from "@/lib/email/bookingConfirmation";
 import { sendSameDayBookingAlert } from "@/lib/email/sameDayAlert";
+import { subscribeToQuotesList } from "@/lib/kit";
 
 export class SlotUnavailableError extends Error {}
 
@@ -76,6 +77,10 @@ export type CreateBookingInput = {
   useExistingCard: boolean;
   // present unless useExistingCard: a just-confirmed SetupIntent from PaymentSetup.
   payment?: { setupIntentId: string; stripeCustomerId: string };
+  // true = ticked the opt-in box for the separate "daily quotes" email list
+  // (Kit, not Resend). Purely marketing — no bearing on the booking or any
+  // transactional email.
+  quotesOptIn: boolean;
 };
 
 export type CreateBookingResult = {
@@ -254,6 +259,14 @@ export async function createBookingRecord(
   // Same-day owner alert — a booking for today can land with an hour's notice.
   if (chosenSlot.slotDate === todayDenverISODate()) {
     await sendSameDayBookingAlert(jobId);
+  }
+
+  // Daily-quotes email list (Kit). Separate provider, separate consent, purely
+  // marketing — strictly fire-and-forget: subscribeToQuotesList never throws,
+  // and its result is deliberately ignored so nothing about the booking depends
+  // on Kit being reachable.
+  if (input.quotesOptIn) {
+    await subscribeToQuotesList(details.email);
   }
 
   return {
