@@ -1,0 +1,14 @@
+#!/bin/sh
+# Pre-push quality gate — see CLAUDE.md and the release-quality-gate rule.
+# Fast checks only: type-check + lint. The full `next build` runs at the
+# pre-release review and on every Netlify deploy, so it is not repeated here.
+# Emergency bypass: git push --no-verify  (use sparingly, and fix it after).
+set -e
+
+echo "pre-push > tsc --noEmit"
+npx --no-install tsc --noEmit
+
+echo "pre-push > next lint"
+npm run --silent lint
+
+echo "pre-push > passed"
