@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import { Field, inputStyle, buttonStyle, ErrorBanner } from "@/components/ui/form";
+import { AddressAutocompleteField } from "./AddressAutocompleteField";
 
 export type BookingDetails = {
   fullName: string;
@@ -87,12 +88,10 @@ export function DetailsStep({
           autoComplete="tel"
         />
       </Field>
-      <Field label="Property address" hint="Street, city, state, ZIP">
-        <input
-          style={inputStyle}
+      <Field label="Property address" hint="Start typing and pick your address from the list">
+        <AddressAutocompleteField
           value={d.address}
-          onChange={set("address")}
-          autoComplete="street-address"
+          onChange={(address) => setD((prev) => ({ ...prev, address }))}
         />
       </Field>
       <Field label="Ice maker brand" hint="Optional">

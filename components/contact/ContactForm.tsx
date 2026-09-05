@@ -4,6 +4,7 @@ import { useState, type FormEvent } from "react";
 import Link from "next/link";
 import { submitContactForm } from "@/app/contact/actions";
 import { Field, inputStyle, buttonStyle, ErrorBanner } from "@/components/ui/form";
+import { AddressAutocompleteField } from "@/components/booking/AddressAutocompleteField";
 
 export type ContactPrefill = Partial<{
   name: string;
@@ -95,7 +96,10 @@ export function ContactForm({ prefill }: { prefill: ContactPrefill }) {
         <input style={inputStyle} type="tel" inputMode="tel" value={f.phone} onChange={set("phone")} autoComplete="tel" />
       </Field>
       <Field label="Property address" hint="Optional">
-        <input style={inputStyle} value={f.address} onChange={set("address")} autoComplete="street-address" />
+        <AddressAutocompleteField
+          value={f.address}
+          onChange={(address) => setF((prev) => ({ ...prev, address }))}
+        />
       </Field>
       <Field label="Ice maker brand / model" hint="Optional">
         <div style={{ display: "flex", gap: "var(--space-2)" }}>

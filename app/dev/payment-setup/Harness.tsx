@@ -18,7 +18,7 @@ type Mode = "booking" | "setup_token";
 
 export function Harness() {
   const [mode, setMode] = useState<Mode>("booking");
-  // eslint-disable-next-line react-hooks/purity -- pre-existing pattern, flagged by eslint-plugin-react-hooks v7 bundled in the Next 16 upgrade; deferred 2026-09-04, not fixed here. Also: this whole dev-only harness is marked "delete before launch" in README.md's build order.
+  // eslint-disable-next-line react-hooks/purity -- Date.now() in this initializer is impure, but this harness is dev-only scaffolding that's never SSR'd for a real user (no hydration mismatch is possible) and is marked "delete before launch" in README.md's build order — not worth restructuring throwaway code to satisfy a rule whose actual concern (SSR/client divergence) doesn't apply here.
   const [email, setEmail] = useState(`dev+${Date.now()}@example.test`);
   const [seed, setSeed] = useState<{ token: string; customerId: string } | null>(
     null

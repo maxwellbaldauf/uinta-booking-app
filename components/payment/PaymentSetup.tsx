@@ -87,13 +87,15 @@ export function PaymentSetup(props: Props) {
           }
         })(),
       };
+      // Only reset visible state when this effect run is actually starting a
+      // new request — not on the strict-mode replay of an unchanged
+      // requestKey, which would otherwise force an extra, avoidable render.
+      setClientSecret(null);
+      setStripeCustomerId(null);
+      setInitError(null);
     }
 
     let active = true;
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- pre-existing pattern, flagged by eslint-plugin-react-hooks v7 bundled in the Next 16 upgrade; deferred 2026-09-04, not fixed here.
-    setClientSecret(null);
-    setStripeCustomerId(null);
-    setInitError(null);
 
     inflightRef.current.result.then((r) => {
       if (!active) return;

@@ -4,6 +4,47 @@ import { useState } from "react";
 import { buttonStyle, secondaryButtonStyle, ErrorBanner } from "@/components/ui/form";
 import type { CancelScope } from "@/app/visit/[token]/actions";
 
+function Option({
+  value,
+  title,
+  body,
+  selected,
+  onSelect,
+}: {
+  value: CancelScope;
+  title: string;
+  body: string;
+  selected: boolean;
+  onSelect: (value: CancelScope) => void;
+}) {
+  return (
+    <label
+      style={{
+        display: "flex",
+        gap: 10,
+        alignItems: "flex-start",
+        border: `1px solid ${selected ? "var(--color-primary)" : "var(--color-border)"}`,
+        borderRadius: "var(--radius)",
+        padding: "var(--space-3)",
+        cursor: "pointer",
+      }}
+    >
+      <input
+        type="radio"
+        checked={selected}
+        onChange={() => onSelect(value)}
+        style={{ marginTop: 3 }}
+      />
+      <span>
+        <span style={{ display: "block", fontWeight: 600, fontSize: 14 }}>{title}</span>
+        <span style={{ display: "block", fontSize: 13, color: "var(--color-fg-muted)", marginTop: 2 }}>
+          {body}
+        </span>
+      </span>
+    </label>
+  );
+}
+
 export function CancelDialog({
   address,
   busy,
@@ -19,57 +60,24 @@ export function CancelDialog({
 }) {
   const [scope, setScope] = useState<CancelScope>("visit");
 
-  const Option = ({
-    value,
-    title,
-    body,
-  }: {
-    value: CancelScope;
-    title: string;
-    body: string;
-  }) => (
-    <label
-      style={{
-        display: "flex",
-        gap: 10,
-        alignItems: "flex-start",
-        border: `1px solid ${scope === value ? "var(--color-primary)" : "var(--color-border)"}`,
-        borderRadius: "var(--radius)",
-        padding: "var(--space-3)",
-        cursor: "pointer",
-      }}
-    >
-      <input
-        type="radio"
-        checked={scope === value}
-        onChange={() => setScope(value)}
-        style={{ marginTop: 3 }}
-      />
-      <span>
-        <span style={{ display: "block", fontWeight: 600, fontSize: 14 }}>{title}</span>
-        <span style={{ display: "block", fontSize: 13, color: "var(--color-fg-muted)", marginTop: 2 }}>
-          {body}
-        </span>
-      </span>
-    </label>
-  );
-
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
       <h1 style={{ fontSize: 22, margin: 0 }}>Cancel this visit</h1>
 
       <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
-        {/* eslint-disable-next-line react-hooks/static-components -- pre-existing pattern (Option defined inside render), flagged by eslint-plugin-react-hooks v7 bundled in the Next 16 upgrade; deferred 2026-09-04, not fixed here. */}
         <Option
           value="visit"
           title="Just this visit"
           body="Your semi-annual plan stays active — we'll schedule the next visit as usual."
+          selected={scope === "visit"}
+          onSelect={setScope}
         />
-        {/* eslint-disable-next-line react-hooks/static-components -- pre-existing pattern (Option defined inside render), flagged by eslint-plugin-react-hooks v7 bundled in the Next 16 upgrade; deferred 2026-09-04, not fixed here. */}
         <Option
           value="property"
           title="Stop service at this property"
           body={`Cancels this visit and ends the plan for ${address}. Your card stays on file, and any other properties are unaffected.`}
+          selected={scope === "property"}
+          onSelect={setScope}
         />
       </div>
 
