@@ -12,8 +12,9 @@ export const metadata = {
 // the only authorization. Expired / unknown / already-used token gets a
 // friendly page, never a raw error. /api/payment/finalize consumes the token on
 // success, so a second visit lands here.
-export default async function PayPage({ params }: { params: { token: string } }) {
-  const customer = await findCustomerByPaymentSetupToken(params.token);
+export default async function PayPage({ params }: { params: Promise<{ token: string }> }) {
+  const { token } = await params;
+  const customer = await findCustomerByPaymentSetupToken(token);
 
   if (!customer) {
     return (
@@ -33,7 +34,7 @@ export default async function PayPage({ params }: { params: { token: string } })
   return (
     <main className="page">
       <ImportPaymentSetup
-        token={params.token}
+        token={token}
         customerName={customer.full_name}
         existingCard={customer.payment_display}
       />

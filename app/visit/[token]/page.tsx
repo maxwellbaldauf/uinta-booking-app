@@ -7,8 +7,9 @@ export const dynamic = "force-dynamic";
 // The magic-link portal (spec §3): view the appointment, reschedule, or cancel.
 // Public — the token is the only authorization. Expired/unknown token gets a
 // friendly page, never a raw error.
-export default async function VisitPage({ params }: { params: { token: string } }) {
-  const visit = await getVisitByToken(params.token);
+export default async function VisitPage({ params }: { params: Promise<{ token: string }> }) {
+  const { token } = await params;
+  const visit = await getVisitByToken(token);
 
   if (!visit) {
     return (
@@ -29,7 +30,7 @@ export default async function VisitPage({ params }: { params: { token: string } 
     <main className="page">
       <VisitPortal
         visit={{
-          token: params.token,
+          token,
           status: visit.status,
           scheduledDate: visit.scheduledDate,
           arrivalWindowLabel: visit.arrivalWindowLabel,

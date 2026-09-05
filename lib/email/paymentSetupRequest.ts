@@ -23,7 +23,7 @@ export async function buildPaymentSetupRequestEmail(
 
   const settings = await getSettings();
   const name = data.full_name?.trim() || "there";
-  const link = `${getAppBaseUrl()}/pay/${token}`;
+  const link = `${await getAppBaseUrl()}/pay/${token}`;
 
   const inner = `
     <p style="margin:0 0 12px;">Hi ${escapeHtml(name)},</p>

@@ -6,12 +6,12 @@ import { headers } from "next/headers";
 // - Otherwise derive it from the incoming request, so links in emails point at
 //   whatever host you're actually on — localhost:<whatever-port> in dev, a
 //   preview URL on a preview deploy, etc. No more swapping the domain by hand.
-export function getAppBaseUrl(): string {
+export async function getAppBaseUrl(): Promise<string> {
   const explicit = process.env.APP_BASE_URL?.trim();
   if (explicit) return explicit.replace(/\/$/, "");
 
   try {
-    const h = headers();
+    const h = await headers();
     const host = h.get("x-forwarded-host") ?? h.get("host");
     if (host) {
       const proto =

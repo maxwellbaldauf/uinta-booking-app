@@ -18,6 +18,7 @@ type Mode = "booking" | "setup_token";
 
 export function Harness() {
   const [mode, setMode] = useState<Mode>("booking");
+  // eslint-disable-next-line react-hooks/purity -- pre-existing pattern, flagged by eslint-plugin-react-hooks v7 bundled in the Next 16 upgrade; deferred 2026-09-04, not fixed here. Also: this whole dev-only harness is marked "delete before launch" in README.md's build order.
   const [email, setEmail] = useState(`dev+${Date.now()}@example.test`);
   const [seed, setSeed] = useState<{ token: string; customerId: string } | null>(
     null

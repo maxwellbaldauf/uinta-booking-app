@@ -90,6 +90,7 @@ export function PaymentSetup(props: Props) {
     }
 
     let active = true;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- pre-existing pattern, flagged by eslint-plugin-react-hooks v7 bundled in the Next 16 upgrade; deferred 2026-09-04, not fixed here.
     setClientSecret(null);
     setStripeCustomerId(null);
     setInitError(null);
