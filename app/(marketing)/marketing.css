@@ -538,14 +538,12 @@
   letter-spacing: 0.1em;
   line-height: 1.2;
   margin: 0 0 var(--space-md);
-  padding-bottom: var(--space-sm);
-  border-bottom: 1px solid var(--line);
 }
 .mkt-prose h3 {
-  font-size: var(--text-xl);
-  letter-spacing: 0.08em;
+  font-size: var(--text-lg);
+  letter-spacing: 0.06em;
   line-height: 1.3;
-  margin: var(--space-xl) 0 var(--space-sm);
+  margin: var(--space-lg) 0 var(--space-2xs);
 }
 .mkt-prose p {
   margin: 0 0 var(--space-md);
@@ -625,8 +623,18 @@
   border-top: 1px solid var(--line);
   max-width: var(--measure);
 }
+/* No second hairline when a heading, eyebrow, or the section edge already
+   draws the top of the accordion. */
+.mkt-prose h2 + .mkt-acc,
+.mkt-eyebrow + .mkt-acc,
+.mkt-section > .mkt-acc:first-child {
+  border-top: none;
+}
 .mkt-acc__item {
   border-bottom: 1px solid var(--line);
+}
+.mkt-acc__item:last-child {
+  border-bottom: none;
 }
 .mkt-acc__summary {
   list-style: none;
@@ -727,21 +735,24 @@
   margin: 0;
   padding: 0;
   list-style: none;
-  border-top: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
 }
 .mkt-jump li {
   margin: 0;
-  border-bottom: 1px solid var(--line);
 }
 .mkt-jump a {
-  display: block;
-  padding: var(--space-sm) 0;
+  display: inline-block;
   color: var(--ink);
-  text-decoration: none;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.18em;
+  text-decoration-color: var(--ink-faint);
   line-height: 1.4;
 }
 .mkt-jump a:hover {
-  color: var(--ink-soft);
+  text-decoration-color: var(--ink);
 }
 
 /* ---- Comparison table (troubleshooting) --------------------------- */

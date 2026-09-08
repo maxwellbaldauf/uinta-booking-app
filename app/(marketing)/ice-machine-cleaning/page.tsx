@@ -4,6 +4,7 @@ import { pageMetadata } from "@/lib/seo";
 import { SERVICE_FAQ } from "@/lib/faq";
 import { breadcrumbSchema, faqPageSchema, serviceSchema } from "@/lib/schema";
 import { JsonLd } from "@/components/marketing/JsonLd";
+import { Accordion, AccordionItem } from "@/components/marketing/Accordion";
 
 export const metadata = pageMetadata({
   title: "Residential Ice Machine Cleaning Service | Uinta Ice Co.",
@@ -41,7 +42,7 @@ export default function IceMachineCleaningPage() {
         </p>
         <p>
           This page covers exactly what that visit involves, what we use, and
-          what we’ll tell you when we’re done.
+          what we send you afterward.
         </p>
         <div className="mkt-cta-row">
           <Link href="/book" className="mkt-btn mkt-btn--primary">
@@ -53,7 +54,7 @@ export default function IceMachineCleaningPage() {
         </div>
       </header>
 
-      {/* SECTION 1 */}
+      {/* SECTION 1 — stays open */}
       <section id="included" className="mkt-section">
         <h2>What’s Included in a Professional Ice Machine Cleaning?</h2>
         <p>
@@ -68,8 +69,8 @@ export default function IceMachineCleaningPage() {
           Power down, panels off, and an assessment of what condition it’s in.
           How much scale is on the evaporator, whether there’s biofilm in the
           reservoir, whether the machine has ever been serviced. That assessment
-          shapes the rest of the visit and it’s the first thing we’ll tell you
-          about at the end.
+          shapes the rest of the visit, and it’s the first thing in the writeup
+          we send you.
         </p>
 
         <h3>We remove the components that hold buildup.</h3>
@@ -118,174 +119,205 @@ export default function IceMachineCleaningPage() {
         </p>
       </section>
 
-      {/* SECTION 2 */}
-      <section id="descaler" className="mkt-section">
-        <h2>Why a Nickel-Safe Descaler Matters</h2>
-        <p>
-          The evaporator plate in most residential ice machines is nickel-plated.
-          A descaler that isn’t formulated as nickel-safe will attack that
-          plating, and once the plating is gone it does not come back.
-        </p>
-        <p>
-          That’s the reason we don’t use general-purpose lime and scale removers,
-          the kind sold for bathroom fixtures and coffee makers. They dissolve
-          mineral effectively. They also pit and strip plated surfaces, because
-          nothing about them was designed for a food-contact evaporator. Vinegar
-          is gentler and correspondingly less effective, and it does nothing for
-          biofilm.
-        </p>
-        <p>
-          A stripped evaporator causes problems that look like unrelated
-          failures. Ice picks up a metallic taste. The exposed base metal
-          corrodes. Ice stops releasing cleanly during harvest, because the
-          surface it’s forming on is no longer smooth, which shows up as
-          misshapen cubes or a machine that seems to jam mid-cycle. Manufacturers
-          are specific about this, and using a non-approved cleaner is grounds for
-          denying a warranty claim.
-        </p>
-        <p>
-          We use a universal nickel-safe descaler on every machine, regardless of
-          brand. It costs more than what’s on the shelf at a hardware store. It’s
-          also the difference between a maintenance visit and an expensive
-          mistake.
-        </p>
-        <p>
-          <Link href="/troubleshooting#descaling-vs-sanitizing">
-            Descaling and sanitizing do different jobs
-          </Link>
-          .
-        </p>
+      {/* The supporting detail — collapsed */}
+      <section className="mkt-section" aria-label="About the service">
+        <Accordion>
+          <AccordionItem
+            id="descaler"
+            headingLevel={2}
+            defaultOpen
+            summary="Why a Nickel-Safe Descaler Matters"
+          >
+            <p>
+              The evaporator plate in most residential ice machines is
+              nickel-plated. A descaler that isn’t formulated as nickel-safe will
+              attack that plating, and once the plating is gone it does not come
+              back.
+            </p>
+            <p>
+              That’s the reason we don’t use general-purpose lime and scale
+              removers, the kind sold for bathroom fixtures and coffee makers.
+              They dissolve mineral effectively. They also pit and strip plated
+              surfaces, because nothing about them was designed for a
+              food-contact evaporator. Vinegar is gentler and correspondingly
+              less effective, and it does nothing for biofilm.
+            </p>
+            <p>
+              A stripped evaporator causes problems that look like unrelated
+              failures. Ice picks up a metallic taste. The exposed base metal
+              corrodes. Ice stops releasing cleanly during harvest, because the
+              surface it’s forming on is no longer smooth, which shows up as
+              misshapen cubes or a machine that seems to jam mid-cycle.
+              Manufacturers are specific about this, and using a non-approved
+              cleaner is grounds for denying a warranty claim.
+            </p>
+            <p>
+              We use a universal nickel-safe descaler on every machine,
+              regardless of brand. It costs more than what’s on the shelf at a
+              hardware store. It’s also the difference between a maintenance
+              visit and an expensive mistake.
+            </p>
+            <p>
+              <Link href="/troubleshooting#descaling-vs-sanitizing">
+                Descaling and sanitizing do different jobs
+              </Link>
+              .
+            </p>
+          </AccordionItem>
+
+          <AccordionItem
+            id="before-we-arrive"
+            headingLevel={2}
+            summary="What Do I Need to Do Before You Come?"
+          >
+            <p>Nothing. Leave the machine as it is.</p>
+            <p>
+              We bring the descaler, the sanitizer, the tools, and the towels.
+              You don’t need to empty the bin, run a cycle, buy a cleaning kit,
+              or clear the cabinet. If the machine is full of ice, that’s fine.
+            </p>
+            <p>
+              You don’t need to be home, but we do need a way into the house —
+              however you arrange that is up to you. We send reminders in the
+              week before the visit, and if we arrive and can’t get in, there’s a
+              $50 rescheduling fee. We work in one spot, we keep it clean, and we
+              take everything out with us.
+            </p>
+          </AccordionItem>
+
+          <AccordionItem
+            id="walkthrough"
+            headingLevel={2}
+            summary="What We Send You After the Visit"
+          >
+            <p>
+              Every visit ends with an email breakdown, with before-and-after
+              photos attached. It covers four things.
+            </p>
+            <p>
+              <strong>What condition the machine was in.</strong> How heavy the
+              scale was, whether there was biofilm in the reservoir, and how that
+              compares to what we typically see in your area.
+            </p>
+            <p>
+              <strong>What came out of it.</strong> Specific to your unit, not a
+              general description.
+            </p>
+            <p>
+              <strong>When yours should be serviced again.</strong> Six months is
+              standard for Utah. Machines on especially hard water, in heavy-use
+              households, or that have gone years without service sometimes need a
+              shorter interval, and we’ll say so if yours does.
+            </p>
+            <p>
+              <strong>Whether anything looks mechanical.</strong> If we see
+              something that cleaning won’t fix, it’s in the writeup, called out
+              plainly. We don’t do repairs, so we have no reason to find
+              problems.
+            </p>
+            <p>
+              The receipt comes with it. This is a recurring six-month service,
+              so we schedule the next visit and track the date — you don’t have
+              to keep a calendar for it.
+            </p>
+          </AccordionItem>
+
+          <AccordionItem
+            id="how-often"
+            headingLevel={2}
+            summary="How Often Should a Residential Ice Machine Be Cleaned?"
+          >
+            <p>
+              Every six months for most Utah homes. Manufacturers typically
+              recommend descaling every three to six months, and that range
+              assumes average water hardness. Utah sits at the hard end of it.
+            </p>
+            <p>
+              The U.S. Geological Survey classifies water above 180 mg/L as very
+              hard. Mountain Regional Water, which supplies much of the Park City
+              area, publishes its hardness at roughly 300 mg/L, about 17.5 grains
+              per gallon. Herriman City reports Jordan Valley Water Conservancy
+              District supply generally running 12 to 15 grains per gallon.
+              Machines here scale faster than the same unit would in most of the
+              country.
+            </p>
+            <p>
+              We run it as a recurring service. You sign a short agreement, we
+              come back every six months at the same flat rate, and we handle the
+              scheduling. Semi-annual service keeps an undercounter machine at
+              full production and keeps the reservoir from becoming a problem in
+              the first place. Waiting until the ice tastes wrong means the
+              buildup has been there a long time.
+            </p>
+            <p>
+              <Link href="/troubleshooting#never-cleaned">
+                What happens to a machine that’s never cleaned
+              </Link>
+              .
+            </p>
+          </AccordionItem>
+
+          <AccordionItem
+            id="what-we-dont-do"
+            headingLevel={2}
+            summary="What We Don’t Do"
+          >
+            <p>We clean ice machines. That’s the whole business.</p>
+            <p>
+              We don’t do appliance repair, refrigeration work, or installation.
+              If your machine has a failed compressor, a refrigerant issue, or an
+              electrical fault, cleaning it won’t fix that, and we’ll tell you
+              rather than clean it anyway and let you find out.
+            </p>
+            <p>
+              That boundary is deliberate. A repair company that also cleans has
+              a reason to find something expensive. We don’t.
+            </p>
+          </AccordionItem>
+
+          <AccordionItem
+            id="machines"
+            headingLevel={2}
+            summary="Which Machines Do You Service?"
+          >
+            <p>
+              Undercounter and built-in residential ice machines producing
+              nugget, pebble, gourmet, clear, and crescent ice.
+            </p>
+            <p>
+              The brands we see most often are Scotsman, Sub-Zero, U-Line,
+              KitchenAid, GE Profile, and GE Monogram. We service most other
+              residential makes as well, so call if yours isn’t on that list.
+            </p>
+            <p>
+              <Link href="/brands">
+                What each brand needs, and where each one tends to fail
+              </Link>
+              .
+            </p>
+            <p>
+              <Link href="/service-areas">
+                The cities we serve across Utah County and Salt Lake County
+              </Link>
+              .
+            </p>
+          </AccordionItem>
+        </Accordion>
       </section>
 
-      {/* SECTION 3 */}
-      <section id="before-we-arrive" className="mkt-section">
-        <h2>What Do I Need to Do Before You Come?</h2>
-        <p>Nothing. Leave the machine as it is.</p>
-        <p>
-          We bring the descaler, the sanitizer, the tools, and the towels. You
-          don’t need to empty the bin, run a cycle, buy a cleaning kit, or clear
-          the cabinet. If the machine is full of ice, that’s fine.
-        </p>
-        <p>
-          Someone needs to be there to let us in and to hear what we found at the
-          end. Beyond that, you can go about your day. We work in one spot, we
-          keep it clean, and we take everything out with us.
-        </p>
-      </section>
-
-      {/* SECTION 4 */}
-      <section id="walkthrough" className="mkt-section">
-        <h2>What We Tell You Before We Leave</h2>
-        <p>Every visit ends with a short walkthrough. You’ll hear four things.</p>
-        <p>
-          <strong>What condition the machine was in.</strong> How heavy the scale
-          was, whether there was biofilm in the reservoir, and how that compares
-          to what we typically see in your area.
-        </p>
-        <p>
-          <strong>What came out of it.</strong> Specific to your unit, not a
-          general description.
-        </p>
-        <p>
-          <strong>When yours should be serviced again.</strong> Six months is
-          standard for Utah. Machines on especially hard water, in heavy-use
-          households, or that have gone years without service sometimes need a
-          shorter interval, and we’ll say so if yours does.
-        </p>
-        <p>
-          <strong>Whether anything looks mechanical.</strong> If we see something
-          that cleaning won’t fix, you’ll hear it directly. We don’t do repairs,
-          so we have no reason to find problems.
-        </p>
-        <p>
-          We track your next service date and reach out when it comes due. You
-          don’t have to keep a calendar for it.
-        </p>
-      </section>
-
-      {/* SECTION 5 */}
-      <section id="how-often" className="mkt-section">
-        <h2>How Often Should a Residential Ice Machine Be Cleaned?</h2>
-        <p>
-          Every six months for most Utah homes. Manufacturers typically recommend
-          descaling every three to six months, and that range assumes average
-          water hardness. Utah sits at the hard end of it.
-        </p>
-        <p>
-          The U.S. Geological Survey classifies water above 180 mg/L as very hard.
-          Mountain Regional Water, which supplies much of the Park City area,
-          publishes its hardness at roughly 300 mg/L, about 17.5 grains per
-          gallon. Herriman City reports Jordan Valley Water Conservancy District
-          supply generally running 12 to 15 grains per gallon. Machines here scale
-          faster than the same unit would in most of the country.
-        </p>
-        <p>
-          Semi-annual service keeps an undercounter machine at full production and
-          keeps the reservoir from becoming a problem in the first place. Waiting
-          until the ice tastes wrong means the buildup has been there a long time.
-        </p>
-        <p>
-          <Link href="/troubleshooting#never-cleaned">
-            What happens to a machine that’s never cleaned
-          </Link>
-          .
-        </p>
-      </section>
-
-      {/* SECTION 6 */}
-      <section id="what-we-dont-do" className="mkt-section">
-        <h2>What We Don’t Do</h2>
-        <p>We clean ice machines. That’s the whole business.</p>
-        <p>
-          We don’t do appliance repair, refrigeration work, or installation. If
-          your machine has a failed compressor, a refrigerant issue, or an
-          electrical fault, cleaning it won’t fix that, and we’ll tell you rather
-          than clean it anyway and let you find out.
-        </p>
-        <p>
-          That boundary is deliberate. A repair company that also cleans has a
-          reason to find something expensive. We don’t.
-        </p>
-      </section>
-
-      {/* SECTION 7 */}
-      <section id="machines" className="mkt-section">
-        <h2>Which Machines Do You Service?</h2>
-        <p>
-          Undercounter and built-in residential ice machines producing nugget,
-          pebble, gourmet, clear, and crescent ice.
-        </p>
-        <p>
-          The brands we see most often are Scotsman, Sub-Zero, U-Line, KitchenAid,
-          GE Profile, and GE Monogram. We service most other residential makes as
-          well, so call if yours isn’t on that list.
-        </p>
-        <p>
-          <Link href="/brands">
-            What each brand needs, and where each one tends to fail
-          </Link>
-          .
-        </p>
-        <p>
-          <Link href="/service-areas">
-            The cities we serve across Utah County and Salt Lake County
-          </Link>
-          .
-        </p>
-      </section>
-
-      {/* SECTION 8 */}
-      <section id="faq" className="mkt-section mkt-faq">
+      {/* FAQ — collapsed */}
+      <section id="faq" className="mkt-section">
         <h2>Common Questions About the Service</h2>
-        {SERVICE_FAQ.map(({ q, a }) => (
-          <div key={q}>
-            <h3>{q}</h3>
-            <p>{a}</p>
-          </div>
-        ))}
+        <Accordion>
+          {SERVICE_FAQ.map(({ q, a }, i) => (
+            <AccordionItem key={q} summary={q} defaultOpen={i === 0}>
+              <p>{a}</p>
+            </AccordionItem>
+          ))}
+        </Accordion>
       </section>
 
-      {/* SECTION 9 */}
+      {/* CLOSING CTA */}
       <section id="book" className="mkt-section">
         <h2>Book a Cleaning</h2>
         <p>

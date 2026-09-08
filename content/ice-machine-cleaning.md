@@ -18,7 +18,7 @@ Residential Ice Machine Cleaning in Utah, Start to Finish
 
 Uinta Ice Co. descales, deep cleans, and sanitizes residential ice machines in the customer's home. A visit takes about an hour, covers every component the water and ice touch, and includes all supplies. We're based in Lehi and serve Utah County and Salt Lake County within a 75-mile radius.
 
-This page covers exactly what that visit involves, what we use, and what we'll tell you when we're done.
+This page covers exactly what that visit involves, what we use, and what we send you afterward.
 
 **CTA button (top of page):** Book a cleaning → `/book`
 **Secondary:** Call or text (801) 796-2675 → `tel:+18017962675`
@@ -36,7 +36,7 @@ What's Included in a Professional Ice Machine Cleaning?
 Every visit covers four things: descaling the water path, deep cleaning the reservoir and bin, sanitizing every ice-contact surface, and testing the machine before we leave. Here's what each of those actually involves.
 
 **We start by looking at the machine before we touch it.**
-Power down, panels off, and an assessment of what condition it's in. How much scale is on the evaporator, whether there's biofilm in the reservoir, whether the machine has ever been serviced. That assessment shapes the rest of the visit and it's the first thing we'll tell you about at the end.
+Power down, panels off, and an assessment of what condition it's in. How much scale is on the evaporator, whether there's biofilm in the reservoir, whether the machine has ever been serviced. That assessment shapes the rest of the visit, and it's the first thing in the writeup we send you.
 
 **We remove the components that hold buildup.**
 The bin, the reservoir, the water distribution parts, and the pump components come out. This is the step that separates a real cleaning from a clean cycle. A built-in cleaning cycle circulates solution through the water path and then drains. It does not reach the parts that hold the most residue, because those parts sit outside the circulating path or hold standing water at the bottom of the machine. Those pieces get cleaned by hand, off the machine.
@@ -90,7 +90,7 @@ Nothing. Leave the machine as it is.
 
 We bring the descaler, the sanitizer, the tools, and the towels. You don't need to empty the bin, run a cycle, buy a cleaning kit, or clear the cabinet. If the machine is full of ice, that's fine.
 
-Someone needs to be there to let us in and to hear what we found at the end. Beyond that, you can go about your day. We work in one spot, we keep it clean, and we take everything out with us.
+You don't need to be home, but we do need a way into the house — however you arrange that is up to you. We send reminders in the week before the visit, and if we arrive and can't get in, there's a $50 rescheduling fee. We work in one spot, we keep it clean, and we take everything out with us.
 
 ---
 
@@ -100,9 +100,9 @@ Someone needs to be there to let us in and to hear what we found at the end. Bey
 > **PSYCHOLOGY: Value stacking, non-physical.** The part of the service that isn't labor. Ends the visit with the customer knowing something they didn't, which is what generates the referral.
 
 ### H2
-What We Tell You Before We Leave
+What We Send You After the Visit
 
-Every visit ends with a short walkthrough. You'll hear four things.
+Every visit ends with an email breakdown, with before-and-after photos attached. It covers four things.
 
 **What condition the machine was in.** How heavy the scale was, whether there was biofilm in the reservoir, and how that compares to what we typically see in your area.
 
@@ -110,9 +110,9 @@ Every visit ends with a short walkthrough. You'll hear four things.
 
 **When yours should be serviced again.** Six months is standard for Utah. Machines on especially hard water, in heavy-use households, or that have gone years without service sometimes need a shorter interval, and we'll say so if yours does.
 
-**Whether anything looks mechanical.** If we see something that cleaning won't fix, you'll hear it directly. We don't do repairs, so we have no reason to find problems.
+**Whether anything looks mechanical.** If we see something that cleaning won't fix, it's in the writeup, called out plainly. We don't do repairs, so we have no reason to find problems.
 
-We track your next service date and reach out when it comes due. You don't have to keep a calendar for it.
+The receipt comes with it. This is a recurring six-month service, so we schedule the next visit and track the date — you don't have to keep a calendar for it.
 
 ---
 
@@ -128,7 +128,7 @@ Every six months for most Utah homes. Manufacturers typically recommend descalin
 
 The U.S. Geological Survey classifies water above 180 mg/L as very hard. Mountain Regional Water, which supplies much of the Park City area, publishes its hardness at roughly 300 mg/L, about 17.5 grains per gallon. Herriman City reports Jordan Valley Water Conservancy District supply generally running 12 to 15 grains per gallon. Machines here scale faster than the same unit would in most of the country.
 
-Semi-annual service keeps an undercounter machine at full production and keeps the reservoir from becoming a problem in the first place. Waiting until the ice tastes wrong means the buildup has been there a long time.
+We run it as a recurring service. You sign a short agreement, we come back every six months at the same flat rate, and we handle the scheduling. Semi-annual service keeps an undercounter machine at full production and keeps the reservoir from becoming a problem in the first place. Waiting until the ice tastes wrong means the buildup has been there a long time.
 
 → Link: [what happens to a machine that's never cleaned](/troubleshooting#never-cleaned)
 
