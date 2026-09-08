@@ -26,7 +26,12 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en">
+    // data-scroll-behavior="smooth": marketing.css sets `scroll-behavior: smooth`
+    // on <html>; this attribute lets Next 16 force it back to `auto` during route
+    // transitions (so client-side navigations jump instantly) while in-page
+    // anchor scrolls still animate. See node_modules/next/dist/shared/lib/router/
+    // utils/disable-smooth-scroll.js.
+    <html lang="en" data-scroll-behavior="smooth">
       <body>
         {children}
         {/* Plausible — privacy-friendly, no cookie banner needed. Loads only

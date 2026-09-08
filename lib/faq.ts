@@ -1,10 +1,15 @@
-// FAQ content, transcribed from content/*.md. Two consumers:
-//  - the home and service pages render these as a visible Q&A block
-//  - every page with an FAQ emits a matching FAQPage JSON-LD (lib/schema.ts)
+// FAQ content, transcribed from content/*.md.
 //
-// On the consolidated pages (troubleshooting, brands, service-areas) the visible
-// content is the prose sections; these entries are the dedicated "FAQ schema
-// pair" text from the .md files, used only for JSON-LD.
+// HOME_FAQ and SERVICE_FAQ are rendered as a visible Q&A block on the home and
+// /ice-machine-cleaning pages, and each emits a matching FAQPage JSON-LD
+// (lib/schema.ts).
+//
+// TROUBLESHOOTING_FAQ / BRANDS_FAQ / AREAS_FAQ are the dedicated "FAQ schema
+// pair" text from the .md files for the consolidated pages. They have no
+// consumer right now: the FAQPage JSON-LD that used them was removed because
+// Google requires the Q&A to be visible on the page and those pages show prose
+// instead. Staged for the design facelift, which will render them as visible
+// accordion Q&A on the three consolidated pages.
 
 export type FaqItem = {
   q: string;

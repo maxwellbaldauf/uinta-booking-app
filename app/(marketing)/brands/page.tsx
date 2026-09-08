@@ -1,8 +1,7 @@
 import Link from "next/link";
 import { NAP } from "@/lib/site";
 import { pageMetadata } from "@/lib/seo";
-import { BRANDS_FAQ } from "@/lib/faq";
-import { breadcrumbSchema, faqPageSchema, serviceSchema } from "@/lib/schema";
+import { breadcrumbSchema, serviceSchema } from "@/lib/schema";
 import { JsonLd } from "@/components/marketing/JsonLd";
 
 export const metadata = pageMetadata({
@@ -32,7 +31,8 @@ const schema = [
     { name: "Home", path: "/" },
     { name: "Brands", path: "/brands" },
   ]),
-  faqPageSchema(BRANDS_FAQ),
+  // No FAQPage schema: the visible content is prose, not a Q&A list. The design
+  // facelift will render lib/faq.ts's BRANDS_FAQ as visible accordion Q&A.
 ];
 
 export default function BrandsPage() {

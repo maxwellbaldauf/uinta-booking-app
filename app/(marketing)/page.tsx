@@ -38,10 +38,13 @@ export default async function HomePage() {
   try {
     const settings = await getSettings();
     price = formatUsdWhole(settings.base_price_cents);
-    geo = {
-      lat: settings.service_center_lat,
-      lng: settings.service_center_lng,
-    };
+    // Only emit GeoCoordinates in the JSON-LD if both values are real numbers.
+    // The Settings type says `number`, but the row is cast unchecked, so a NULL
+    // column would otherwise produce `latitude: null` in the schema.
+    const { service_center_lat: lat, service_center_lng: lng } = settings;
+    if (Number.isFinite(lat) && Number.isFinite(lng)) {
+      geo = { lat, lng };
+    }
   } catch {
     price = null;
   }

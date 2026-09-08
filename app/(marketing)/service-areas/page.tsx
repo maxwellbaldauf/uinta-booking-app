@@ -1,8 +1,7 @@
 import Link from "next/link";
 import { NAP, SERVICE_CITIES } from "@/lib/site";
 import { pageMetadata } from "@/lib/seo";
-import { AREAS_FAQ } from "@/lib/faq";
-import { breadcrumbSchema, faqPageSchema } from "@/lib/schema";
+import { breadcrumbSchema } from "@/lib/schema";
 import { JsonLd } from "@/components/marketing/JsonLd";
 
 export const metadata = pageMetadata({
@@ -20,12 +19,13 @@ const SECTIONS = [
   { id: "full-list", label: "Every city we serve" },
 ];
 
+// No FAQPage schema: the visible content is prose, not a Q&A list. The design
+// facelift will render lib/faq.ts's AREAS_FAQ as visible accordion Q&A.
 const schema = [
   breadcrumbSchema([
     { name: "Home", path: "/" },
     { name: "Service Areas", path: "/service-areas" },
   ]),
-  faqPageSchema(AREAS_FAQ),
 ];
 
 export default function ServiceAreasPage() {

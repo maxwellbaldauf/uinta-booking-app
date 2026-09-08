@@ -1,8 +1,7 @@
 import Link from "next/link";
 import { NAP } from "@/lib/site";
 import { pageMetadata } from "@/lib/seo";
-import { TROUBLESHOOTING_FAQ } from "@/lib/faq";
-import { breadcrumbSchema, faqPageSchema } from "@/lib/schema";
+import { breadcrumbSchema } from "@/lib/schema";
 import { JsonLd } from "@/components/marketing/JsonLd";
 
 export const metadata = pageMetadata({
@@ -12,12 +11,15 @@ export const metadata = pageMetadata({
   path: "/troubleshooting",
 });
 
+// No FAQPage schema here: the visible content is the prose sections, not a Q&A
+// list, and Google requires FAQ markup to match visible on-page text. The
+// design facelift will render lib/faq.ts's TROUBLESHOOTING_FAQ as visible
+// accordion Q&A, at which point the schema can come back.
 const schema = [
   breadcrumbSchema([
     { name: "Home", path: "/" },
     { name: "Troubleshooting", path: "/troubleshooting" },
   ]),
-  faqPageSchema(TROUBLESHOOTING_FAQ),
 ];
 
 // Editorial date, shown under the H1. Bump this by hand whenever a section
