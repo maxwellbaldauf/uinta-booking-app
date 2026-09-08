@@ -1,8 +1,7 @@
 import Link from "next/link";
 import { NAP } from "@/lib/site";
 import { pageMetadata } from "@/lib/seo";
-import { TROUBLESHOOTING_FAQ } from "@/lib/faq";
-import { breadcrumbSchema, faqPageSchema } from "@/lib/schema";
+import { breadcrumbSchema } from "@/lib/schema";
 import { JsonLd } from "@/components/marketing/JsonLd";
 import { Accordion, AccordionItem } from "@/components/marketing/Accordion";
 
@@ -13,15 +12,15 @@ export const metadata = pageMetadata({
   path: "/troubleshooting",
 });
 
-// The FAQ arrays in lib/faq.ts condense each accordion section below; the full
-// answer is visible on the page as accordion content (in the HTML at load,
-// collapsed by CSS), so the FAQPage schema matches.
+// No FAQPage schema: the visible accordion prose doesn't match lib/faq.ts's
+// condensed Q&A verbatim, and Google wants the answer in the markup to be
+// present on the page. Home and /ice-machine-cleaning keep theirs — they
+// render the same array they pass to faqPageSchema().
 const schema = [
   breadcrumbSchema([
     { name: "Home", path: "/" },
     { name: "Troubleshooting", path: "/troubleshooting" },
   ]),
-  faqPageSchema(TROUBLESHOOTING_FAQ),
 ];
 
 // Editorial date, shown under the H1. Bump this by hand whenever a section

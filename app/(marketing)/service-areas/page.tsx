@@ -1,8 +1,7 @@
 import Link from "next/link";
 import { NAP, SERVICE_CITIES } from "@/lib/site";
 import { pageMetadata } from "@/lib/seo";
-import { AREAS_FAQ } from "@/lib/faq";
-import { breadcrumbSchema, faqPageSchema } from "@/lib/schema";
+import { breadcrumbSchema } from "@/lib/schema";
 import { JsonLd } from "@/components/marketing/JsonLd";
 import { Accordion, AccordionItem } from "@/components/marketing/Accordion";
 
@@ -21,14 +20,13 @@ const JUMP = [
   { id: "full-list", label: "Every city we serve" },
 ];
 
-// AREAS_FAQ condenses the accordion sections below; the full answer is visible
-// on the page as accordion content (in the HTML at load), so the schema matches.
+// No FAQPage schema: the visible accordion prose doesn't match lib/faq.ts's
+// condensed Q&A verbatim (Google wants the markup answer present on the page).
 const schema = [
   breadcrumbSchema([
     { name: "Home", path: "/" },
     { name: "Service Areas", path: "/service-areas" },
   ]),
-  faqPageSchema(AREAS_FAQ),
 ];
 
 export default function ServiceAreasPage() {

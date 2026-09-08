@@ -7,20 +7,23 @@ export const metadata = {
   title: "Contact Us — Uinta Ice Co",
 };
 
-export default function ContactPage({
+export default async function ContactPage({
   searchParams,
 }: {
-  searchParams: Record<string, string | string[] | undefined>;
+  // Next 16: searchParams is a Promise and must be awaited (matches
+  // /visit/[token] and /pay/[token]).
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
+  const sp = await searchParams;
   const str = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v ?? "");
   const prefill: ContactPrefill = {
-    name: str(searchParams.name),
-    email: str(searchParams.email),
-    phone: str(searchParams.phone),
-    address: str(searchParams.address),
-    brand: str(searchParams.brand),
-    model: str(searchParams.model),
-    from: str(searchParams.from),
+    name: str(sp.name),
+    email: str(sp.email),
+    phone: str(sp.phone),
+    address: str(sp.address),
+    brand: str(sp.brand),
+    model: str(sp.model),
+    from: str(sp.from),
   };
 
   return (

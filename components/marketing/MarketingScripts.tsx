@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { usePathname } from "next/navigation";
 
 // Progressive enhancement for the marketing pages. Everything works without
 // this — <details> toggles natively, anchor links jump natively. This adds:
@@ -9,7 +10,14 @@ import { useEffect } from "react";
 //  - opening the target <details> when a jump-nav link or an inbound #hash
 //    points at a collapsed section, and re-aligning the scroll on load
 //  - a fade-up as sections scroll into view
+//
+// The (marketing) layout persists across route-group navigations, so this
+// effect is keyed on the pathname: it tears down and rebuilds for each page,
+// which is also what makes an in-app deep link like /troubleshooting#how-often
+// open the target accordion.
 export function MarketingScripts() {
+  const pathname = usePathname();
+
   useEffect(() => {
     const prefersReduced = window.matchMedia(
       "(prefers-reduced-motion: reduce)",
@@ -22,6 +30,8 @@ export function MarketingScripts() {
     const hashTarget = hashId ? document.getElementById(hashId) : null;
 
     // ---- Accordion height animation ----
+    const CLOSE_MS = 200;
+    const OPEN_MS = 220;
     document
       .querySelectorAll<HTMLDetailsElement>(".mkt-acc__item")
       .forEach((details) => {
@@ -29,33 +39,41 @@ export function MarketingScripts() {
         const panel = details.querySelector<HTMLElement>(".mkt-acc__panel");
         if (!summary || !panel) return;
 
+        let closeTimer = 0;
+
         const onClick = (event: MouseEvent) => {
           if (prefersReduced || typeof panel.animate !== "function") return;
           event.preventDefault();
+          // drop anything in flight so rapid clicks don't stack
+          window.clearTimeout(closeTimer);
+          panel.getAnimations().forEach((a) => a.cancel());
 
           if (details.open) {
             const from = panel.offsetHeight;
-            const anim = panel.animate(
+            panel.animate(
               { height: [`${from}px`, "0px"], opacity: [1, 0] },
-              { duration: 200, easing: "ease-out" },
+              { duration: CLOSE_MS, easing: "ease-out" },
             );
-            anim.onfinish = () => {
+            // hide just before the animation ends, so <details> collapses the
+            // panel before the fill reverts — no flash of the full height
+            closeTimer = window.setTimeout(() => {
               details.open = false;
-              panel.style.height = "";
-              panel.style.opacity = "";
-            };
+            }, CLOSE_MS - 10);
           } else {
             details.open = true;
             const to = panel.offsetHeight;
             panel.animate(
               { height: ["0px", `${to}px`], opacity: [0, 1] },
-              { duration: 220, easing: "ease-out" },
+              { duration: OPEN_MS, easing: "ease-out" },
             );
           }
         };
 
         summary.addEventListener("click", onClick);
-        cleanups.push(() => summary.removeEventListener("click", onClick));
+        cleanups.push(() => {
+          summary.removeEventListener("click", onClick);
+          window.clearTimeout(closeTimer);
+        });
       });
 
     // ---- Open + align to an inbound #hash on load ----
@@ -118,7 +136,7 @@ export function MarketingScripts() {
     }
 
     return () => cleanups.forEach((fn) => fn());
-  }, []);
+  }, [pathname]);
 
   return null;
 }

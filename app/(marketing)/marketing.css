@@ -873,17 +873,6 @@
   }
 }
 
-/* ---- FAQ (home / service, non-accordion render) ---------------- */
-
-.mkt-faq h3 {
-  margin: var(--space-xl) 0 var(--space-2xs);
-  font-size: var(--text-lg);
-  letter-spacing: 0.04em;
-}
-.mkt-faq p {
-  margin: 0 0 var(--space-md);
-}
-
 /* ---- Footer ------------------------------------------------------- */
 
 .mkt-footer {
@@ -1039,7 +1028,9 @@
 }
 @media (max-width: 47.999rem) {
   :root {
-    --botbar-h: 62px;
+    /* the bar is ~55px of chrome plus its own safe-area padding; reserve the
+       same so it never covers the footer on notched phones */
+    --botbar-h: calc(55px + max(var(--space-2xs), env(safe-area-inset-bottom)));
   }
   /* The fixed bottom bar is the Book action on a phone. Suppress the duplicate
      primary Book in the hero and footer — the mid-page CTAs (pricing,

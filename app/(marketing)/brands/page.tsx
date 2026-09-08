@@ -1,8 +1,7 @@
 import Link from "next/link";
 import { NAP } from "@/lib/site";
 import { pageMetadata } from "@/lib/seo";
-import { BRANDS_FAQ } from "@/lib/faq";
-import { breadcrumbSchema, faqPageSchema, serviceSchema } from "@/lib/schema";
+import { breadcrumbSchema, serviceSchema } from "@/lib/schema";
 import { JsonLd } from "@/components/marketing/JsonLd";
 import { Accordion, AccordionItem } from "@/components/marketing/Accordion";
 
@@ -22,8 +21,8 @@ const JUMP = [
   { id: "other-brands", label: "Every other brand" },
 ];
 
-// BRANDS_FAQ condenses the accordion sections below; the full answer is visible
-// on the page as accordion content (in the HTML at load), so the schema matches.
+// No FAQPage schema: the visible accordion prose doesn't match lib/faq.ts's
+// condensed Q&A verbatim (Google wants the markup answer present on the page).
 const schema = [
   serviceSchema({
     name: "Ice machine cleaning by brand",
@@ -35,7 +34,6 @@ const schema = [
     { name: "Home", path: "/" },
     { name: "Brands", path: "/brands" },
   ]),
-  faqPageSchema(BRANDS_FAQ),
 ];
 
 export default function BrandsPage() {

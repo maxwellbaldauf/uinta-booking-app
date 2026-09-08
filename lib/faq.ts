@@ -5,11 +5,12 @@
 // (lib/schema.ts).
 //
 // TROUBLESHOOTING_FAQ / BRANDS_FAQ / AREAS_FAQ are the dedicated "FAQ schema
-// pair" text from the .md files for the consolidated pages. They have no
-// consumer right now: the FAQPage JSON-LD that used them was removed because
-// Google requires the Q&A to be visible on the page and those pages show prose
-// instead. Staged for the design facelift, which will render them as visible
-// accordion Q&A on the three consolidated pages.
+// pair" text from the .md files for the consolidated pages. They currently
+// have no consumer: those pages render their own (longer) accordion prose,
+// which doesn't match this condensed text verbatim, so there's no FAQPage
+// JSON-LD there — Google wants the markup answer to be present on the page.
+// Kept as a content reference; wiring a schema back would mean making the
+// visible text and this array agree.
 
 export type FaqItem = {
   q: string;
