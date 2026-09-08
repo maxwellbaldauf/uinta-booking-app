@@ -1,4 +1,5 @@
 import { ContactForm, type ContactPrefill } from "@/components/contact/ContactForm";
+import { BrandBar } from "@/components/BrandBar";
 
 export const dynamic = "force-dynamic";
 
@@ -23,8 +24,11 @@ export default function ContactPage({
   };
 
   return (
-    <main className="page">
-      <ContactForm prefill={prefill} />
-    </main>
+    <>
+      <BrandBar />
+      <main className="page">
+        <ContactForm prefill={prefill} />
+      </main>
+    </>
   );
 }

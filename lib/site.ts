@@ -70,10 +70,11 @@ export const NAV_ITEMS = [
   { href: "/service-areas", label: "Service Areas" },
 ] as const;
 
-// Footer page links (nav items plus Home).
+// Footer page links (Home, the nav items, and Contact).
 export const FOOTER_LINKS = [
   { href: "/", label: "Home" },
   ...NAV_ITEMS,
+  { href: "/contact", label: "Contact" },
 ] as const;
 
 // Every city named on /service-areas (§ "Every City We Serve"). Feeds the

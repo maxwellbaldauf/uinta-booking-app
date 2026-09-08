@@ -6,48 +6,82 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { NAP, NAV_ITEMS } from "@/lib/site";
 
-// Persistent header for the marketing pages. The four text links collapse into
-// a menu below 48rem; the "Book a cleaning" button and click-to-call never
-// collapse — they stay visible at every width.
+// Persistent header for the marketing pages. Transparent over the home page's
+// full-bleed hero, solid once scrolled past it; solid everywhere else. Below
+// 48rem the text links collapse into a menu that also carries the call and
+// book actions — the always-visible Book + call on a phone live in the bottom
+// bar (components/marketing/MobileCtaBar).
 export function SiteHeader() {
   const pathname = usePathname();
+  const isHome = pathname === "/";
   const [menuOpen, setMenuOpen] = useState(false);
-  const navRef = useRef<HTMLElement>(null);
+  // Only the home page has a full-bleed hero to sit over; it starts transparent
+  // and the scroll effect below flips it. Every other page is solid.
+  const [solid, setSolid] = useState(!isHome);
+  const headerRef = useRef<HTMLElement>(null);
 
-  // Close the menu on navigation, without an effect: when the pathname changes,
-  // reset during render (React's "storing information from previous renders"
-  // pattern).
-  const [menuPathname, setMenuPathname] = useState(pathname);
-  if (pathname !== menuPathname) {
-    setMenuPathname(pathname);
+  // On navigation: close the menu, and reset `solid` for the new page
+  // (render-phase reset — no effect).
+  const [navPath, setNavPath] = useState(pathname);
+  if (pathname !== navPath) {
+    setNavPath(pathname);
     setMenuOpen(false);
+    setSolid(!isHome);
   }
 
-  // Close on Escape or a click outside the header.
+  // Home only: flip to solid once the hero has scrolled past.
+  useEffect(() => {
+    if (!isHome) return;
+    const hero = document.querySelector<HTMLElement>(".mkt-hero");
+    if (!hero) return;
+    const update = () => {
+      const headerH = headerRef.current?.offsetHeight ?? 60;
+      setSolid(window.scrollY > Math.max(hero.offsetHeight - headerH, 0));
+    };
+    update();
+    window.addEventListener("scroll", update, { passive: true });
+    window.addEventListener("resize", update);
+    return () => {
+      window.removeEventListener("scroll", update);
+      window.removeEventListener("resize", update);
+    };
+  }, [isHome]);
+
+  // Close the menu on Escape or a click outside the header.
   useEffect(() => {
     if (!menuOpen) return;
-    function onKey(e: KeyboardEvent) {
+    const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") setMenuOpen(false);
-    }
-    function onClick(e: MouseEvent) {
-      if (navRef.current && !navRef.current.contains(e.target as Node)) {
+    };
+    const onPointer = (e: PointerEvent) => {
+      if (headerRef.current && !headerRef.current.contains(e.target as Node)) {
         setMenuOpen(false);
       }
-    }
+    };
     document.addEventListener("keydown", onKey);
-    document.addEventListener("pointerdown", onClick);
+    document.addEventListener("pointerdown", onPointer);
     return () => {
       document.removeEventListener("keydown", onKey);
-      document.removeEventListener("pointerdown", onClick);
+      document.removeEventListener("pointerdown", onPointer);
     };
   }, [menuOpen]);
 
   const isActive = (href: string) => pathname === href;
+  const close = () => setMenuOpen(false);
+  // the open menu forces the solid look so its panel reads
+  const overHero = !solid && !menuOpen;
 
   return (
-    <header className="mkt-header" ref={navRef}>
+    <header
+      ref={headerRef}
+      className={`mkt-header${overHero ? " mkt-header--over" : ""}`}
+    >
       <div className="mkt-header__bar">
-        <Link href="/" className="mkt-header__logo" aria-label="Uinta Ice Co. — home">
+        <Link
+          href="/"
+          className="mkt-header__logo"
+          aria-label="Uinta Ice Co. — home"
+        >
           <Image src="/images/logo2.png" alt="" width={26} height={26} />
           <span>Uinta Ice Co.</span>
         </Link>
@@ -91,19 +125,28 @@ export function SiteHeader() {
         </div>
       </div>
 
-      {menuOpen && (
-        <nav id="mkt-menu" className="mkt-menu" aria-label="Pages">
-          {NAV_ITEMS.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              aria-current={isActive(item.href) ? "page" : undefined}
-            >
-              {item.label}
-            </Link>
-          ))}
-        </nav>
-      )}
+      <nav id="mkt-menu" className="mkt-menu" aria-label="Pages" hidden={!menuOpen}>
+        {NAV_ITEMS.map((item) => (
+          <Link
+            key={item.href}
+            href={item.href}
+            aria-current={isActive(item.href) ? "page" : undefined}
+            onClick={close}
+          >
+            {item.label}
+          </Link>
+        ))}
+        <a href={NAP.phoneHref} className="mkt-menu__call" onClick={close}>
+          Call or text {NAP.phoneDisplay}
+        </a>
+        <Link
+          href="/book"
+          className="mkt-btn mkt-btn--primary mkt-menu__book"
+          onClick={close}
+        >
+          Book a cleaning
+        </Link>
+      </nav>
     </header>
   );
 }

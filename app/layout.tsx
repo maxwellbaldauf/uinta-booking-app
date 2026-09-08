@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import Script from "next/script";
 import { SITE_ORIGIN } from "@/lib/site";
+import { inter, tenorSans } from "./fonts";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -11,7 +12,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0f6e8c",
+  themeColor: "#12110f",
   width: "device-width",
   initialScale: 1,
 };
@@ -32,7 +33,7 @@ export default function RootLayout({
     // anchor scrolls still animate. See node_modules/next/dist/shared/lib/router/
     // utils/disable-smooth-scroll.js.
     <html lang="en" data-scroll-behavior="smooth">
-      <body>
+      <body className={`${inter.variable} ${tenorSans.variable}`}>
         {children}
         {/* Plausible — privacy-friendly, no cookie banner needed. Loads only
             when a domain is configured. This is a plain public website: no

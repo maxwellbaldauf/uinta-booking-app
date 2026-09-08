@@ -39,6 +39,45 @@
   z-index: 50;
   background: var(--paper);
   border-bottom: 1px solid var(--line);
+  transition: background 200ms ease, border-color 200ms ease;
+}
+/* Transparent over the home hero, until scrolled past it (toggled in JS). The
+   ::after scrim extends below the bar and fades out, so the light text and
+   dark button stay legible over any part of the photo. */
+.mkt-header--over {
+  background: transparent;
+  border-bottom-color: transparent;
+}
+.mkt-header--over::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 170px;
+  background: linear-gradient(
+    to bottom,
+    rgba(18, 17, 15, 0.6) 0%,
+    rgba(18, 17, 15, 0.28) 45%,
+    rgba(18, 17, 15, 0) 100%
+  );
+  pointer-events: none;
+  z-index: -1;
+}
+.mkt-header--over .mkt-header__logo,
+.mkt-header--over .mkt-header__links a,
+.mkt-header--over .mkt-header__links a:hover,
+.mkt-header--over .mkt-header__call,
+.mkt-header--over .mkt-menu-btn {
+  color: var(--hero-ink);
+}
+/* logo2.png has no transparency, so it can't drop onto the photo — the
+   wordmark carries the brand here */
+.mkt-header--over .mkt-header__logo img {
+  display: none;
+}
+.mkt-header--over .mkt-menu-btn {
+  border-color: color-mix(in srgb, var(--hero-ink) 45%, transparent);
 }
 
 .mkt-header__bar {
@@ -74,14 +113,15 @@
 .mkt-header__logo span {
   font-family: var(--font-display), "Trebuchet MS", sans-serif;
   text-transform: uppercase;
-  letter-spacing: 0.2em;
+  letter-spacing: 0.18em;
   font-size: var(--text-sm);
   /* optical: tracked caps sit high; nudge baseline */
   padding-left: 0.1em;
 }
-@media (max-width: 24rem) {
+@media (max-width: 22rem) {
   .mkt-header__logo span {
-    display: none;
+    letter-spacing: 0.1em;
+    font-size: var(--text-xs);
   }
 }
 
@@ -95,12 +135,13 @@
   gap: var(--space-2xs);
 }
 
+/* Click-to-call: in the header on desktop only. On a phone it lives in the
+   bottom bar and the menu. */
 .mkt-header__call {
-  display: inline-flex;
+  display: none;
   align-items: center;
   justify-content: center;
   gap: var(--space-2xs);
-  min-width: 44px;
   min-height: 44px;
   padding: 0 var(--space-2xs);
   color: var(--ink);
@@ -109,7 +150,7 @@
   font-weight: 500;
 }
 .mkt-header__call-text {
-  display: none;
+  font-variant-numeric: tabular-nums;
 }
 
 .mkt-menu-btn {
@@ -125,9 +166,9 @@
   color: var(--ink);
 }
 
-/* "Book a cleaning" in the header — hidden on mobile (it lives in the bottom
-   bar there), shown on desktop. */
-.mkt-header .mkt-btn {
+/* "Book a cleaning" in the header — desktop only (bottom bar carries it on a
+   phone). */
+.mkt-header > .mkt-header__bar .mkt-btn {
   display: none;
 }
 
@@ -138,28 +179,42 @@
   right: 0;
   background: var(--paper);
   border-bottom: 1px solid var(--line);
-  box-shadow: 0 12px 28px rgba(18, 17, 15, 0.1);
+  box-shadow: 0 12px 28px rgba(18, 17, 15, 0.12);
   padding: var(--space-2xs) var(--space-md) var(--space-md);
   display: flex;
   flex-direction: column;
+  gap: var(--space-2xs);
 }
-.mkt-menu a {
+.mkt-menu[hidden] {
+  display: none;
+}
+.mkt-menu a:not(.mkt-btn) {
   padding: var(--space-sm) 0;
   border-bottom: 1px solid var(--line);
   font-size: var(--text-lg);
   color: var(--ink);
   text-decoration: none;
 }
-.mkt-menu a:last-child {
-  border-bottom: none;
-}
 .mkt-menu a[aria-current="page"] {
   font-weight: 600;
+}
+.mkt-menu__call {
+  font-variant-numeric: tabular-nums;
+}
+.mkt-menu .mkt-menu__book {
+  margin-top: var(--space-sm);
+  align-self: stretch;
 }
 
 @media (min-width: 48rem) {
   .mkt-menu-btn,
   .mkt-menu {
+    display: none;
+  }
+  .mkt-header__call {
+    display: inline-flex;
+  }
+  .mkt-header__call svg {
     display: none;
   }
   .mkt-header__links {
@@ -184,17 +239,10 @@
     color: var(--ink);
     border-bottom-color: var(--ink);
   }
-  .mkt-header__call {
-    padding: 0 var(--space-2xs);
+  .mkt-header--over .mkt-header__links a[aria-current="page"] {
+    border-bottom-color: var(--hero-ink);
   }
-  .mkt-header__call-text {
-    display: inline;
-    font-variant-numeric: tabular-nums;
-  }
-  .mkt-header__call svg {
-    display: none;
-  }
-  .mkt-header .mkt-btn {
+  .mkt-header > .mkt-header__bar .mkt-btn {
     display: inline-flex;
     min-height: 42px;
     padding: 0 var(--space-md);

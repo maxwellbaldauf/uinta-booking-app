@@ -1,22 +1,28 @@
-/* Design tokens ported from Project A (app/globals.css) so the two apps read
-   as one brand. Plain CSS custom properties, no framework. */
+/* Shared design tokens. Plain CSS custom properties, no framework.
+   The marketing route group (app/(marketing)) layers its own scale and a
+   couple of extra tokens on top in theme.css; everything else — /book,
+   /contact, /visit, /pay — renders straight from here.
+
+   Phase 4 of the redesign moved these off the old teal to the same
+   monochrome palette the marketing pages use. Status colors (danger /
+   success / warning) are semantic, not brand accent, and stay. */
 
 :root {
-  --color-bg: #ffffff;
-  --color-bg-subtle: #f7f8fa;
-  --color-fg: #14171a;
-  --color-fg-muted: #5b6470;
-  --color-border: #e1e4e8;
-  --color-primary: #0f6e8c;
-  --color-primary-fg: #ffffff;
+  --color-bg: #f4f2ed;
+  --color-bg-subtle: #eae6de;
+  --color-fg: #12110f;
+  --color-fg-muted: #575047;
+  --color-border: #d8d2c6;
+  --color-primary: #12110f;
+  --color-primary-fg: #f4f2ed;
   --color-danger: #c0392b;
-  --color-danger-bg: #fdecea;
+  --color-danger-bg: #fbeae7;
   --color-success: #1e8e5a;
-  --color-success-bg: #e6f7ef;
+  --color-success-bg: #e6f2ea;
   --color-warning: #8a5a00;
-  --color-warning-bg: #fdf3e0;
-  --color-fg-inverse: #ffffff;
-  --overlay-scrim: rgba(0, 0, 0, 0.45);
+  --color-warning-bg: #f5ecdb;
+  --color-fg-inverse: #f7f4ec;
+  --overlay-scrim: rgba(18, 17, 15, 0.45);
 
   --space-1: 4px;
   --space-2: 8px;
@@ -25,7 +31,7 @@
   --space-5: 24px;
   --space-6: 32px;
 
-  --radius: 8px;
+  --radius: 3px;
   --max-width: 30rem;
   /* Wider columns for the marketing pages only. The booking / portal flows stay
      at --max-width (a form is easier to fill in a narrow column); long-form
@@ -38,22 +44,22 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --color-bg: #121417;
-    --color-bg-subtle: #1a1d21;
-    --color-fg: #edeff1;
-    --color-fg-muted: #9aa4af;
-    --color-border: #2a2e33;
-    --color-primary: #4fb3d0;
-    --color-primary-fg: #0c1618;
+    --color-bg: #161511;
+    --color-bg-subtle: #100f0c;
+    --color-fg: #ece7dc;
+    --color-fg-muted: #a49c8d;
+    --color-border: #322e26;
+    --color-primary: #ece7dc;
+    --color-primary-fg: #161511;
     --color-danger: #e57368;
     --color-danger-bg: #3a1f1c;
     --color-success: #4fcf94;
     --color-success-bg: #163829;
     --color-warning: #e0b34f;
     --color-warning-bg: #3a2f14;
-    /* Stays white, unlike other tokens here: it pairs with the hero photo's
+    /* Stays light, unlike other tokens here: it pairs with the hero photo's
        scrim, which is always dark regardless of color-scheme. */
-    --color-fg-inverse: #ffffff;
+    --color-fg-inverse: #f7f4ec;
     --overlay-scrim: rgba(0, 0, 0, 0.55);
   }
 
@@ -77,15 +83,26 @@ body {
 body {
   color: var(--color-fg);
   background: var(--color-bg);
-  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
-    Helvetica, Arial, sans-serif;
+  font-family: var(--font-body), ui-sans-serif, system-ui, -apple-system,
+    "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   line-height: 1.5;
 }
 
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-body), ui-sans-serif, system-ui, sans-serif;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
 a {
-  color: var(--color-primary);
+  color: var(--color-fg);
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
 }
 
 input,

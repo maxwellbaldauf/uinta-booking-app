@@ -1,4 +1,5 @@
 import { BookingFlow } from "@/components/booking/BookingFlow";
+import { BrandBar } from "@/components/BrandBar";
 
 export const dynamic = "force-dynamic";
 
@@ -8,8 +9,11 @@ export const metadata = {
 
 export default function BookPage() {
   return (
-    <main className="page">
-      <BookingFlow />
-    </main>
+    <>
+      <BrandBar />
+      <main className="page">
+        <BookingFlow />
+      </main>
+    </>
   );
 }

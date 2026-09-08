@@ -27,9 +27,9 @@
   --hero-ink: #f7f4ec;
   --hero-scrim: linear-gradient(
     180deg,
-    rgba(18, 17, 15, 0.1) 0%,
-    rgba(18, 17, 15, 0.32) 45%,
-    rgba(18, 17, 15, 0.66) 100%
+    rgba(18, 17, 15, 0.3) 0%,
+    rgba(18, 17, 15, 0.44) 42%,
+    rgba(18, 17, 15, 0.68) 100%
   );
 
   /* Focus ring only — not a brand accent, never fills anything. */

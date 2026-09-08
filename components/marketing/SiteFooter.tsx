@@ -1,13 +1,12 @@
 import Link from "next/link";
 import { FOOTER_LINKS, NAP, SINCE_LINE } from "@/lib/site";
 import { SocialLinks } from "./SocialLinks";
+import { CurrentYear } from "./CurrentYear";
 
 // Persistent footer for the marketing pages. The NAP line renders the exact
 // string used in the JSON-LD (Phase 6) — legal name, phone, email — so the two
 // can't disagree.
 export function SiteFooter() {
-  const year = new Date().getFullYear();
-
   return (
     <footer className="mkt-footer">
       <div className="mkt-footer__inner">
@@ -40,7 +39,7 @@ export function SiteFooter() {
         </Link>
 
         <p className="mkt-footer__legal">
-          &copy; {year} {NAP.legalName}
+          &copy; <CurrentYear /> {NAP.legalName}
         </p>
       </div>
     </footer>
