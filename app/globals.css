@@ -15,6 +15,8 @@
   --color-success-bg: #e6f7ef;
   --color-warning: #8a5a00;
   --color-warning-bg: #fdf3e0;
+  --color-fg-inverse: #ffffff;
+  --overlay-scrim: rgba(0, 0, 0, 0.45);
 
   --space-1: 4px;
   --space-2: 8px;
@@ -42,6 +44,10 @@
     --color-success-bg: #163829;
     --color-warning: #e0b34f;
     --color-warning-bg: #3a2f14;
+    /* Stays white, unlike other tokens here: it pairs with the hero photo's
+       scrim, which is always dark regardless of color-scheme. */
+    --color-fg-inverse: #ffffff;
+    --overlay-scrim: rgba(0, 0, 0, 0.55);
   }
 
   html {
