@@ -48,7 +48,9 @@
     --color-bg-subtle: #100f0c;
     --color-fg: #ece7dc;
     --color-fg-muted: #a49c8d;
-    --color-border: #322e26;
+    /* a touch lighter than the marketing --line: it also outlines form inputs
+       on /book and /contact, which need to read as distinct fields */
+    --color-border: #423c31;
     --color-primary: #ece7dc;
     --color-primary-fg: #161511;
     --color-danger: #e57368;
