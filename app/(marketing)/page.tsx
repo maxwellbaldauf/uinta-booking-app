@@ -3,6 +3,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { getSettings, formatUsdWhole } from "@/lib/settings";
 import { NAP } from "@/lib/site";
+import { SocialLinks } from "@/components/marketing/SocialLinks";
 
 // The price is read from settings.base_price_cents on every request so the site
 // and the amount actually charged can't drift. Everything else on this page is
@@ -451,6 +452,7 @@ export default async function HomePage() {
             <a href={NAP.phoneHref}>{NAP.phoneDisplay}</a>. Email{" "}
             <a href={NAP.emailHref}>{NAP.email}</a>.
           </p>
+          <SocialLinks />
         </section>
       </div>
     </>

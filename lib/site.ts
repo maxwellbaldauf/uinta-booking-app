@@ -30,10 +30,29 @@ export const NAP = {
 
 export const NAP_LINE = `${NAP.legalName} · ${NAP.phoneDisplay} · ${NAP.email}`;
 
-// Google Business Profile listing, for JSON-LD `sameAs`. Derived from the
-// feature id in the Maps place URL (…:0xb6a2edb97452562d).
+// Social profiles. Rendered as icon links in the home page About section and
+// the footer; also feed JSON-LD `sameAs` in Phase 6. `key` maps to the icon in
+// components/marketing/SocialLinks.tsx.
+export const SOCIAL_LINKS = [
+  {
+    key: "facebook",
+    name: "Facebook",
+    href: "https://www.facebook.com/profile.php?id=61593982749812",
+  },
+  {
+    key: "instagram",
+    name: "Instagram",
+    href: "https://www.instagram.com/uintaiceco/?hl=en",
+  },
+  { key: "youtube", name: "YouTube", href: "https://www.youtube.com/@uintaiceco" },
+  { key: "tiktok", name: "TikTok", href: "https://www.tiktok.com/@uintaiceco" },
+] as const;
+
+// JSON-LD `sameAs`: the Google Business Profile listing (derived from the
+// feature id in the Maps place URL, …:0xb6a2edb97452562d) plus the socials.
 export const SAME_AS: string[] = [
   "https://www.google.com/maps?cid=13160342441906296365",
+  ...SOCIAL_LINKS.map((s) => s.href),
 ];
 
 export const ESTABLISHED_YEAR = 2022;

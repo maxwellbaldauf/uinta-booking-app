@@ -5,6 +5,7 @@ import {
   NAP,
   SINCE_LINE,
 } from "@/lib/site";
+import { SocialLinks } from "./SocialLinks";
 
 // Persistent footer for the marketing pages. The NAP line renders the exact
 // string used in the JSON-LD (Phase 6) — legal name, phone, email — so the two
@@ -24,6 +25,8 @@ export function SiteFooter() {
           <br />
           {NAP.locality}, {NAP.regionName}
         </p>
+
+        <SocialLinks className="mkt-footer__social" />
 
         <ul className="mkt-footer__links">
           {FOOTER_LINKS.map((link) => (

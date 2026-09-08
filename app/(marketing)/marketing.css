@@ -514,6 +514,9 @@
     flex-direction: column;
     gap: var(--space-2);
   }
+  .mkt-footer__social {
+    grid-column: 1;
+  }
   .mkt-footer__meta {
     grid-column: 1;
   }
@@ -523,4 +526,42 @@
   .mkt-footer__legal {
     grid-column: 1 / -1;
   }
+}
+
+/* ---- Social icon row (home About section + footer) -------------------- */
+
+.mkt-social,
+.mkt-prose .mkt-social,
+.mkt-footer .mkt-social {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  /* pull the row left so the first glyph aligns with the text column edge */
+  margin: var(--space-2) 0 0 -10px;
+  padding: 0;
+  list-style: none;
+}
+.mkt-social li,
+.mkt-prose .mkt-social li {
+  margin: 0;
+}
+.mkt-social a,
+.mkt-prose .mkt-social a,
+.mkt-footer .mkt-social a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  color: var(--color-fg-muted);
+  text-decoration: none;
+}
+.mkt-social a:hover,
+.mkt-prose .mkt-social a:hover,
+.mkt-footer .mkt-social a:hover {
+  color: var(--color-primary);
+  text-decoration: none;
+}
+.mkt-social svg {
+  display: block;
 }
