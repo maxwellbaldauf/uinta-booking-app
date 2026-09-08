@@ -295,10 +295,11 @@ export default async function HomePage() {
                   cycling and making ice correctly.
                 </li>
                 <li>
-                  <strong>We tell you what we found.</strong> Condition of the
-                  evaporator, how much buildup came out, and when your specific
-                  make and model should be serviced next. We track that date so
-                  you don’t have to.
+                  <strong>We send you the breakdown.</strong> An email with
+                  before-and-after photos, the condition of the evaporator, how
+                  much buildup came out, and anything that looked mechanical. Six
+                  months is the standard interval for Utah, and we schedule the
+                  next visit so you don’t have to track it.
                 </li>
               </ol>
               <p>
@@ -323,7 +324,7 @@ export default async function HomePage() {
             We’re licensed and insured. And if you’re not satisfied with the
             cleaning, we come back and do it again at no charge.
           </p>
-          <p>That’s the whole pitch. We’d rather earn the review than write one.</p>
+          <p>We don’t have testimonials to show you yet.</p>
         </section>
 
         {/* SECTION 9 — WHO THIS IS FOR */}
@@ -398,17 +399,20 @@ export default async function HomePage() {
           <p>
             That’s the complete service. Full teardown of removable components,
             nickel-safe descale, reservoir and bin deep cleaned by hand,
-            food-contact sanitize, reassembly and test, and a walkthrough of what
-            we found. All supplies included. About an hour.
+            food-contact sanitize, reassembly and test, and an email breakdown
+            afterward with before-and-after photos, our notes, and the receipt.
+            All supplies included. About an hour.
           </p>
           <p>
             Flat rate. Not a starting price, not an estimate, and not a quote
             that changes when we open the machine.
           </p>
           <p>
-            Most Utah homes are on a six-month schedule, which comes to two
-            visits a year on a machine that cost four figures to install. We
-            track your service date and reach out when it’s due.
+            This is a recurring service. Utah water makes six months the right
+            interval, so you sign a short agreement and we come back every six
+            months to clean the machine again at the same flat rate. We handle
+            the scheduling. If you want to stop, tell us and we stop. It comes to
+            two visits a year on a machine that cost four figures to install.
           </p>
           <div className="mkt-cta-row mkt-anchor-cta">
             <Link href="/book" className="mkt-btn mkt-btn--primary">

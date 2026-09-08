@@ -30,7 +30,7 @@ export const HOME_FAQ: FaqItem[] = [
   },
   {
     q: "Do I need to be home?",
-    a: "Someone needs to let us in and be there at the end so we can walk you through what we found. You don’t need to stand over us.",
+    a: "No, but we have to be able to get into the house to do the work — how you arrange that is up to you. We remind you several times in the week leading up to the visit, so it won't sneak up on you. If we still show up and can't get in, there's a $50 rescheduling fee. When the visit is done, you get an email with before-and-after photos, our notes, and the receipt.",
   },
   {
     q: "My machine is still under warranty. Does this affect it?",
@@ -45,16 +45,12 @@ export const HOME_FAQ: FaqItem[] = [
     a: "No. We clean them. That’s the entire business.",
   },
   {
-    q: "How do I know if mine has ever been cleaned?",
-    a: "We’ll know within a few minutes of opening it, and we’ll show you.",
-  },
-  {
     q: "What do you use? Is it safe around food?",
     a: "A universal nickel-safe descaler for the mineral buildup, and a food-contact sanitizer for every surface the ice touches. Nickel-safe matters more than most homeowners realize, because the wrong descaler permanently damages an evaporator plate.",
   },
   {
     q: "How often does it actually need this?",
-    a: "Every six months for most Utah homes. Heavy use or unusually hard water can mean sooner, and we’ll tell you which category yours is in after we’ve seen inside it.",
+    a: "Every six months for most Utah homes, so it’s a recurring service. You sign a short agreement, we come back on that schedule at the same flat rate, and we handle the scheduling. Heavy use or unusually hard water can mean sooner, and we’ll tell you which category yours is in after we’ve seen inside it.",
   },
   {
     q: "Do you come out to Park City and Heber?",

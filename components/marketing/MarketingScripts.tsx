@@ -53,6 +53,32 @@ export function MarketingScripts() {
       cleanups.push(() => summary.removeEventListener("click", onClick));
     });
 
+    // ---- Scroll-in reveal for sections ----
+    if (!prefersReduced && "IntersectionObserver" in window) {
+      const io = new IntersectionObserver(
+        (entries) => {
+          for (const entry of entries) {
+            if (entry.isIntersecting) {
+              entry.target.classList.add("is-visible");
+              io.unobserve(entry.target);
+            }
+          }
+        },
+        { rootMargin: "0px 0px -8% 0px" },
+      );
+      const reveals = document.querySelectorAll<HTMLElement>(
+        ".mkt-section, .mkt-trustbar",
+      );
+      reveals.forEach((el) => {
+        // only hide what starts below the fold, so on-screen content never flashes
+        if (el.getBoundingClientRect().top > window.innerHeight) {
+          el.classList.add("mkt-reveal");
+          io.observe(el);
+        }
+      });
+      cleanups.push(() => io.disconnect());
+    }
+
     // ---- Open the <details> a hash points at ----
     const openTarget = (rawHash: string) => {
       const id = rawHash.replace(/^#/, "");

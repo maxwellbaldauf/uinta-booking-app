@@ -131,7 +131,7 @@ About an hour, start to finish. We bring everything. There is nothing for you to
 4. **We deep clean the reservoir and bin by hand.** Biofilm doesn't come off in a rinse cycle. It has to be broken down and physically removed.
 5. **We sanitize every surface your ice touches.** Food-contact sanitizer, applied to the evaporator, the tubes, the reservoir, and the bin.
 6. **We reassemble and run it.** We stay until it's cycling and making ice correctly.
-7. **We tell you what we found.** Condition of the evaporator, how much buildup came out, and when your specific make and model should be serviced next. We track that date so you don't have to.
+7. **We send you the breakdown.** An email with before-and-after photos, the condition of the evaporator, how much buildup came out, and anything that looked mechanical. Six months is the standard interval for Utah, and we schedule the next visit so you don't have to track it.
 
 We work clean, we take our mess with us, and we're out of your kitchen.
 
@@ -171,7 +171,7 @@ Why Homeowners Call Us
 
 We've been cleaning residential ice machines in Utah since 2022. We're licensed and insured. And if you're not satisfied with the cleaning, we come back and do it again at no charge.
 
-That's the whole pitch. We'd rather earn the review than write one.
+We don't have testimonials to show you yet.
 
 ---
 
@@ -211,7 +211,7 @@ Usually not. Most of the work happens through the front of the unit. If yours ne
 About an hour, depending on the machine and how long it's been.
 
 **Do I need to be home?**
-Someone needs to let us in and be there at the end so we can walk you through what we found. You don't need to stand over us.
+No, but we have to be able to get into the house to do the work — how you arrange that is up to you. We remind you several times in the week leading up to the visit, so it won't sneak up on you. If we still show up and can't get in, there's a $50 rescheduling fee. When the visit is done, you get an email with before-and-after photos, our notes, and the receipt.
 
 **My machine is still under warranty. Does this affect it?**
 No. Professional descaling and sanitizing is maintenance the manufacturer recommends. It's the absence of it that causes warranty problems.
@@ -222,14 +222,11 @@ Then it's a mechanical or electrical fault, not buildup, and we'll tell you that
 **Do you repair ice machines too?**
 No. We clean them. That's the entire business.
 
-**How do I know if mine has ever been cleaned?**
-We'll know within a few minutes of opening it, and we'll show you.
-
 **What do you use? Is it safe around food?**
 A universal nickel-safe descaler for the mineral buildup, and a food-contact sanitizer for every surface the ice touches. Nickel-safe matters more than most homeowners realize, because the wrong descaler permanently damages an evaporator plate.
 
 **How often does it actually need this?**
-Every six months for most Utah homes. Heavy use or unusually hard water can mean sooner, and we'll tell you which category yours is in after we've seen inside it.
+Every six months for most Utah homes, so it's a recurring service. You sign a short agreement, we come back on that schedule at the same flat rate, and we handle the scheduling. Heavy use or unusually hard water can mean sooner, and we'll tell you which category yours is in after we've seen inside it.
 
 **Do you come out to Park City and Heber?**
 Yes. We're based in Lehi and serve a 75-mile radius.
@@ -251,11 +248,11 @@ What It Costs
 
 **$150 per visit.**
 
-That's the complete service. Full teardown of removable components, nickel-safe descale, reservoir and bin deep cleaned by hand, food-contact sanitize, reassembly and test, and a walkthrough of what we found. All supplies included. About an hour.
+That's the complete service. Full teardown of removable components, nickel-safe descale, reservoir and bin deep cleaned by hand, food-contact sanitize, reassembly and test, and an email breakdown afterward with before-and-after photos, our notes, and the receipt. All supplies included. About an hour.
 
 Flat rate. Not a starting price, not an estimate, and not a quote that changes when we open the machine.
 
-Most Utah homes are on a six-month schedule, which comes to two visits a year on a machine that cost four figures to install. We track your service date and reach out when it's due.
+This is a recurring service. Utah water makes six months the right interval, so you sign a short agreement and we come back every six months to clean the machine again at the same flat rate. We handle the scheduling. If you want to stop, tell us and we stop. It comes to two visits a year on a machine that cost four figures to install.
 
 **CTA button:** Book a cleaning → `/book`
 
