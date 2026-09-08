@@ -1,5 +1,5 @@
 import type { MetadataRoute } from "next";
-import { SITE_ORIGIN } from "@/lib/site";
+import { absoluteUrl } from "@/lib/site";
 
 // The public, indexable pages. The token pages (/visit, /pay) and dev routes
 // are intentionally excluded and also disallowed in robots.ts.
@@ -16,7 +16,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
   ];
 
   return pages.map(({ path, priority }) => ({
-    url: path === "/" ? `${SITE_ORIGIN}/` : `${SITE_ORIGIN}${path}`,
+    url: absoluteUrl(path),
     lastModified,
     changeFrequency: "monthly",
     priority,

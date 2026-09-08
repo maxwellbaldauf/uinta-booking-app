@@ -10,6 +10,7 @@
 // out of JSON-LD too.
 
 import {
+  absoluteUrl,
   ESTABLISHED_YEAR,
   NAP,
   SAME_AS,
@@ -19,7 +20,7 @@ import {
 import type { FaqItem } from "./faq";
 
 const BUSINESS_ID = `${SITE_ORIGIN}/#business`;
-const LOGO_URL = `${SITE_ORIGIN}/images/logo.png`;
+const LOGO_URL = `${SITE_ORIGIN}/images/logo2.png`;
 
 const BUSINESS_DESCRIPTION =
   "Residential ice machine cleaning service based in Lehi, Utah. We descale, " +
@@ -109,10 +110,7 @@ export function breadcrumbSchema(
       "@type": "ListItem",
       position: i + 1,
       name: crumb.name,
-      item:
-        crumb.path === "/"
-          ? `${SITE_ORIGIN}/`
-          : `${SITE_ORIGIN}${crumb.path}`,
+      item: absoluteUrl(crumb.path),
     })),
   };
 }

@@ -1,0 +1,157 @@
+/* Marketing design system — Phase 1 tokens, wired for the redesign.
+   Loaded only by the (marketing) route group, so these rules never reach
+   /book, /contact, or the token pages. Plain CSS against custom properties,
+   no framework.
+
+   The monochrome palette here deliberately replaces the teal-based tokens in
+   app/globals.css for the marketing pages. globals.css still loads (root
+   layout), but nothing in the marketing components references its
+   --color-* names. */
+
+:root {
+  /* ---- Grounds — warm-neutral off-whites, never pure #fff ---- */
+  --paper: #f4f2ed;
+  --paper-raised: #fbfaf7;
+  --paper-sunk: #eae6de;
+
+  /* ---- Ink — warm near-black, never pure #000 ---- */
+  --ink: #12110f;
+  --ink-soft: #575047;
+  --ink-faint: #8a8276;
+
+  /* ---- One hairline ---- */
+  --line: #d8d2c6;
+
+  /* ---- Hero: text on a fixed dark scrim over the photo. Theme-invariant —
+     these do not flip with color-scheme (that pairing has broken before). ---- */
+  --hero-ink: #f7f4ec;
+  --hero-scrim: linear-gradient(
+    180deg,
+    rgba(18, 17, 15, 0.1) 0%,
+    rgba(18, 17, 15, 0.32) 45%,
+    rgba(18, 17, 15, 0.66) 100%
+  );
+
+  /* Focus ring only — not a brand accent, never fills anything. */
+  --focus: #2f6f7e;
+
+  /* ---- Type scale — 1.25, base 16px ---- */
+  --text-xs: 0.8125rem; /* 13 */
+  --text-sm: 0.875rem; /* 14 */
+  --text-base: 1rem; /* 16 — floor for running text */
+  --text-lg: 1.25rem; /* 20 */
+  --text-xl: 1.5625rem; /* 25 */
+  --text-2xl: 1.9375rem; /* 31 */
+  --text-3xl: 2.4375rem; /* 39 */
+  --text-4xl: 3.0625rem; /* 49 */
+  --text-5xl: 3.8125rem; /* 61 */
+
+  --leading-body: 1.65;
+  --leading-tight: 1.2;
+
+  /* ---- Spacing — 8px base, 4 as the half-step ---- */
+  --space-3xs: 4px;
+  --space-2xs: 8px;
+  --space-xs: 12px;
+  --space-sm: 16px;
+  --space-md: 24px;
+  --space-lg: 32px;
+  --space-xl: 48px;
+  --space-2xl: 64px;
+  --space-3xl: 96px;
+  --space-4xl: 128px;
+  --space-5xl: 160px;
+
+  /* ---- Widths ---- */
+  --measure: 42.5rem; /* ~680px — running-text blocks */
+  --width-content: 46rem; /* slightly wider section content */
+  --width-wide: 71.25rem; /* ~1140px — hero, trust bar, header, footer */
+
+  --radius: 2px;
+  --header-h: 60px;
+
+  /* Bottom CTA bar height on mobile — pages reserve this so it never covers
+     content. 0 on desktop (set in marketing.css media query). */
+  --botbar-h: 0px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: #161511;
+    --paper-raised: #201e17;
+    --paper-sunk: #100f0c;
+    --ink: #ece7dc;
+    --ink-soft: #a49c8d;
+    --ink-faint: #766e60;
+    --line: #322e26;
+    --focus: #7fb8c4;
+    color-scheme: dark;
+  }
+}
+
+/* ---- Base, scoped to the marketing tree ------------------------------- */
+
+/* globals.css sets overflow-x:hidden on <body>, which makes it a scroll
+   container and breaks position:sticky. clip stops sideways scroll without
+   the scroll container. This file only loads on (marketing). */
+html,
+body {
+  overflow-x: clip;
+}
+
+body {
+  background: var(--paper);
+  color: var(--ink);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+/* The route-group wrapper carries the next/font variables (--font-body,
+   --font-display) and the base typography. Everything inside inherits. */
+.mkt-root {
+  font-family: var(--font-body), system-ui, -apple-system, "Segoe UI", Roboto,
+    Helvetica, Arial, sans-serif;
+  font-size: var(--text-base);
+  line-height: var(--leading-body);
+  font-weight: 400;
+  color: var(--ink);
+  background: var(--paper);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.mkt-root h1,
+.mkt-root h2,
+.mkt-root h3 {
+  font-family: var(--font-display), "Trebuchet MS", "Gill Sans", system-ui,
+    sans-serif;
+  font-weight: 400;
+  text-transform: uppercase;
+  text-wrap: balance;
+  margin: 0;
+  color: var(--ink);
+}
+
+.mkt-root :focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 3px;
+  border-radius: 1px;
+}
+
+/* Anchor targets clear the sticky header. */
+.mkt-root [id] {
+  scroll-margin-top: calc(var(--header-h) + var(--space-sm));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mkt-root *,
+  .mkt-root *::before,
+  .mkt-root *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}

@@ -13,12 +13,14 @@ export function SiteFooter() {
       <div className="mkt-footer__inner">
         <p className="mkt-footer__nap">
           <strong>{NAP.legalName}</strong>
-          {" · "}
-          <a href={NAP.phoneHref}>{NAP.phoneDisplay}</a>
-          {" · "}
-          <a href={NAP.emailHref}>{NAP.email}</a>
-          <br />
-          {NAP.locality}, {NAP.regionName}
+          <span className="mkt-footer__contact">
+            <a href={NAP.phoneHref}>{NAP.phoneDisplay}</a>
+            <span aria-hidden="true"> · </span>
+            <a href={NAP.emailHref}>{NAP.email}</a>
+          </span>
+          <span className="mkt-footer__loc">
+            {NAP.locality}, {NAP.regionName}
+          </span>
         </p>
 
         <SocialLinks className="mkt-footer__social" />

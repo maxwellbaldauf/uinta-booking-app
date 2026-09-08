@@ -17,7 +17,7 @@ Approx. 2,050 words of body copy.
 Get Your Utah Ice Machine Making Clean Ice Again
 
 ### Subhead
-Professional descaling, deep cleaning, and sanitizing for Scotsman, Sub-Zero, U-Line, KitchenAid, and GE undercounter ice machines. We work in your kitchen. It takes about an hour.
+Professional descaling, deep cleaning, and sanitizing for Scotsman, Sub-Zero, U-Line, and most other undercounter ice machines. We just need an hour of your ice time.
 
 ### CTAs
 - **Primary button:** Book a cleaning → `/book`

@@ -12,9 +12,14 @@ export const SITE_ORIGIN = (
   process.env.NEXT_PUBLIC_SITE_URL?.trim() || "https://uintaice.com"
 ).replace(/\/$/, "");
 
-// Name / Address / Phone. `NAP_LINE` is the exact string rendered wherever the
-// NAP appears as one line (the footer today); keep it byte-identical to the
-// values used in the JSON-LD so the two never disagree.
+// One absolute-URL builder for the canonical tag, breadcrumb JSON-LD, and the
+// sitemap, so a trailing-slash / prefix change is made in one place.
+export function absoluteUrl(path: string): string {
+  return path === "/" ? `${SITE_ORIGIN}/` : `${SITE_ORIGIN}${path}`;
+}
+
+// Name / Address / Phone. Keep byte-identical to the values used in the JSON-LD
+// (lib/schema.ts) so the two never disagree.
 export const NAP = {
   legalName: "Uinta Ice Co., LLC",
   name: "Uinta Ice Co.",
@@ -27,8 +32,6 @@ export const NAP = {
   regionName: "Utah",
   country: "US",
 } as const;
-
-export const NAP_LINE = `${NAP.legalName} · ${NAP.phoneDisplay} · ${NAP.email}`;
 
 // Social profiles. Rendered as icon links in the home page About section and
 // the footer; also feed JSON-LD `sameAs` in Phase 6. `key` maps to the icon in
@@ -57,7 +60,6 @@ export const SAME_AS: string[] = [
 
 export const ESTABLISHED_YEAR = 2022;
 export const SINCE_LINE = `Serving Utah homes since ${ESTABLISHED_YEAR}`;
-export const SERVICE_RADIUS_MILES = 75;
 
 // Header nav — the four text links. "Book a cleaning" and click-to-call are
 // rendered separately and never collapse into the mobile menu.
@@ -72,17 +74,6 @@ export const NAV_ITEMS = [
 export const FOOTER_LINKS = [
   { href: "/", label: "Home" },
   ...NAV_ITEMS,
-] as const;
-
-// Rendered as plain text in the footer, and the basis for the brands covered
-// on /brands. Order matches the home page copy.
-export const BRANDS_SERVICED = [
-  "Scotsman",
-  "Sub-Zero",
-  "U-Line",
-  "KitchenAid",
-  "GE Profile",
-  "GE Monogram",
 ] as const;
 
 // Every city named on /service-areas (§ "Every City We Serve"). Feeds the

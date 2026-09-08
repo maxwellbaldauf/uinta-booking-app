@@ -56,5 +56,5 @@ export function formatUsd(cents: number): string {
 // "$149.99" otherwise. The marketing copy reads "<price> per visit", where a
 // trailing ".00" would look wrong.
 export function formatUsdWhole(cents: number): string {
-  return cents % 100 === 0 ? `$${Math.round(cents / 100)}` : formatUsd(cents);
+  return cents % 100 === 0 ? `$${cents / 100}` : formatUsd(cents);
 }

@@ -1,102 +1,90 @@
-/* Marketing pages (home + the four content pages). Plain CSS against the design
-   tokens in app/globals.css — no framework, same visual language as the booking
-   flow, just a wider column for long-form copy.
+/* Marketing pages — layout and components. Design tokens live in theme.css.
+   Plain CSS against the custom properties, no framework. Mobile-first: base
+   rules target ~360px; wider layouts are added in min-width media queries.
+   Loads only on the (marketing) route group. */
 
-   Mobile-first: the base rules target a ~360px phone. Wider layouts are added
-   in min-width media queries. This CSS only loads on the (marketing) route
-   group, so the html-level rules here don't touch /book, /contact, etc. */
-
-/* globals.css sets `overflow-x: hidden` on <html> and <body> to stop sideways
-   scroll. On <body> that creates a scroll container, which breaks the header's
-   `position: sticky`. `overflow-x: clip` stops the sideways scroll the same way
-   without creating a scroll container. This file only loads on the (marketing)
-   route group, so /book, /contact, and the token pages keep the original rule. */
-html,
-body {
-  overflow-x: clip;
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  html {
-    scroll-behavior: smooth;
-  }
-}
-
-/* Anchor targets clear the sticky header when jumped to. */
-.mkt-section[id],
-.mkt-jump[id],
-.mkt-prose h2[id],
-.mkt-prose h3[id] {
-  scroll-margin-top: calc(var(--header-h) + 12px);
-}
-
-/* ---- Layout containers --------------------------------------------------- */
+/* ---- Layout containers ------------------------------------------------- */
 
 .mkt-wrap,
 .mkt-wrap-wide {
   width: 100%;
-  margin: 0 auto;
-  padding-left: var(--space-4);
-  padding-right: var(--space-4);
+  margin-inline: auto;
+  padding-inline: var(--space-md);
 }
 .mkt-wrap {
-  max-width: var(--max-width-prose);
+  max-width: var(--measure);
 }
 .mkt-wrap-wide {
-  max-width: var(--max-width-wide);
+  max-width: var(--width-wide);
 }
 
-.mkt-main {
-  /* space above the footer */
-  padding-bottom: var(--space-6);
+@media (min-width: 48rem) {
+  .mkt-wrap,
+  .mkt-wrap-wide {
+    padding-inline: var(--space-xl);
+  }
 }
 
-/* ---- Header ------------------------------------------------------------- */
+/* Reserve space below everything (footer included) so the fixed mobile CTA
+   bar never covers the last lines. 0 on desktop. */
+.mkt-root {
+  padding-bottom: var(--botbar-h);
+}
+
+/* ---- Header ---------------------------------------------------------- */
 
 .mkt-header {
   position: sticky;
   top: 0;
   z-index: 50;
-  background: var(--color-bg);
-  border-bottom: 1px solid var(--color-border);
+  background: var(--paper);
+  border-bottom: 1px solid var(--line);
 }
 
 .mkt-header__bar {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
-  max-width: var(--max-width-wide);
-  margin: 0 auto;
-  padding: var(--space-2) var(--space-4);
+  gap: var(--space-sm);
+  max-width: var(--width-wide);
+  margin-inline: auto;
+  padding: var(--space-2xs) var(--space-md);
   min-height: var(--header-h);
+}
+
+@media (min-width: 48rem) {
+  .mkt-header__bar {
+    padding-inline: var(--space-xl);
+  }
 }
 
 .mkt-header__logo {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-2);
+  gap: var(--space-2xs);
   margin-right: auto;
-  font-weight: 700;
-  font-size: 15px;
-  color: var(--color-fg);
   text-decoration: none;
+  color: var(--ink);
   white-space: nowrap;
 }
-/* Icon-only logo on phones so the Book button + click-to-call + menu button
-   always fit the bar. The link keeps its aria-label for screen readers. */
-@media (max-width: 25rem) {
+.mkt-header__logo img {
+  display: block;
+  width: 26px;
+  height: 26px;
+}
+.mkt-header__logo span {
+  font-family: var(--font-display), "Trebuchet MS", sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  font-size: var(--text-sm);
+  /* optical: tracked caps sit high; nudge baseline */
+  padding-left: 0.1em;
+}
+@media (max-width: 24rem) {
   .mkt-header__logo span {
     display: none;
   }
 }
-.mkt-header__logo img {
-  display: block;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-}
 
-/* The four text links: hidden on mobile (they live in the menu), a row on desktop. */
 .mkt-header__links {
   display: none;
 }
@@ -104,24 +92,21 @@ body {
 .mkt-header__actions {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
+  gap: var(--space-2xs);
 }
 
-/* Click-to-call: icon-only on mobile, number spelled out on desktop. */
 .mkt-header__call {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: var(--space-2);
+  gap: var(--space-2xs);
   min-width: 44px;
   min-height: 44px;
-  padding: 0 var(--space-2);
-  border-radius: var(--radius);
-  border: 1px solid var(--color-border);
-  color: var(--color-fg);
+  padding: 0 var(--space-2xs);
+  color: var(--ink);
   text-decoration: none;
-  font-weight: 600;
-  font-size: 14px;
+  font-size: var(--text-sm);
+  font-weight: 500;
 }
 .mkt-header__call-text {
   display: none;
@@ -135,140 +120,157 @@ body {
   height: 44px;
   padding: 0;
   background: none;
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--line);
   border-radius: var(--radius);
-  color: var(--color-fg);
+  color: var(--ink);
 }
 
-/* Mobile dropdown menu */
+/* "Book a cleaning" in the header — hidden on mobile (it lives in the bottom
+   bar there), shown on desktop. */
+.mkt-header .mkt-btn {
+  display: none;
+}
+
 .mkt-menu {
   position: absolute;
   top: 100%;
   left: 0;
   right: 0;
-  background: var(--color-bg);
-  border-bottom: 1px solid var(--color-border);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
-  padding: var(--space-2) var(--space-4) var(--space-4);
+  background: var(--paper);
+  border-bottom: 1px solid var(--line);
+  box-shadow: 0 12px 28px rgba(18, 17, 15, 0.1);
+  padding: var(--space-2xs) var(--space-md) var(--space-md);
   display: flex;
   flex-direction: column;
 }
 .mkt-menu a {
-  padding: var(--space-4) 0;
-  border-bottom: 1px solid var(--color-border);
-  font-size: 17px;
-  color: var(--color-fg);
+  padding: var(--space-sm) 0;
+  border-bottom: 1px solid var(--line);
+  font-size: var(--text-lg);
+  color: var(--ink);
   text-decoration: none;
 }
 .mkt-menu a:last-child {
   border-bottom: none;
 }
 .mkt-menu a[aria-current="page"] {
-  color: var(--color-primary);
-  font-weight: 700;
+  font-weight: 600;
 }
 
 @media (min-width: 48rem) {
-  .mkt-menu-btn {
-    display: none;
-  }
+  .mkt-menu-btn,
   .mkt-menu {
     display: none;
   }
   .mkt-header__links {
     display: flex;
     align-items: center;
-    gap: var(--space-5);
-    margin-right: var(--space-5);
+    gap: var(--space-lg);
+    margin-right: var(--space-lg);
   }
   .mkt-header__links a {
-    color: var(--color-fg-muted);
+    color: var(--ink-soft);
     text-decoration: none;
-    font-size: 15px;
-    font-weight: 600;
-    padding: var(--space-2) 0;
-    border-bottom: 2px solid transparent;
+    font-size: var(--text-sm);
+    font-weight: 500;
+    padding: var(--space-2xs) 0;
+    border-bottom: 1px solid transparent;
+    transition: color 150ms ease, border-color 150ms ease;
   }
   .mkt-header__links a:hover {
-    color: var(--color-fg);
+    color: var(--ink);
   }
   .mkt-header__links a[aria-current="page"] {
-    color: var(--color-fg);
-    border-bottom-color: var(--color-primary);
+    color: var(--ink);
+    border-bottom-color: var(--ink);
   }
   .mkt-header__call {
-    border: none;
-    padding: 0 var(--space-2);
+    padding: 0 var(--space-2xs);
   }
   .mkt-header__call-text {
     display: inline;
+    font-variant-numeric: tabular-nums;
   }
   .mkt-header__call svg {
     display: none;
   }
+  .mkt-header .mkt-btn {
+    display: inline-flex;
+    min-height: 42px;
+    padding: 0 var(--space-md);
+  }
 }
 
-/* ---- Buttons (match components/ui/form.tsx, laid out for a content page) -- */
+/* ---- Buttons -------------------------------------------------------- */
 
 .mkt-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: var(--space-2);
+  gap: var(--space-2xs);
   min-height: 48px;
-  padding: 12px 20px;
+  padding: 0 var(--space-md);
   border-radius: var(--radius);
   border: 1px solid transparent;
-  font-size: 16px;
-  font-weight: 600;
+  font-family: var(--font-body), sans-serif;
+  font-size: var(--text-sm);
+  font-weight: 500;
+  letter-spacing: 0.02em;
   line-height: 1.2;
   text-align: center;
   text-decoration: none;
   cursor: pointer;
+  transition: background 150ms ease, color 150ms ease, border-color 150ms ease;
 }
 .mkt-btn--primary {
-  background: var(--color-primary);
-  color: var(--color-primary-fg);
+  background: var(--ink);
+  color: var(--paper);
+  border-color: var(--ink);
+}
+.mkt-btn--primary:hover {
+  background: transparent;
+  color: var(--ink);
 }
 .mkt-btn--secondary {
   background: transparent;
-  color: var(--color-fg);
-  border-color: var(--color-border);
+  color: var(--ink);
+  border-color: var(--ink);
+}
+.mkt-btn--secondary:hover {
+  background: var(--ink);
+  color: var(--paper);
 }
 .mkt-btn--link {
   min-height: 44px;
-  padding: 10px 4px;
+  padding: 0 var(--space-3xs);
   background: none;
-  color: var(--color-primary);
+  border: none;
+  color: var(--ink);
   text-decoration: underline;
-  text-underline-offset: 2px;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.18em;
+  text-decoration-color: var(--ink-faint);
 }
-
-/* header "Book a cleaning" — a little tighter than the in-page CTAs */
-.mkt-header .mkt-btn {
-  min-height: 44px;
-  padding: 10px 14px;
-  font-size: 14px;
-  white-space: nowrap;
+.mkt-btn--link:hover {
+  text-decoration-thickness: 2px;
+  text-decoration-color: var(--ink);
 }
 
 .mkt-cta-row {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  gap: var(--space-3);
-  margin: var(--space-5) 0;
-}
-/* On a phone the two real buttons go full-width for an easy tap; the plain
-   text link ("See pricing") stays inline. */
-.mkt-cta-row .mkt-btn--primary,
-.mkt-cta-row .mkt-btn--secondary {
-  width: 100%;
+  align-items: stretch;
+  gap: var(--space-sm);
+  margin: var(--space-xl) 0;
 }
 .mkt-cta-row__below {
   margin: 0;
-  font-size: 14px;
-  color: var(--color-fg-muted);
+  font-size: var(--text-sm);
+  color: var(--ink-soft);
+}
+.mkt-cta-row__below a {
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
 }
 
 @media (min-width: 34rem) {
@@ -277,144 +279,266 @@ body {
     flex-wrap: wrap;
     align-items: center;
   }
-  .mkt-cta-row .mkt-btn--primary,
-  .mkt-cta-row .mkt-btn--secondary {
-    width: auto;
+  .mkt-cta-row .mkt-btn {
+    flex: 0 0 auto;
   }
   .mkt-cta-row__below {
     flex-basis: 100%;
   }
 }
 
-/* ---- Hero ------------------------------------------------------------- */
+/* ---- Hero (home) -------------------------------------------------- */
 
 .mkt-hero {
-  padding: var(--space-6) 0 var(--space-5);
-}
-.mkt-hero__eyebrow {
-  margin: 0 0 var(--space-2);
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--color-primary);
-}
-.mkt-hero h1 {
-  margin: 0 0 var(--space-3);
-  font-size: clamp(1.75rem, 7vw, 2.75rem);
-  line-height: 1.15;
-  letter-spacing: -0.01em;
-}
-.mkt-hero__subhead {
-  margin: 0 0 var(--space-4);
-  font-size: clamp(1rem, 3.5vw, 1.15rem);
-  line-height: 1.6;
-  color: var(--color-fg-muted);
-  max-width: 42ch;
-}
-.mkt-hero__photo {
   position: relative;
-  margin-top: var(--space-5);
-  border-radius: var(--radius);
+  min-height: clamp(30rem, 82vh, 44rem);
+  display: flex;
+  align-items: flex-end;
   overflow: hidden;
-  aspect-ratio: 3 / 2;
+  background: #14130f;
+}
+.mkt-hero__img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 40%;
+}
+.mkt-hero::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--hero-scrim);
+}
+.mkt-hero__inner {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: var(--width-wide);
+  margin-inline: auto;
+  padding: var(--space-2xl) var(--space-md);
+  color: var(--hero-ink);
 }
 @media (min-width: 48rem) {
-  .mkt-hero__photo {
-    aspect-ratio: 2 / 1;
-    margin-top: var(--space-6);
+  .mkt-hero__inner {
+    padding: var(--space-3xl) var(--space-xl);
+  }
+}
+/* Brand wordmark in the hero. Prominent on a phone — it's the first thing a
+   visitor should see on open — and quieter on desktop, where the header
+   already carries the name. */
+.mkt-hero__wordmark {
+  font-family: var(--font-display), "Trebuchet MS", sans-serif;
+  text-transform: uppercase;
+  color: var(--hero-ink);
+  font-size: clamp(1.9rem, 9.5vw, 2.75rem);
+  letter-spacing: 0.2em;
+  line-height: 1.08;
+  margin: 0 0 var(--space-xs);
+  /* tracked caps push right; pull back so it optically aligns left */
+  text-indent: 0.2em;
+}
+.mkt-hero__eyebrow {
+  font-family: var(--font-display), sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  font-size: var(--text-xs);
+  color: var(--hero-ink);
+  opacity: 0.8;
+  margin: 0 0 var(--space-lg);
+}
+/* Mobile: smaller and tighter — wide tracking on a big cap headline breaks
+   badly across lines on a narrow screen. Desktop widens both. */
+.mkt-hero h1 {
+  color: var(--hero-ink);
+  font-size: 1.95rem;
+  letter-spacing: 0.015em;
+  line-height: 1.12;
+  margin: 0 0 var(--space-md);
+  max-width: 22ch;
+}
+.mkt-hero__subhead {
+  font-family: var(--font-body), sans-serif;
+  font-size: var(--text-base);
+  line-height: 1.55;
+  color: var(--hero-ink);
+  max-width: 42ch;
+  margin: 0 0 var(--space-lg);
+}
+@media (min-width: 40rem) {
+  .mkt-hero__wordmark {
+    font-size: var(--text-lg);
+    letter-spacing: 0.28em;
+    opacity: 0.9;
+    margin-bottom: var(--space-2xs);
+  }
+  .mkt-hero__eyebrow {
+    letter-spacing: 0.24em;
+    margin-bottom: var(--space-md);
+  }
+  .mkt-hero h1 {
+    font-size: clamp(2.75rem, 6vw, var(--text-5xl));
+    letter-spacing: 0.06em;
+    line-height: 1.08;
+    max-width: 16ch;
+  }
+  .mkt-hero__subhead {
+    font-size: var(--text-lg);
+  }
+}
+.mkt-hero .mkt-cta-row {
+  margin: 0;
+}
+.mkt-hero .mkt-btn--secondary {
+  color: var(--hero-ink);
+  border-color: var(--hero-ink);
+}
+.mkt-hero .mkt-btn--secondary:hover {
+  background: var(--hero-ink);
+  color: var(--ink);
+}
+.mkt-hero .mkt-btn--link {
+  color: var(--hero-ink);
+  text-decoration-color: rgba(247, 244, 236, 0.5);
+}
+.mkt-hero .mkt-btn--link:hover {
+  text-decoration-color: var(--hero-ink);
+}
+
+/* ---- Trust bar --------------------------------------------------- */
+
+.mkt-trustbar {
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  background: var(--paper-sunk);
+}
+/* Mobile: a clean vertical list. Desktop: one centered row with dot
+   separators (which only read right on a single line). */
+.mkt-trustbar ul {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
+  margin: 0 auto;
+  padding: var(--space-lg) var(--space-md);
+  max-width: var(--width-wide);
+  list-style: none;
+  font-size: var(--text-sm);
+  line-height: 1.4;
+  color: var(--ink-soft);
+}
+.mkt-trustbar li {
+  display: block;
+}
+@media (min-width: 48rem) {
+  .mkt-trustbar ul {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2xs) 0;
+    padding: var(--space-md) var(--space-xl);
+  }
+  .mkt-trustbar li {
+    display: inline-flex;
+    align-items: center;
+  }
+  .mkt-trustbar li:not(:last-child)::after {
+    content: "·";
+    margin: 0 var(--space-sm);
+    color: var(--ink-faint);
   }
 }
 
-/* ---- Trust bar ------------------------------------------------------- */
-
-.mkt-trustbar {
-  border-top: 1px solid var(--color-border);
-  border-bottom: 1px solid var(--color-border);
-  background: var(--color-bg-subtle);
-}
-.mkt-trustbar ul {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  margin: 0 auto;
-  padding: var(--space-4);
-  max-width: var(--max-width-wide);
-  list-style: none;
-  font-size: 13px;
-  line-height: 1.5;
-  color: var(--color-fg-muted);
-}
-.mkt-trustbar li {
-  display: inline-flex;
-  align-items: center;
-}
-.mkt-trustbar li:not(:last-child)::after {
-  content: "·";
-  margin: 0 var(--space-3);
-  color: var(--color-border);
-}
-
-/* ---- Page head (content pages) ----------------------------------------- */
+/* ---- Page head (content pages) ---------------------------------- */
 
 .mkt-pagehead {
-  padding: var(--space-6) 0 var(--space-5);
+  padding: var(--space-2xl) 0 var(--space-xl);
 }
 .mkt-pagehead h1 {
-  margin: 0 0 var(--space-3);
-  font-size: clamp(1.6rem, 5.5vw, 2.4rem);
-  line-height: 1.15;
-  letter-spacing: -0.01em;
+  font-size: clamp(var(--text-3xl), 5.5vw, var(--text-4xl));
+  letter-spacing: 0.06em;
+  line-height: 1.12;
+  margin: 0 0 var(--space-md);
 }
 .mkt-pagehead .mkt-updated {
-  margin: 0 0 var(--space-4);
-  font-size: 13px;
-  color: var(--color-fg-muted);
+  margin: 0 0 var(--space-md);
+  font-size: var(--text-sm);
+  color: var(--ink-faint);
 }
 
-/* ---- Prose / sections ---------------------------------------------------- */
+/* ---- Sections / prose ----------------------------------------------- */
 
 .mkt-section {
-  padding: var(--space-6) 0;
-  border-top: 1px solid var(--color-border);
+  padding-block: clamp(var(--space-2xl), 12vw, var(--space-4xl));
+  border-top: 1px solid var(--line);
 }
 .mkt-section:first-child,
 .mkt-pagehead + .mkt-section,
 .mkt-jump + .mkt-section {
   border-top: none;
 }
+.mkt-section--sunk {
+  background: var(--paper-sunk);
+  border-top: none;
+}
+
+.mkt-eyebrow {
+  display: block;
+  font-family: var(--font-display), sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.24em;
+  font-size: var(--text-xs);
+  color: var(--ink-faint);
+  margin: 0 0 var(--space-sm);
+}
 
 .mkt-prose h2 {
-  margin: 0 0 var(--space-3);
-  font-size: clamp(1.3rem, 4.5vw, 1.6rem);
-  line-height: 1.25;
+  font-size: clamp(var(--text-xl), 4.5vw, var(--text-2xl));
+  letter-spacing: 0.1em;
+  line-height: 1.2;
+  margin: 0 0 var(--space-md);
+  padding-bottom: var(--space-sm);
+  border-bottom: 1px solid var(--line);
 }
 .mkt-prose h3 {
-  margin: var(--space-5) 0 var(--space-2);
-  font-size: 1.05rem;
-  line-height: 1.35;
+  font-size: var(--text-xl);
+  letter-spacing: 0.08em;
+  line-height: 1.3;
+  margin: var(--space-xl) 0 var(--space-sm);
 }
 .mkt-prose p {
-  margin: 0 0 var(--space-4);
-  line-height: 1.7;
+  margin: 0 0 var(--space-md);
+  line-height: var(--leading-body);
+  max-width: var(--measure);
 }
 .mkt-prose ul,
 .mkt-prose ol {
-  margin: 0 0 var(--space-4);
+  margin: 0 0 var(--space-md);
   padding-left: 1.3em;
-  line-height: 1.7;
+  line-height: var(--leading-body);
+  max-width: var(--measure);
 }
 .mkt-prose li {
-  margin: var(--space-1) 0;
+  margin: var(--space-3xs) 0;
 }
 .mkt-prose li::marker {
-  color: var(--color-fg-muted);
+  color: var(--ink-faint);
 }
-/* Prose links, but never the CTA buttons that also render as <a>. */
+.mkt-prose strong {
+  font-weight: 600;
+}
 .mkt-prose a:not(.mkt-btn) {
-  color: var(--color-primary);
+  color: var(--ink);
   text-decoration: underline;
-  text-underline-offset: 2px;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.18em;
+  text-decoration-color: var(--ink-faint);
+  transition: text-decoration-color 150ms ease, text-decoration-thickness 150ms ease;
+}
+.mkt-prose a:not(.mkt-btn):hover {
+  text-decoration-thickness: 2px;
+  text-decoration-color: var(--ink);
 }
 .mkt-prose > :first-child {
   margin-top: 0;
@@ -424,96 +548,195 @@ body {
 }
 
 .mkt-lead {
-  font-size: clamp(1.05rem, 3vw, 1.2rem);
-  line-height: 1.6;
-  color: var(--color-fg-muted);
+  font-size: clamp(var(--text-lg), 3vw, var(--text-lg));
+  line-height: 1.5;
+  color: var(--ink);
+  max-width: var(--measure);
 }
 
-/* ---- Pricing block (home only) ---------------------------------------- */
+.mkt-section-intro {
+  color: var(--ink-soft);
+  max-width: var(--measure);
+  margin-bottom: var(--space-lg);
+}
+
+/* ---- Pricing (home) --------------------------------------------- */
 
 .mkt-price {
-  margin: 0 0 var(--space-4);
-  font-size: clamp(1.6rem, 6vw, 2.25rem);
-  font-weight: 800;
-  line-height: 1.1;
+  font-family: var(--font-display), sans-serif;
+  font-size: clamp(var(--text-4xl), 10vw, var(--text-5xl));
+  letter-spacing: 0.02em;
+  line-height: 1;
+  margin: 0 0 var(--space-md);
+  color: var(--ink);
 }
 .mkt-price span {
-  font-size: 1rem;
-  font-weight: 600;
-  color: var(--color-fg-muted);
+  display: block;
+  font-family: var(--font-body), sans-serif;
+  font-size: var(--text-base);
+  letter-spacing: 0;
+  color: var(--ink-soft);
+  margin-top: var(--space-2xs);
 }
 
-/* ---- Jump index (in-page table of contents on the consolidated pages) - */
+/* ---- Accordion ------------------------------------------------------ */
+
+.mkt-acc {
+  border-top: 1px solid var(--line);
+  max-width: var(--measure);
+}
+.mkt-acc__item {
+  border-bottom: 1px solid var(--line);
+}
+.mkt-acc__summary {
+  list-style: none;
+  cursor: pointer;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-md);
+  padding-block: var(--space-md);
+  min-height: 44px;
+}
+.mkt-acc__summary::-webkit-details-marker {
+  display: none;
+}
+/* The title is an <h3> for document outline / SEO, but styled as body text —
+   accordion titles are questions, not display headings. The two-class selector
+   beats the global .mkt-root h3 rule regardless of stylesheet order. */
+.mkt-acc .mkt-acc__title {
+  font-family: var(--font-body), sans-serif;
+  text-transform: none;
+  letter-spacing: normal;
+  font-size: var(--text-lg);
+  font-weight: 500;
+  line-height: 1.35;
+  color: var(--ink);
+  margin: 0;
+}
+.mkt-acc__summary:hover .mkt-acc__title {
+  color: var(--ink-soft);
+}
+.mkt-acc__icon {
+  flex: none;
+  position: relative;
+  width: 18px;
+  height: 18px;
+  margin-top: 0.35em;
+}
+.mkt-acc__icon::before,
+.mkt-acc__icon::after {
+  content: "";
+  position: absolute;
+  background: var(--ink);
+  transition: transform 200ms ease, opacity 200ms ease;
+}
+.mkt-acc__icon::before {
+  top: 8px;
+  left: 0;
+  width: 18px;
+  height: 1.5px;
+}
+.mkt-acc__icon::after {
+  top: 0;
+  left: 8px;
+  width: 1.5px;
+  height: 18px;
+}
+.mkt-acc__item[open] .mkt-acc__icon::after {
+  transform: scaleY(0);
+  opacity: 0;
+}
+.mkt-acc__panel {
+  overflow: hidden;
+}
+.mkt-acc__panel-inner {
+  padding-bottom: var(--space-lg);
+}
+.mkt-acc__panel-inner > :first-child {
+  margin-top: 0;
+}
+.mkt-acc__panel-inner > :last-child {
+  margin-bottom: 0;
+}
+.mkt-acc__panel-inner h3:first-child {
+  margin-top: 0;
+}
+
+/* ---- CTA row helper on home sections --------------------------- */
+
+.mkt-anchor-cta {
+  margin-top: var(--space-lg);
+}
+
+/* ---- Jump index (content pages) ------------------------------------- */
 
 .mkt-jump {
-  margin: var(--space-5) 0;
-  padding: var(--space-4) var(--space-4) var(--space-2);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius);
-  background: var(--color-bg-subtle);
+  margin: var(--space-xl) 0;
+  max-width: var(--measure);
 }
 .mkt-jump__label {
-  margin: 0 0 var(--space-2);
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
+  font-family: var(--font-display), sans-serif;
   text-transform: uppercase;
-  color: var(--color-fg-muted);
+  letter-spacing: 0.22em;
+  font-size: var(--text-xs);
+  color: var(--ink-faint);
+  margin: 0 0 var(--space-2xs);
 }
 .mkt-jump ul {
   margin: 0;
   padding: 0;
   list-style: none;
+  border-top: 1px solid var(--line);
 }
 .mkt-jump li {
   margin: 0;
-  border-top: 1px solid var(--color-border);
-}
-.mkt-jump li:first-child {
-  border-top: none;
+  border-bottom: 1px solid var(--line);
 }
 .mkt-jump a {
   display: block;
-  padding: var(--space-3) 0;
-  color: var(--color-primary);
+  padding: var(--space-sm) 0;
+  color: var(--ink);
   text-decoration: none;
   line-height: 1.4;
 }
 .mkt-jump a:hover {
-  text-decoration: underline;
+  color: var(--ink-soft);
 }
 
-/* ---- Comparison table (troubleshooting: descaling vs sanitizing) ------ */
+/* ---- Comparison table (troubleshooting) --------------------------- */
 
 .mkt-table-wrap {
-  margin: var(--space-4) 0;
+  margin: var(--space-md) 0;
   overflow-x: auto;
+  max-width: var(--measure);
 }
 .mkt-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 15px;
+  font-size: var(--text-sm);
 }
 .mkt-table th,
 .mkt-table td {
-  padding: var(--space-3);
+  padding: var(--space-sm);
   text-align: left;
   vertical-align: top;
   line-height: 1.55;
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--line);
 }
 .mkt-table thead th {
-  background: var(--color-bg-subtle);
-  font-weight: 700;
+  font-family: var(--font-display), sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-size: var(--text-xs);
+  font-weight: 400;
+  color: var(--ink-faint);
 }
 .mkt-table th[scope="row"] {
-  background: var(--color-bg-subtle);
-  font-weight: 700;
+  font-weight: 600;
   white-space: nowrap;
 }
 
-/* Below 40rem the table stacks: one card per row, each cell prefixed with
-   its column name. No sideways scrolling on a phone. */
 @media (max-width: 40rem) {
   .mkt-table-wrap {
     overflow-x: visible;
@@ -529,157 +752,201 @@ body {
     display: none;
   }
   .mkt-table tr {
-    margin-bottom: var(--space-3);
-    border: 1px solid var(--color-border);
+    margin-bottom: var(--space-sm);
+    border: 1px solid var(--line);
     border-radius: var(--radius);
-    padding: var(--space-3);
+    padding: var(--space-sm);
   }
   .mkt-table th[scope="row"] {
     border: none;
-    padding: 0 0 var(--space-2);
-    font-size: 1rem;
+    padding: 0 0 var(--space-2xs);
+    font-size: var(--text-base);
     white-space: normal;
-    background: none;
   }
   .mkt-table td {
     border: none;
-    padding: var(--space-1) 0;
+    padding: var(--space-3xs) 0;
   }
   .mkt-table td::before {
     content: attr(data-col) ": ";
-    font-weight: 700;
-    color: var(--color-fg-muted);
+    font-weight: 600;
+    color: var(--ink-faint);
   }
 }
 
-/* ---- FAQ ------------------------------------------------------------- */
+/* ---- FAQ (home / service, non-accordion render) ---------------- */
 
 .mkt-faq h3 {
-  margin: var(--space-5) 0 var(--space-2);
-  font-size: 1.05rem;
+  margin: var(--space-xl) 0 var(--space-2xs);
+  font-size: var(--text-lg);
+  letter-spacing: 0.04em;
 }
 .mkt-faq p {
-  margin: 0 0 var(--space-4);
+  margin: 0 0 var(--space-md);
 }
 
-/* ---- Footer ------------------------------------------------------------- */
+/* ---- Footer ------------------------------------------------------- */
 
 .mkt-footer {
-  border-top: 1px solid var(--color-border);
-  background: var(--color-bg-subtle);
+  border-top: 1px solid var(--line);
+  background: var(--paper-sunk);
 }
 .mkt-footer__inner {
-  max-width: var(--max-width-wide);
-  margin: 0 auto;
-  padding: var(--space-6) var(--space-4);
+  max-width: var(--width-wide);
+  margin-inline: auto;
+  padding: var(--space-2xl) var(--space-md);
   display: flex;
   flex-direction: column;
-  gap: var(--space-5);
-  font-size: 14px;
-  color: var(--color-fg-muted);
+  gap: var(--space-lg);
+  font-size: var(--text-sm);
+  color: var(--ink-soft);
+}
+@media (min-width: 48rem) {
+  .mkt-footer__inner {
+    padding-inline: var(--space-xl);
+    display: grid;
+    grid-template-columns: 1.3fr 1fr;
+    column-gap: var(--space-2xl);
+    row-gap: var(--space-lg);
+  }
+  .mkt-footer__nap,
+  .mkt-footer__social,
+  .mkt-footer__meta,
+  .mkt-footer__cta {
+    grid-column: 1;
+  }
+  .mkt-footer__links {
+    grid-column: 2;
+    grid-row: 1 / span 4;
+  }
+  .mkt-footer__legal {
+    grid-column: 1 / -1;
+  }
 }
 .mkt-footer a:not(.mkt-btn) {
-  color: var(--color-fg);
+  color: var(--ink);
   text-decoration: none;
 }
 .mkt-footer a:not(.mkt-btn):hover {
   text-decoration: underline;
+  text-underline-offset: 0.18em;
 }
 .mkt-footer__nap {
   margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3xs);
   line-height: 1.6;
+  font-variant-numeric: tabular-nums;
 }
 .mkt-footer__nap strong {
-  color: var(--color-fg);
-  font-weight: 700;
+  font-family: var(--font-display), sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-size: var(--text-sm);
+  font-weight: 400;
+  color: var(--ink);
+  margin-bottom: var(--space-2xs);
+}
+.mkt-footer__loc {
+  color: var(--ink-faint);
 }
 .mkt-footer__links {
   display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-3) var(--space-4);
+  flex-direction: column;
+  gap: var(--space-2xs);
   margin: 0;
   padding: 0;
   list-style: none;
 }
 .mkt-footer__links a {
-  font-weight: 600;
+  font-weight: 500;
 }
 .mkt-footer__meta {
   margin: 0;
   line-height: 1.7;
 }
 .mkt-footer .mkt-btn {
-  align-self: flex-start;
+  align-self: start;
   justify-self: start;
 }
 .mkt-footer__legal {
   margin: 0;
-  font-size: 13px;
+  font-size: var(--text-xs);
+  color: var(--ink-faint);
+  font-variant-numeric: tabular-nums;
 }
 
-@media (min-width: 48rem) {
-  .mkt-footer__inner {
-    display: grid;
-    grid-template-columns: 1.4fr 1fr;
-    column-gap: var(--space-6);
-  }
-  .mkt-footer__nap {
-    grid-column: 1;
-  }
-  .mkt-footer__links {
-    grid-column: 2;
-    grid-row: 1 / span 2;
-    flex-direction: column;
-    gap: var(--space-2);
-  }
-  .mkt-footer__social {
-    grid-column: 1;
-  }
-  .mkt-footer__meta {
-    grid-column: 1;
-  }
-  .mkt-footer__cta {
-    grid-column: 1;
-  }
-  .mkt-footer__legal {
-    grid-column: 1 / -1;
-  }
-}
+/* ---- Social icon row -------------------------------------------- */
 
-/* ---- Social icon row (home About section + footer) -------------------- */
-
-.mkt-social,
-.mkt-prose .mkt-social,
-.mkt-footer .mkt-social {
+.mkt-social {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-1);
-  /* pull the row left so the first glyph aligns with the text column edge */
-  margin: var(--space-2) 0 0 -10px;
+  gap: var(--space-3xs);
+  margin: var(--space-sm) 0 0 -10px;
   padding: 0;
   list-style: none;
 }
-.mkt-social li,
-.mkt-prose .mkt-social li {
+.mkt-social li {
   margin: 0;
 }
-.mkt-social a,
-.mkt-prose .mkt-social a,
-.mkt-footer .mkt-social a {
+.mkt-social a {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   width: 44px;
   height: 44px;
-  color: var(--color-fg-muted);
+  color: var(--ink-soft);
   text-decoration: none;
+  transition: color 150ms ease;
 }
-.mkt-social a:hover,
-.mkt-prose .mkt-social a:hover,
-.mkt-footer .mkt-social a:hover {
-  color: var(--color-primary);
-  text-decoration: none;
+.mkt-social a:hover {
+  color: var(--ink);
 }
 .mkt-social svg {
   display: block;
+}
+
+/* ---- Mobile bottom CTA bar ------------------------------------- */
+
+.mkt-botbar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 60;
+  display: flex;
+  gap: var(--space-2xs);
+  padding: var(--space-2xs);
+  padding-bottom: max(var(--space-2xs), env(safe-area-inset-bottom));
+  background: var(--paper-raised);
+  border-top: 1px solid var(--line);
+}
+.mkt-botbar .mkt-btn {
+  min-height: 46px;
+}
+.mkt-botbar .mkt-btn--primary {
+  flex: 1;
+}
+.mkt-botbar .mkt-btn--secondary {
+  flex: 0 0 52px;
+  padding: 0;
+}
+
+@media (min-width: 48rem) {
+  .mkt-botbar {
+    display: none;
+  }
+}
+@media (max-width: 47.999rem) {
+  :root {
+    --botbar-h: 62px;
+  }
+  /* The fixed bottom bar is the Book action on a phone. Suppress the duplicate
+     primary Book in the hero and footer — the mid-page CTAs (pricing,
+     guarantee) keep theirs, since those sit at a decision point. */
+  .mkt-hero .mkt-cta-row .mkt-btn--primary,
+  .mkt-footer__cta {
+    display: none;
+  }
 }

@@ -48,7 +48,7 @@ export function SiteHeader() {
     <header className="mkt-header" ref={navRef}>
       <div className="mkt-header__bar">
         <Link href="/" className="mkt-header__logo" aria-label="Uinta Ice Co. — home">
-          <Image src="/images/logo.png" alt="" width={28} height={28} />
+          <Image src="/images/logo2.png" alt="" width={26} height={26} />
           <span>Uinta Ice Co.</span>
         </Link>
 
