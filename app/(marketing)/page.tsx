@@ -324,7 +324,6 @@ export default async function HomePage() {
             We’re licensed and insured. And if you’re not satisfied with the
             cleaning, we come back and do it again at no charge.
           </p>
-          <p>We don’t have testimonials to show you yet.</p>
         </section>
 
         {/* SECTION 9 — WHO THIS IS FOR */}
