@@ -6,6 +6,16 @@
    in min-width media queries. This CSS only loads on the (marketing) route
    group, so the html-level rules here don't touch /book, /contact, etc. */
 
+/* globals.css sets `overflow-x: hidden` on <html> and <body> to stop sideways
+   scroll. On <body> that creates a scroll container, which breaks the header's
+   `position: sticky`. `overflow-x: clip` stops the sideways scroll the same way
+   without creating a scroll container. This file only loads on the (marketing)
+   route group, so /book, /contact, and the token pages keep the original rule. */
+html,
+body {
+  overflow-x: clip;
+}
+
 @media (prefers-reduced-motion: no-preference) {
   html {
     scroll-behavior: smooth;
@@ -14,6 +24,7 @@
 
 /* Anchor targets clear the sticky header when jumped to. */
 .mkt-section[id],
+.mkt-jump[id],
 .mkt-prose h2[id],
 .mkt-prose h3[id] {
   scroll-margin-top: calc(var(--header-h) + 12px);
@@ -70,6 +81,13 @@
   color: var(--color-fg);
   text-decoration: none;
   white-space: nowrap;
+}
+/* Icon-only logo on phones so the Book button + click-to-call + menu button
+   always fit the bar. The link keeps its aria-label for screen readers. */
+@media (max-width: 25rem) {
+  .mkt-header__logo span {
+    display: none;
+  }
 }
 .mkt-header__logo img {
   display: block;
@@ -361,7 +379,8 @@
   border-top: 1px solid var(--color-border);
 }
 .mkt-section:first-child,
-.mkt-pagehead + .mkt-section {
+.mkt-pagehead + .mkt-section,
+.mkt-jump + .mkt-section {
   border-top: none;
 }
 
@@ -424,32 +443,113 @@
   color: var(--color-fg-muted);
 }
 
-/* ---- Jump index (content pages, Phase 3+) ---------------------------- */
+/* ---- Jump index (in-page table of contents on the consolidated pages) - */
 
 .mkt-jump {
   margin: var(--space-5) 0;
-  padding: var(--space-4);
+  padding: var(--space-4) var(--space-4) var(--space-2);
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
   background: var(--color-bg-subtle);
 }
-.mkt-jump h2 {
+.mkt-jump__label {
   margin: 0 0 var(--space-2);
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--color-fg-muted);
 }
-.mkt-jump ol {
+.mkt-jump ul {
   margin: 0;
-  padding-left: 1.2em;
+  padding: 0;
+  list-style: none;
 }
 .mkt-jump li {
-  margin: var(--space-2) 0;
+  margin: 0;
+  border-top: 1px solid var(--color-border);
+}
+.mkt-jump li:first-child {
+  border-top: none;
 }
 .mkt-jump a {
+  display: block;
+  padding: var(--space-3) 0;
   color: var(--color-primary);
+  text-decoration: none;
+  line-height: 1.4;
+}
+.mkt-jump a:hover {
+  text-decoration: underline;
+}
+
+/* ---- Comparison table (troubleshooting: descaling vs sanitizing) ------ */
+
+.mkt-table-wrap {
+  margin: var(--space-4) 0;
+  overflow-x: auto;
+}
+.mkt-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 15px;
+}
+.mkt-table th,
+.mkt-table td {
+  padding: var(--space-3);
+  text-align: left;
+  vertical-align: top;
+  line-height: 1.55;
+  border: 1px solid var(--color-border);
+}
+.mkt-table thead th {
+  background: var(--color-bg-subtle);
+  font-weight: 700;
+}
+.mkt-table th[scope="row"] {
+  background: var(--color-bg-subtle);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* Below 40rem the table stacks: one card per row, each cell prefixed with
+   its column name. No sideways scrolling on a phone. */
+@media (max-width: 40rem) {
+  .mkt-table-wrap {
+    overflow-x: visible;
+  }
+  .mkt-table,
+  .mkt-table tbody,
+  .mkt-table tr,
+  .mkt-table th,
+  .mkt-table td {
+    display: block;
+  }
+  .mkt-table thead {
+    display: none;
+  }
+  .mkt-table tr {
+    margin-bottom: var(--space-3);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    padding: var(--space-3);
+  }
+  .mkt-table th[scope="row"] {
+    border: none;
+    padding: 0 0 var(--space-2);
+    font-size: 1rem;
+    white-space: normal;
+    background: none;
+  }
+  .mkt-table td {
+    border: none;
+    padding: var(--space-1) 0;
+  }
+  .mkt-table td::before {
+    content: attr(data-col) ": ";
+    font-weight: 700;
+    color: var(--color-fg-muted);
+  }
 }
 
 /* ---- FAQ ------------------------------------------------------------- */
