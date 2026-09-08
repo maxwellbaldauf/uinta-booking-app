@@ -1,13 +1,16 @@
 import Link from "next/link";
-import type { Metadata } from "next";
 import { NAP, SERVICE_CITIES } from "@/lib/site";
+import { pageMetadata } from "@/lib/seo";
+import { AREAS_FAQ } from "@/lib/faq";
+import { breadcrumbSchema, faqPageSchema } from "@/lib/schema";
+import { JsonLd } from "@/components/marketing/JsonLd";
 
-export const metadata: Metadata = {
+export const metadata = pageMetadata({
   title: "Ice Machine Cleaning Service Areas | Utah County & SLC",
   description:
     "In-home ice machine cleaning from Alpine and Highland to Holladay, Park City, Heber, and Salt Lake City. Based in Lehi, serving a 75-mile radius.",
-  alternates: { canonical: "/service-areas" },
-};
+  path: "/service-areas",
+});
 
 const SECTIONS = [
   { id: "alpine-highland", label: "Alpine and Highland" },
@@ -17,9 +20,18 @@ const SECTIONS = [
   { id: "full-list", label: "Every city we serve" },
 ];
 
+const schema = [
+  breadcrumbSchema([
+    { name: "Home", path: "/" },
+    { name: "Service Areas", path: "/service-areas" },
+  ]),
+  faqPageSchema(AREAS_FAQ),
+];
+
 export default function ServiceAreasPage() {
   return (
     <div className="mkt-wrap mkt-prose">
+      <JsonLd graph={schema} />
       <header className="mkt-pagehead">
         <h1>Ice Machine Cleaning Near You in Utah</h1>
         <p className="mkt-lead">

@@ -1,13 +1,24 @@
 import Link from "next/link";
-import type { Metadata } from "next";
 import { NAP } from "@/lib/site";
+import { pageMetadata } from "@/lib/seo";
+import { TROUBLESHOOTING_FAQ } from "@/lib/faq";
+import { breadcrumbSchema, faqPageSchema } from "@/lib/schema";
+import { JsonLd } from "@/components/marketing/JsonLd";
 
-export const metadata: Metadata = {
+export const metadata = pageMetadata({
   title: "Ice Machine Not Making Ice? Common Causes and Fixes",
   description:
     "Black slime, bad-tasting ice, low production, a clean light that won't reset. What each symptom means inside a residential ice machine, and how to fix it.",
-  alternates: { canonical: "/troubleshooting" },
-};
+  path: "/troubleshooting",
+});
+
+const schema = [
+  breadcrumbSchema([
+    { name: "Home", path: "/" },
+    { name: "Troubleshooting", path: "/troubleshooting" },
+  ]),
+  faqPageSchema(TROUBLESHOOTING_FAQ),
+];
 
 // Editorial date, shown under the H1. Bump this by hand whenever a section
 // changes — the copy calls the recency signal load-bearing for search and AI
@@ -61,6 +72,7 @@ const COMPARISON = [
 export default function TroubleshootingPage() {
   return (
     <div className="mkt-wrap mkt-prose">
+      <JsonLd graph={schema} />
       <header className="mkt-pagehead">
         <h1>Ice Machine Symptoms and What They Mean</h1>
         <p className="mkt-updated">Last updated: {LAST_UPDATED}</p>

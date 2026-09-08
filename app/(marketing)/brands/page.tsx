@@ -1,13 +1,16 @@
 import Link from "next/link";
-import type { Metadata } from "next";
 import { NAP } from "@/lib/site";
+import { pageMetadata } from "@/lib/seo";
+import { BRANDS_FAQ } from "@/lib/faq";
+import { breadcrumbSchema, faqPageSchema, serviceSchema } from "@/lib/schema";
+import { JsonLd } from "@/components/marketing/JsonLd";
 
-export const metadata: Metadata = {
+export const metadata = pageMetadata({
   title: "Ice Machine Cleaning by Brand | Scotsman, Sub-Zero, U-Line",
   description:
     "We service Scotsman, Sub-Zero, U-Line, KitchenAid and GE undercounter ice machines, plus most other makes. Brand-specific quirks and clean light behavior.",
-  alternates: { canonical: "/brands" },
-};
+  path: "/brands",
+});
 
 const SECTIONS = [
   { id: "scotsman", label: "Scotsman" },
@@ -18,9 +21,24 @@ const SECTIONS = [
   { id: "other-brands", label: "Every other brand" },
 ];
 
+const schema = [
+  serviceSchema({
+    name: "Ice machine cleaning by brand",
+    description:
+      "Brand-specific residential ice machine cleaning for Scotsman, Sub-Zero, U-Line, KitchenAid, GE Profile and GE Monogram, plus most other residential makes.",
+    path: "/brands",
+  }),
+  breadcrumbSchema([
+    { name: "Home", path: "/" },
+    { name: "Brands", path: "/brands" },
+  ]),
+  faqPageSchema(BRANDS_FAQ),
+];
+
 export default function BrandsPage() {
   return (
     <div className="mkt-wrap mkt-prose">
+      <JsonLd graph={schema} />
       <header className="mkt-pagehead">
         <h1>The Brands We Service Most Often</h1>
         <p className="mkt-lead">

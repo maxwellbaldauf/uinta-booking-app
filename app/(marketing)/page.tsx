@@ -1,21 +1,28 @@
 import Image from "next/image";
 import Link from "next/link";
-import type { Metadata } from "next";
 import { getSettings, formatUsdWhole } from "@/lib/settings";
 import { NAP } from "@/lib/site";
+import { pageMetadata } from "@/lib/seo";
+import { HOME_FAQ } from "@/lib/faq";
+import {
+  breadcrumbSchema,
+  faqPageSchema,
+  localBusinessSchema,
+} from "@/lib/schema";
 import { SocialLinks } from "@/components/marketing/SocialLinks";
+import { JsonLd } from "@/components/marketing/JsonLd";
 
 // The price is read from settings.base_price_cents on every request so the site
 // and the amount actually charged can't drift. Everything else on this page is
 // static copy from content/home.md.
 export const dynamic = "force-dynamic";
 
-export const metadata: Metadata = {
+export const metadata = pageMetadata({
   title: "Ice Machine Cleaning in Utah Homes | Uinta Ice Co.",
   description:
     "We descale, deep clean, and sanitize residential ice machines in your home. Scotsman, Sub-Zero, U-Line and more, across Utah County and Salt Lake County.",
-  alternates: { canonical: "/" },
-};
+  path: "/",
+});
 
 const TRUST_BAR = [
   "Licensed and insured",
@@ -25,69 +32,30 @@ const TRUST_BAR = [
   "Utah County and Salt Lake County",
 ];
 
-const FAQ: { q: string; a: React.ReactNode }[] = [
-  {
-    q: "Do you have to pull the machine out of the cabinet?",
-    a: "Usually not. Most of the work happens through the front of the unit. If yours needs to come out, we’ll tell you before we start.",
-  },
-  {
-    q: "How long does it take?",
-    a: "About an hour, depending on the machine and how long it’s been.",
-  },
-  {
-    q: "Do I need to be home?",
-    a: "Someone needs to let us in and be there at the end so we can walk you through what we found. You don’t need to stand over us.",
-  },
-  {
-    q: "My machine is still under warranty. Does this affect it?",
-    a: "No. Professional descaling and sanitizing is maintenance the manufacturer recommends. It’s the absence of it that causes warranty problems.",
-  },
-  {
-    q: "What if it still isn’t making ice after you clean it?",
-    a: "Then it’s a mechanical or electrical fault, not buildup, and we’ll tell you that plainly. We don’t do appliance repair, so we have no reason to sell you one.",
-  },
-  {
-    q: "Do you repair ice machines too?",
-    a: "No. We clean them. That’s the entire business.",
-  },
-  {
-    q: "How do I know if mine has ever been cleaned?",
-    a: "We’ll know within a few minutes of opening it, and we’ll show you.",
-  },
-  {
-    q: "What do you use? Is it safe around food?",
-    a: "A universal nickel-safe descaler for the mineral buildup, and a food-contact sanitizer for every surface the ice touches. Nickel-safe matters more than most homeowners realize, because the wrong descaler permanently damages an evaporator plate.",
-  },
-  {
-    q: "How often does it actually need this?",
-    a: "Every six months for most Utah homes. Heavy use or unusually hard water can mean sooner, and we’ll tell you which category yours is in after we’ve seen inside it.",
-  },
-  {
-    q: "Do you come out to Park City and Heber?",
-    a: (
-      <>
-        Yes. We’re based in Lehi and serve a 75-mile radius.{" "}
-        <Link href="/service-areas">See whether you’re in our service area</Link>.
-      </>
-    ),
-  },
-  {
-    q: "What if I’m not happy with the job?",
-    a: "We come back and clean it again at no charge.",
-  },
-];
-
 export default async function HomePage() {
   let price: string | null = null;
+  let geo: { lat: number; lng: number } | undefined;
   try {
     const settings = await getSettings();
     price = formatUsdWhole(settings.base_price_cents);
+    geo = {
+      lat: settings.service_center_lat,
+      lng: settings.service_center_lng,
+    };
   } catch {
     price = null;
   }
 
+  const schema = [
+    localBusinessSchema(geo),
+    breadcrumbSchema([{ name: "Home", path: "/" }]),
+    faqPageSchema(HOME_FAQ),
+  ];
+
   return (
     <>
+      <JsonLd graph={schema} />
+
       {/* SECTION 1 — HERO */}
       <section className="mkt-hero">
         <div className="mkt-wrap-wide">
@@ -317,6 +285,12 @@ export default async function HomePage() {
             We work clean, we take our mess with us, and we’re out of your
             kitchen.
           </p>
+          <p>
+            <Link href="/ice-machine-cleaning">
+              The full breakdown of what a cleaning includes
+            </Link>
+            .
+          </p>
         </section>
 
         {/* SECTION 8 — SOCIAL PROOF (Section 7 before/after is not rendered
@@ -366,10 +340,18 @@ export default async function HomePage() {
         {/* SECTION 10 — OBJECTION HANDLING FAQ */}
         <section id="faq" className="mkt-section mkt-faq">
           <h2>Questions People Ask Before They Book</h2>
-          {FAQ.map(({ q, a }) => (
+          {HOME_FAQ.map(({ q, a, link }) => (
             <div key={q}>
               <h3>{q}</h3>
-              <p>{a}</p>
+              <p>
+                {a}
+                {link && (
+                  <>
+                    {" "}
+                    <Link href={link.href}>{link.text}</Link>.
+                  </>
+                )}
+              </p>
             </div>
           ))}
         </section>

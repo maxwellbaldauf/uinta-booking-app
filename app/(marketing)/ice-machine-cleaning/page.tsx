@@ -1,46 +1,35 @@
 import Link from "next/link";
-import type { Metadata } from "next";
 import { NAP } from "@/lib/site";
+import { pageMetadata } from "@/lib/seo";
+import { SERVICE_FAQ } from "@/lib/faq";
+import { breadcrumbSchema, faqPageSchema, serviceSchema } from "@/lib/schema";
+import { JsonLd } from "@/components/marketing/JsonLd";
 
-export const metadata: Metadata = {
+export const metadata = pageMetadata({
   title: "Residential Ice Machine Cleaning Service | Uinta Ice Co.",
   description:
     "A full teardown, nickel-safe descale, reservoir and bin deep clean, and food-safe sanitize, done in your kitchen in about an hour. All supplies included.",
-  alternates: { canonical: "/ice-machine-cleaning" },
-};
+  path: "/ice-machine-cleaning",
+});
 
-const FAQ = [
-  {
-    q: "Do you have to pull the machine out of the cabinet?",
-    a: "Usually not. Most of the work is done through the front. If yours needs to come out, we’ll say so before we start.",
-  },
-  {
-    q: "Can you clean a machine that hasn’t been touched in years?",
-    a: "Yes. Those are the ones where the difference is most obvious. Heavily scaled machines occasionally need a second descale pass, which we do on the same visit.",
-  },
-  {
-    q: "Will cleaning fix my ice production?",
-    a: "If scale is the cause, yes, and scale is the most common cause we see in Utah. If the machine has a mechanical fault, cleaning won’t fix it, and we’ll tell you that on the same visit.",
-  },
-  {
-    q: "Is the sanitizer safe around food?",
-    a: "It’s a food-contact sanitizer, applied to surfaces the ice touches and used as directed for that purpose.",
-  },
-  {
-    q: "Do you service commercial machines?",
-    a: (
-      <>
-        This page covers residential service. For anything commercial, call or
-        text <a href={NAP.phoneHref}>{NAP.phoneDisplay}</a> and we’ll talk it
-        through directly.
-      </>
-    ),
-  },
+const schema = [
+  serviceSchema({
+    name: "Residential ice machine cleaning",
+    description:
+      "A full teardown, nickel-safe descale, reservoir and bin deep clean, food-contact sanitize, and test cycle, done in the customer's home in about an hour. All supplies included.",
+    path: "/ice-machine-cleaning",
+  }),
+  breadcrumbSchema([
+    { name: "Home", path: "/" },
+    { name: "Ice Machine Cleaning", path: "/ice-machine-cleaning" },
+  ]),
+  faqPageSchema(SERVICE_FAQ),
 ];
 
 export default function IceMachineCleaningPage() {
   return (
     <div className="mkt-wrap mkt-prose">
+      <JsonLd graph={schema} />
       <header className="mkt-pagehead">
         <h1>Residential Ice Machine Cleaning in Utah, Start to Finish</h1>
         <p className="mkt-lead">
@@ -288,7 +277,7 @@ export default function IceMachineCleaningPage() {
       {/* SECTION 8 */}
       <section id="faq" className="mkt-section mkt-faq">
         <h2>Common Questions About the Service</h2>
-        {FAQ.map(({ q, a }) => (
+        {SERVICE_FAQ.map(({ q, a }) => (
           <div key={q}>
             <h3>{q}</h3>
             <p>{a}</p>

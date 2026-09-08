@@ -1,10 +1,5 @@
 import Link from "next/link";
-import {
-  BRANDS_SERVICED,
-  FOOTER_LINKS,
-  NAP,
-  SINCE_LINE,
-} from "@/lib/site";
+import { FOOTER_LINKS, NAP, SINCE_LINE } from "@/lib/site";
 import { SocialLinks } from "./SocialLinks";
 
 // Persistent footer for the marketing pages. The NAP line renders the exact
@@ -36,11 +31,7 @@ export function SiteFooter() {
           ))}
         </ul>
 
-        <p className="mkt-footer__meta">
-          Licensed and insured. {SINCE_LINE}.
-          <br />
-          Brands serviced: {BRANDS_SERVICED.join(", ")}.
-        </p>
+        <p className="mkt-footer__meta">Licensed and insured. {SINCE_LINE}.</p>
 
         <Link href="/book" className="mkt-btn mkt-btn--primary mkt-footer__cta">
           Book a cleaning
