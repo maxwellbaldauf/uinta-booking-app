@@ -27,6 +27,13 @@
 
   --radius: 8px;
   --max-width: 30rem;
+  /* Wider columns for the marketing pages only. The booking / portal flows stay
+     at --max-width (a form is easier to fill in a narrow column); long-form
+     copy needs more line length than that on a laptop. Same tokens, type, and
+     color either way. */
+  --max-width-prose: 46rem;
+  --max-width-wide: 68rem;
+  --header-h: 60px;
 }
 
 @media (prefers-color-scheme: dark) {

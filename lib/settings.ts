@@ -51,3 +51,10 @@ export async function getSettings(): Promise<Settings> {
 export function formatUsd(cents: number): string {
   return `$${(cents / 100).toFixed(2)}`;
 }
+
+// Whole-dollar form: "$150" when the price is an even number of dollars,
+// "$149.99" otherwise. The marketing copy reads "<price> per visit", where a
+// trailing ".00" would look wrong.
+export function formatUsdWhole(cents: number): string {
+  return cents % 100 === 0 ? `$${Math.round(cents / 100)}` : formatUsd(cents);
+}

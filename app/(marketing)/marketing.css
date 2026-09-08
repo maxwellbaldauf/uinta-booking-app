@@ -1,0 +1,526 @@
+/* Marketing pages (home + the four content pages). Plain CSS against the design
+   tokens in app/globals.css — no framework, same visual language as the booking
+   flow, just a wider column for long-form copy.
+
+   Mobile-first: the base rules target a ~360px phone. Wider layouts are added
+   in min-width media queries. This CSS only loads on the (marketing) route
+   group, so the html-level rules here don't touch /book, /contact, etc. */
+
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+/* Anchor targets clear the sticky header when jumped to. */
+.mkt-section[id],
+.mkt-prose h2[id],
+.mkt-prose h3[id] {
+  scroll-margin-top: calc(var(--header-h) + 12px);
+}
+
+/* ---- Layout containers --------------------------------------------------- */
+
+.mkt-wrap,
+.mkt-wrap-wide {
+  width: 100%;
+  margin: 0 auto;
+  padding-left: var(--space-4);
+  padding-right: var(--space-4);
+}
+.mkt-wrap {
+  max-width: var(--max-width-prose);
+}
+.mkt-wrap-wide {
+  max-width: var(--max-width-wide);
+}
+
+.mkt-main {
+  /* space above the footer */
+  padding-bottom: var(--space-6);
+}
+
+/* ---- Header ------------------------------------------------------------- */
+
+.mkt-header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: var(--color-bg);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.mkt-header__bar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  max-width: var(--max-width-wide);
+  margin: 0 auto;
+  padding: var(--space-2) var(--space-4);
+  min-height: var(--header-h);
+}
+
+.mkt-header__logo {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-right: auto;
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--color-fg);
+  text-decoration: none;
+  white-space: nowrap;
+}
+.mkt-header__logo img {
+  display: block;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+}
+
+/* The four text links: hidden on mobile (they live in the menu), a row on desktop. */
+.mkt-header__links {
+  display: none;
+}
+
+.mkt-header__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* Click-to-call: icon-only on mobile, number spelled out on desktop. */
+.mkt-header__call {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 var(--space-2);
+  border-radius: var(--radius);
+  border: 1px solid var(--color-border);
+  color: var(--color-fg);
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 14px;
+}
+.mkt-header__call-text {
+  display: none;
+}
+
+.mkt-menu-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  background: none;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  color: var(--color-fg);
+}
+
+/* Mobile dropdown menu */
+.mkt-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: var(--color-bg);
+  border-bottom: 1px solid var(--color-border);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+  padding: var(--space-2) var(--space-4) var(--space-4);
+  display: flex;
+  flex-direction: column;
+}
+.mkt-menu a {
+  padding: var(--space-4) 0;
+  border-bottom: 1px solid var(--color-border);
+  font-size: 17px;
+  color: var(--color-fg);
+  text-decoration: none;
+}
+.mkt-menu a:last-child {
+  border-bottom: none;
+}
+.mkt-menu a[aria-current="page"] {
+  color: var(--color-primary);
+  font-weight: 700;
+}
+
+@media (min-width: 48rem) {
+  .mkt-menu-btn {
+    display: none;
+  }
+  .mkt-menu {
+    display: none;
+  }
+  .mkt-header__links {
+    display: flex;
+    align-items: center;
+    gap: var(--space-5);
+    margin-right: var(--space-5);
+  }
+  .mkt-header__links a {
+    color: var(--color-fg-muted);
+    text-decoration: none;
+    font-size: 15px;
+    font-weight: 600;
+    padding: var(--space-2) 0;
+    border-bottom: 2px solid transparent;
+  }
+  .mkt-header__links a:hover {
+    color: var(--color-fg);
+  }
+  .mkt-header__links a[aria-current="page"] {
+    color: var(--color-fg);
+    border-bottom-color: var(--color-primary);
+  }
+  .mkt-header__call {
+    border: none;
+    padding: 0 var(--space-2);
+  }
+  .mkt-header__call-text {
+    display: inline;
+  }
+  .mkt-header__call svg {
+    display: none;
+  }
+}
+
+/* ---- Buttons (match components/ui/form.tsx, laid out for a content page) -- */
+
+.mkt-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: 48px;
+  padding: 12px 20px;
+  border-radius: var(--radius);
+  border: 1px solid transparent;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.2;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+}
+.mkt-btn--primary {
+  background: var(--color-primary);
+  color: var(--color-primary-fg);
+}
+.mkt-btn--secondary {
+  background: transparent;
+  color: var(--color-fg);
+  border-color: var(--color-border);
+}
+.mkt-btn--link {
+  min-height: 44px;
+  padding: 10px 4px;
+  background: none;
+  color: var(--color-primary);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* header "Book a cleaning" — a little tighter than the in-page CTAs */
+.mkt-header .mkt-btn {
+  min-height: 44px;
+  padding: 10px 14px;
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.mkt-cta-row {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-3);
+  margin: var(--space-5) 0;
+}
+/* On a phone the two real buttons go full-width for an easy tap; the plain
+   text link ("See pricing") stays inline. */
+.mkt-cta-row .mkt-btn--primary,
+.mkt-cta-row .mkt-btn--secondary {
+  width: 100%;
+}
+.mkt-cta-row__below {
+  margin: 0;
+  font-size: 14px;
+  color: var(--color-fg-muted);
+}
+
+@media (min-width: 34rem) {
+  .mkt-cta-row {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .mkt-cta-row .mkt-btn--primary,
+  .mkt-cta-row .mkt-btn--secondary {
+    width: auto;
+  }
+  .mkt-cta-row__below {
+    flex-basis: 100%;
+  }
+}
+
+/* ---- Hero ------------------------------------------------------------- */
+
+.mkt-hero {
+  padding: var(--space-6) 0 var(--space-5);
+}
+.mkt-hero__eyebrow {
+  margin: 0 0 var(--space-2);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-primary);
+}
+.mkt-hero h1 {
+  margin: 0 0 var(--space-3);
+  font-size: clamp(1.75rem, 7vw, 2.75rem);
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+}
+.mkt-hero__subhead {
+  margin: 0 0 var(--space-4);
+  font-size: clamp(1rem, 3.5vw, 1.15rem);
+  line-height: 1.6;
+  color: var(--color-fg-muted);
+  max-width: 42ch;
+}
+.mkt-hero__photo {
+  position: relative;
+  margin-top: var(--space-5);
+  border-radius: var(--radius);
+  overflow: hidden;
+  aspect-ratio: 3 / 2;
+}
+@media (min-width: 48rem) {
+  .mkt-hero__photo {
+    aspect-ratio: 2 / 1;
+    margin-top: var(--space-6);
+  }
+}
+
+/* ---- Trust bar ------------------------------------------------------- */
+
+.mkt-trustbar {
+  border-top: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-bg-subtle);
+}
+.mkt-trustbar ul {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  margin: 0 auto;
+  padding: var(--space-4);
+  max-width: var(--max-width-wide);
+  list-style: none;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--color-fg-muted);
+}
+.mkt-trustbar li {
+  display: inline-flex;
+  align-items: center;
+}
+.mkt-trustbar li:not(:last-child)::after {
+  content: "·";
+  margin: 0 var(--space-3);
+  color: var(--color-border);
+}
+
+/* ---- Prose / sections ---------------------------------------------------- */
+
+.mkt-section {
+  padding: var(--space-6) 0;
+  border-top: 1px solid var(--color-border);
+}
+.mkt-section:first-child {
+  border-top: none;
+}
+
+.mkt-prose h2 {
+  margin: 0 0 var(--space-3);
+  font-size: clamp(1.3rem, 4.5vw, 1.6rem);
+  line-height: 1.25;
+}
+.mkt-prose h3 {
+  margin: var(--space-5) 0 var(--space-2);
+  font-size: 1.05rem;
+  line-height: 1.35;
+}
+.mkt-prose p {
+  margin: 0 0 var(--space-4);
+  line-height: 1.7;
+}
+.mkt-prose ul,
+.mkt-prose ol {
+  margin: 0 0 var(--space-4);
+  padding-left: 1.3em;
+  line-height: 1.7;
+}
+.mkt-prose li {
+  margin: var(--space-1) 0;
+}
+.mkt-prose li::marker {
+  color: var(--color-fg-muted);
+}
+/* Prose links, but never the CTA buttons that also render as <a>. */
+.mkt-prose a:not(.mkt-btn) {
+  color: var(--color-primary);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.mkt-prose > :first-child {
+  margin-top: 0;
+}
+.mkt-prose > :last-child {
+  margin-bottom: 0;
+}
+
+.mkt-lead {
+  font-size: clamp(1.05rem, 3vw, 1.2rem);
+  line-height: 1.6;
+  color: var(--color-fg-muted);
+}
+
+/* ---- Pricing block (home only) ---------------------------------------- */
+
+.mkt-price {
+  margin: 0 0 var(--space-4);
+  font-size: clamp(1.6rem, 6vw, 2.25rem);
+  font-weight: 800;
+  line-height: 1.1;
+}
+.mkt-price span {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-fg-muted);
+}
+
+/* ---- Jump index (content pages, Phase 3+) ---------------------------- */
+
+.mkt-jump {
+  margin: var(--space-5) 0;
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-bg-subtle);
+}
+.mkt-jump h2 {
+  margin: 0 0 var(--space-2);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-fg-muted);
+}
+.mkt-jump ol {
+  margin: 0;
+  padding-left: 1.2em;
+}
+.mkt-jump li {
+  margin: var(--space-2) 0;
+}
+.mkt-jump a {
+  color: var(--color-primary);
+}
+
+/* ---- FAQ ------------------------------------------------------------- */
+
+.mkt-faq h3 {
+  margin: var(--space-5) 0 var(--space-2);
+  font-size: 1.05rem;
+}
+.mkt-faq p {
+  margin: 0 0 var(--space-4);
+}
+
+/* ---- Footer ------------------------------------------------------------- */
+
+.mkt-footer {
+  border-top: 1px solid var(--color-border);
+  background: var(--color-bg-subtle);
+}
+.mkt-footer__inner {
+  max-width: var(--max-width-wide);
+  margin: 0 auto;
+  padding: var(--space-6) var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  font-size: 14px;
+  color: var(--color-fg-muted);
+}
+.mkt-footer a:not(.mkt-btn) {
+  color: var(--color-fg);
+  text-decoration: none;
+}
+.mkt-footer a:not(.mkt-btn):hover {
+  text-decoration: underline;
+}
+.mkt-footer__nap {
+  margin: 0;
+  line-height: 1.6;
+}
+.mkt-footer__nap strong {
+  color: var(--color-fg);
+  font-weight: 700;
+}
+.mkt-footer__links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3) var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.mkt-footer__links a {
+  font-weight: 600;
+}
+.mkt-footer__meta {
+  margin: 0;
+  line-height: 1.7;
+}
+.mkt-footer .mkt-btn {
+  align-self: flex-start;
+  justify-self: start;
+}
+.mkt-footer__legal {
+  margin: 0;
+  font-size: 13px;
+}
+
+@media (min-width: 48rem) {
+  .mkt-footer__inner {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr;
+    column-gap: var(--space-6);
+  }
+  .mkt-footer__nap {
+    grid-column: 1;
+  }
+  .mkt-footer__links {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+  .mkt-footer__meta {
+    grid-column: 1;
+  }
+  .mkt-footer__cta {
+    grid-column: 1;
+  }
+  .mkt-footer__legal {
+    grid-column: 1 / -1;
+  }
+}

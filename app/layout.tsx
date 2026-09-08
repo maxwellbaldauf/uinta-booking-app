@@ -1,8 +1,10 @@
 import type { Metadata, Viewport } from "next";
 import Script from "next/script";
+import { SITE_ORIGIN } from "@/lib/site";
 import "./globals.css";
 
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_ORIGIN),
   title: "Uinta Ice Co — Book a Cleaning",
   description:
     "Book a residential ice machine cleaning with Uinta Ice Co. Semi-annual service, cards on file, no account needed.",
