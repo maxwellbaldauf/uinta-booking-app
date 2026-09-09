@@ -15,8 +15,9 @@ See `README.md` for architecture and build history.
      `npm run lint`, and `npm run build` all green. Never report "done" on red —
      show the failure output.
 3. Triage findings with Max, apply the clear ones (`/code-review --fix` or by
-   hand), then fast-forward `master`. This repo has no GitHub remote yet, so
-   there is no PR step.
+   hand), then fast-forward `master` and `git push origin master`. The GitHub
+   remote (`origin` → `github.com/maxwellbaldauf/uinta-booking-app`) tracks
+   `master` directly — no PR step; the `.githooks/pre-push` checks are the gate.
 
 Trivial change (one-liner, comment, config)? `tsc` + `lint` + a quick read is
 enough — skip the full review pass.
