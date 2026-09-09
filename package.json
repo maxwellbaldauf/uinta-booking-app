@@ -11,6 +11,7 @@
     "prepare": "git config core.hooksPath .githooks || exit 0"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.124.0",
     "@stripe/react-stripe-js": "^6.8.2",
     "@stripe/stripe-js": "^9.14.0",
     "@supabase/supabase-js": "^2.112.4",

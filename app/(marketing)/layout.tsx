@@ -1,9 +1,11 @@
 import "./theme.css";
 import "./marketing.css";
+import "./chat.css";
 import { SiteHeader } from "@/components/marketing/SiteHeader";
 import { SiteFooter } from "@/components/marketing/SiteFooter";
 import { MobileCtaBar } from "@/components/marketing/MobileCtaBar";
 import { MarketingScripts } from "@/components/marketing/MarketingScripts";
+import { ChatWidget } from "@/components/chat/ChatWidget";
 
 // Shared chrome for the public marketing pages: home + /ice-machine-cleaning,
 // /troubleshooting, /brands, /service-areas. The booking flow, contact form,
@@ -22,6 +24,7 @@ export default function MarketingLayout({
       <SiteFooter />
       <MobileCtaBar />
       <MarketingScripts />
+      <ChatWidget />
     </div>
   );
 }

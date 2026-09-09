@@ -1,0 +1,337 @@
+/* AI chat widget (components/chat/ChatWidget). Loads only with the marketing
+   route group, so it rides the same tokens as theme.css / marketing.css and
+   flips with color-scheme for free. Prefix: uic- (Uinta Ice Chat). */
+
+/* ---- Launcher --------------------------------------------------------- */
+
+.uic-launcher {
+  position: fixed;
+  right: 16px;
+  /* --botbar-h is 0 on desktop and ~55px + safe-area under 48rem, so this
+     always sits clear of the mobile bottom CTA bar and its call/book buttons. */
+  bottom: calc(16px + var(--botbar-h));
+  z-index: 70;
+
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2xs);
+  min-height: 52px;
+  padding: 0 var(--space-sm);
+  border: 1px solid var(--ink);
+  border-radius: 999px;
+  background: var(--ink);
+  color: var(--paper);
+  font-family: var(--font-body), sans-serif;
+  font-size: var(--text-sm);
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  box-shadow: 0 6px 22px rgba(18, 17, 15, 0.22);
+  transition: background 150ms ease, color 150ms ease;
+}
+.uic-launcher:hover {
+  background: transparent;
+  color: var(--ink);
+}
+.uic-launcher svg {
+  display: block;
+  flex: none;
+}
+
+@media (min-width: 48rem) {
+  .uic-launcher {
+    right: 24px;
+    bottom: 24px;
+  }
+}
+
+/* Narrow phones: icon-only circle so it never crowds the screen edge. */
+@media (max-width: 26rem) {
+  .uic-launcher {
+    padding: 0;
+    width: 52px;
+    justify-content: center;
+  }
+  .uic-launcher__label {
+    display: none;
+  }
+}
+
+/* ---- Panel ----------------------------------------------------------- */
+
+.uic-panel {
+  position: fixed;
+  z-index: 70;
+  display: flex;
+  flex-direction: column;
+  background: var(--paper-raised);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: 0 16px 44px rgba(18, 17, 15, 0.24);
+  overflow: hidden;
+
+  /* Phone: a sheet below the sticky header, clear of the bottom bar. */
+  top: calc(var(--header-h) + 8px);
+  left: 8px;
+  right: 8px;
+  bottom: calc(8px + var(--botbar-h));
+}
+
+@media (min-width: 30rem) {
+  .uic-panel {
+    top: auto;
+    left: auto;
+    right: 24px;
+    bottom: 24px;
+    width: 380px;
+    height: min(72vh, 560px);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .uic-panel {
+    animation: uic-panel-in 160ms ease-out;
+  }
+}
+@keyframes uic-panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+/* ---- Panel header --------------------------------------------------- */
+
+.uic-panel__head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-xs) var(--space-sm);
+  border-bottom: 1px solid var(--line);
+  background: var(--paper);
+}
+.uic-panel__title {
+  font-family: var(--font-display), "Trebuchet MS", sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  font-size: var(--text-xs);
+  color: var(--ink);
+  margin-right: auto;
+}
+.uic-panel__book {
+  font-size: var(--text-xs);
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 0.18em;
+  text-decoration-color: var(--ink-faint);
+  white-space: nowrap;
+}
+.uic-panel__book:hover {
+  text-decoration-color: var(--ink);
+}
+.uic-panel__close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  margin-right: -6px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+.uic-panel__close:hover {
+  color: var(--ink);
+}
+
+/* ---- Message log --------------------------------------------------- */
+
+.uic-log {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-sm);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.uic-bubble {
+  display: flex;
+  max-width: 88%;
+}
+.uic-bubble--user {
+  align-self: flex-end;
+}
+.uic-bubble--assistant {
+  align-self: flex-start;
+}
+.uic-bubble__body {
+  font-size: var(--text-sm);
+  line-height: 1.5;
+  color: var(--ink);
+}
+.uic-bubble--user .uic-bubble__body {
+  background: var(--paper-sunk);
+  border: 1px solid var(--line);
+  border-radius: 12px 12px 2px 12px;
+  padding: var(--space-2xs) var(--space-xs);
+}
+.uic-bubble__body p {
+  margin: 0 0 var(--space-2xs);
+}
+.uic-bubble__body p:last-child {
+  margin-bottom: 0;
+}
+.uic-inline-link {
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 0.18em;
+  text-decoration-color: var(--ink-faint);
+}
+.uic-inline-link:hover {
+  text-decoration-color: var(--ink);
+}
+
+.uic-notice {
+  align-self: center;
+  margin: var(--space-2xs) 0 0;
+  font-size: var(--text-xs);
+  color: var(--ink-soft);
+  text-align: center;
+}
+
+/* ---- Typing indicator --------------------------------------------- */
+
+.uic-typing {
+  display: inline-flex;
+  gap: 4px;
+  padding: var(--space-2xs) 0;
+}
+.uic-typing span {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--ink-faint);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .uic-typing span {
+    animation: uic-blink 1.2s infinite ease-in-out;
+  }
+  .uic-typing span:nth-child(2) {
+    animation-delay: 0.15s;
+  }
+  .uic-typing span:nth-child(3) {
+    animation-delay: 0.3s;
+  }
+}
+@keyframes uic-blink {
+  0%,
+  80%,
+  100% {
+    opacity: 0.3;
+  }
+  40% {
+    opacity: 1;
+  }
+}
+
+/* ---- Composer ---------------------------------------------------- */
+
+.uic-composer {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-2xs);
+  padding: var(--space-2xs);
+  border-top: 1px solid var(--line);
+  background: var(--paper);
+}
+.uic-composer__input {
+  flex: 1;
+  resize: none;
+  max-height: 96px;
+  overflow-y: hidden; /* the auto-grow effect flips this to auto past max-height */
+  padding: var(--space-2xs) var(--space-xs);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--paper-raised);
+  color: var(--ink);
+  font-family: var(--font-body), sans-serif;
+  font-size: 16px; /* >=16px so mobile Safari doesn't zoom on focus */
+  line-height: 1.4;
+}
+.uic-composer__input:disabled {
+  opacity: 0.6;
+}
+.uic-composer__send {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 1px solid var(--ink);
+  border-radius: var(--radius);
+  background: var(--ink);
+  color: var(--paper);
+  cursor: pointer;
+}
+.uic-composer__send:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+/* ---- Length-limit state ---------------------------------------- */
+
+.uic-limit {
+  padding: var(--space-sm);
+  border-top: 1px solid var(--line);
+  background: var(--paper);
+  text-align: center;
+}
+.uic-limit p {
+  margin: 0 0 var(--space-2xs);
+  font-size: var(--text-sm);
+  color: var(--ink-soft);
+}
+.uic-limit__refresh {
+  min-height: 40px;
+  padding: 0 var(--space-md);
+  border: 1px solid var(--ink);
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--ink);
+  font-family: var(--font-body), sans-serif;
+  font-size: var(--text-sm);
+  cursor: pointer;
+}
+.uic-limit__refresh:hover {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+/* ---- Footer note ---------------------------------------------- */
+
+.uic-foot {
+  margin: 0;
+  padding: var(--space-2xs) var(--space-sm);
+  border-top: 1px solid var(--line);
+  background: var(--paper);
+  font-size: var(--text-xs);
+  color: var(--ink-faint);
+  text-align: center;
+}
+.uic-foot a {
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- Focus ring, matching the marketing tree ------------------ */
+
+.uic-launcher:focus-visible,
+.uic-panel :focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
