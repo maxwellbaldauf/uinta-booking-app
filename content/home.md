@@ -87,7 +87,7 @@ Mountain Regional Water, the Summit County district that supplies much of the Pa
 
 It also moves through the year. Salt Lake City's Department of Public Utilities gets most of its water from Wasatch canyon streams, then supplements with deep valley wells during high-demand summer months, and says plainly that the well water is harder. Your machine's summer is not the same as its winter.
 
-Manufacturers typically call for descaling every three to six months. That range assumes average water. Utah is at the hard end of it, which is why we service most homes here every six months rather than annually.
+Manufacturers typically call for descaling every three to six months. That range assumes average water. Utah is at the hard end of it, which is why we service most homes here at least every six months, with some clients needing quarterly cleanings. If that's the case for you, we'll let you know.
 
 **Source note for the developer, not for publication:**
 - USGS very-hard threshold and Mountain Regional Water hardness figure: `https://mtregional.specialdistrict.org/files/882bc66a4/MRW-Water-Hardness.pdf`

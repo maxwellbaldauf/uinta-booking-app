@@ -215,8 +215,9 @@ export default async function HomePage() {
               <p>
                 Manufacturers typically call for descaling every three to six
                 months. That range assumes average water. Utah is at the hard end
-                of it, which is why we service most homes here every six months
-                rather than annually.
+                of it, which is why we service most homes here at least every six
+                months, with some clients needing quarterly cleanings. If that’s
+                the case for you, we’ll let you know.
               </p>
             </AccordionItem>
 
