@@ -7,9 +7,9 @@ import { AgreementText } from "./AgreementText";
 // Wording lives here (not lib/agreement.data.json) — it's UI consent copy that
 // summarizes the agreement, not part of the agreement text itself.
 const CONSENT_LABEL =
-  "I have read and agree to the Uinta Ice Co. Service Agreement, including the " +
-  "recurring semi-annual service, automatic card charges, and the $50 fee for " +
-  "missed appointments.";
+  "I have read and agree to the Uinta Ice Co. Service Agreement, including " +
+  "recurring semi-annual service, charges to my card on file after each visit, " +
+  "and the $50 fee if we can't safely get in.";
 
 export function AgreementStep({
   staleAcceptance,
