@@ -5,15 +5,26 @@ import { PaymentSetup, type PaymentSetupResult } from "@/components/payment/Paym
 import { createBooking, type CreateBookingResponse } from "@/app/book/actions";
 import { ErrorBanner, secondaryButtonStyle } from "@/components/ui/form";
 import { DetailsStep, type BookingDetails } from "./DetailsStep";
+import { AgreementStep } from "./AgreementStep";
 import { SlotStep, type OfferedSlotView } from "./SlotStep";
 import { DeadEndNotice, type DeadEndKind } from "./DeadEndNotice";
 import { BookedConfirmation } from "./BookedConfirmation";
+import { SERVICE_AGREEMENT_VERSION } from "@/lib/agreement";
 
-type Step = "details" | "slots" | "payment" | "submitting" | "done" | "dead_end";
+type Step =
+  | "details"
+  | "agreement"
+  | "slots"
+  | "payment"
+  | "submitting"
+  | "done"
+  | "dead_end";
 
 type Availability = {
   slots: OfferedSlotView[];
   matchedCustomer: { hasPaymentMethod: boolean; paymentDisplay: string | null } | null;
+  agreementRequired: boolean;
+  agreementStale: boolean;
 };
 
 export function BookingFlow() {
@@ -25,6 +36,9 @@ export function BookingFlow() {
     null
   );
   const [payment, setPayment] = useState<PaymentSetupResult | null>(null);
+  // Set true when the customer accepts on the agreement step this session. The
+  // server re-derives whether acceptance was required and enforces it.
+  const [agreementAccepted, setAgreementAccepted] = useState(false);
   const [result, setResult] = useState<CreateBookingResponse | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -49,8 +63,16 @@ export function BookingFlow() {
         return;
       }
       if (data.status === "ok") {
-        setAvailability({ slots: data.slots, matchedCustomer: data.matchedCustomer });
-        setStep("slots");
+        setAvailability({
+          slots: data.slots,
+          matchedCustomer: data.matchedCustomer,
+          agreementRequired: data.agreementRequired,
+          agreementStale: data.agreementStale,
+        });
+        // Re-check on every details submit — never carry a stale acceptance
+        // (e.g. the email was changed to a different, already-accepted customer).
+        setAgreementAccepted(false);
+        setStep(data.agreementRequired ? "agreement" : "slots");
       } else {
         setDeadEnd({ kind: data.status as DeadEndKind, saved: !!data.saved });
         setStep("dead_end");
@@ -82,6 +104,9 @@ export function BookingFlow() {
         chosenSlot: { slotDate: choice.slot.slotDate, arrivalBlock: choice.slot.arrivalBlock },
         useExistingCard: choice.useExistingCard,
         payment: pay ? { setupIntentId: pay.setupIntentId, stripeCustomerId: pay.stripeCustomerId } : undefined,
+        agreement: agreementAccepted
+          ? { accepted: true, version: SERVICE_AGREEMENT_VERSION }
+          : undefined,
         quotesOptIn: d.quotesOptIn,
       });
       setResult(res);
@@ -95,7 +120,12 @@ export function BookingFlow() {
       if (res.slotTaken) {
         const fresh = await fetchAvailability(d);
         if (fresh.status === "ok") {
-          setAvailability({ slots: fresh.slots, matchedCustomer: fresh.matchedCustomer });
+          setAvailability({
+            slots: fresh.slots,
+            matchedCustomer: fresh.matchedCustomer,
+            agreementRequired: fresh.agreementRequired,
+            agreementStale: fresh.agreementStale,
+          });
         }
         setChosen(null);
         setError(res.error);
@@ -106,7 +136,7 @@ export function BookingFlow() {
       setError(res.error);
       setStep("slots");
     },
-    [fetchAvailability]
+    [fetchAvailability, agreementAccepted]
   );
 
   function handleSlotContinue(choice: { slot: OfferedSlotView; useExistingCard: boolean }) {
@@ -169,6 +199,25 @@ export function BookingFlow() {
           setDeadEnd(null);
           setError(null);
           setStep("details");
+        }}
+      />
+    );
+  }
+
+  if (step === "agreement" && availability) {
+    return (
+      <AgreementStep
+        staleAcceptance={availability.agreementStale}
+        busy={busy}
+        error={error}
+        onBack={() => {
+          setError(null);
+          setStep("details");
+        }}
+        onContinue={() => {
+          setAgreementAccepted(true);
+          setError(null);
+          setStep("slots");
         }}
       />
     );

@@ -4,6 +4,7 @@ import { getSettings } from "@/lib/settings";
 import { isInServiceArea } from "@/lib/serviceArea";
 import { getOfferedSlots, slotStillAvailable, type OfferedSlot } from "@/lib/scheduling";
 import { matchCustomerByEmailOrPhone, normalizePhone } from "@/lib/customers";
+import { agreementIsCurrent, SERVICE_AGREEMENT_VERSION } from "@/lib/agreement";
 import { saveFlaggedLead, type LeadDetails } from "@/lib/leads";
 import {
   resolveConfirmedSetupIntent,
@@ -26,6 +27,12 @@ export type AvailabilityResult =
       status: "ok";
       slots: { slotDate: string; arrivalBlock: number; blockLabel: string }[];
       matchedCustomer: { hasPaymentMethod: boolean; paymentDisplay: string | null } | null;
+      // true = show the service-agreement step. Once-per-customer: false only for
+      // a matched customer who has already accepted the current version.
+      agreementRequired: boolean;
+      // true = matched customer accepted an OLDER version and must re-accept
+      // (drives the "we've updated the agreement" notice, not the gate itself).
+      agreementStale: boolean;
     };
 
 export async function checkAvailability(details: LeadDetails): Promise<AvailabilityResult> {
@@ -49,6 +56,16 @@ export async function checkAvailability(details: LeadDetails): Promise<Availabil
 
   const matched = await matchCustomerByEmailOrPhone(details.email, details.phone);
 
+  // Once-per-customer agreement: required for a brand-new customer, or a matched
+  // one whose stored version isn't the current text. Compared by version string,
+  // not just "has a timestamp" — a wording change re-prompts everyone.
+  const agreementRequired =
+    !matched || !agreementIsCurrent(matched.service_agreement_version);
+  const agreementStale =
+    !!matched &&
+    matched.service_agreement_accepted_at != null &&
+    !agreementIsCurrent(matched.service_agreement_version);
+
   return {
     status: "ok",
     // is_fallback is deliberately dropped here — the customer must see no
@@ -65,6 +82,8 @@ export async function checkAvailability(details: LeadDetails): Promise<Availabil
           paymentDisplay: matched.payment_display,
         }
       : null,
+    agreementRequired,
+    agreementStale,
   };
 }
 
@@ -77,6 +96,10 @@ export type CreateBookingInput = {
   useExistingCard: boolean;
   // present unless useExistingCard: a just-confirmed SetupIntent from PaymentSetup.
   payment?: { setupIntentId: string; stripeCustomerId: string };
+  // present when the agreement step was shown and the customer accepted it this
+  // session. The server re-derives whether acceptance was actually required and
+  // rejects the booking if it was and this is missing / the wrong version.
+  agreement?: { accepted: boolean; version: string };
   // true = ticked the opt-in box for the separate "daily quotes" email list
   // (Kit, not Resend). Purely marketing — no bearing on the booking or any
   // transactional email.
@@ -116,6 +139,31 @@ export async function createBookingRecord(
   const settings = await getSettings();
   const matched = await matchCustomerByEmailOrPhone(details.email, details.phone);
 
+  // --- service agreement (spec: once per customer, re-prompted on a version
+  // change; mirrors payment_authorized_at) --------------------------------
+  const priorAgreementAcceptedAt = matched?.service_agreement_accepted_at ?? null;
+  const agreementNeeded =
+    !matched || !agreementIsCurrent(matched.service_agreement_version);
+  if (
+    agreementNeeded &&
+    !(input.agreement?.accepted && input.agreement.version === SERVICE_AGREEMENT_VERSION)
+  ) {
+    throw new Error(
+      "Please review and accept the current Service Agreement to continue."
+    );
+  }
+  // First-ever acceptance for this customer: the timestamp was null right before
+  // this booking and is being set now. Drives the one-time agreement PDF on the
+  // confirmation email — a re-accept after a version bump does NOT re-attach it.
+  const firstAgreementAcceptance =
+    agreementNeeded && priorAgreementAcceptedAt === null;
+  const agreementStamp = agreementNeeded
+    ? {
+        service_agreement_accepted_at: new Date().toISOString(),
+        service_agreement_version: SERVICE_AGREEMENT_VERSION,
+      }
+    : null;
+
   // Resolve the card up front (before any DB writes) so a bad SetupIntent
   // fails with nothing created.
   let resolvedCard: { paymentMethodId: string; displayLabel: string } | null = null;
@@ -148,6 +196,10 @@ export async function createBookingRecord(
         .eq("id", customerId)
         .is("stripe_customer_id", null);
     }
+    // Stamp (or re-stamp, on a version bump) the agreement acceptance.
+    if (agreementStamp) {
+      await supabase.from("customers").update(agreementStamp).eq("id", customerId);
+    }
   } else {
     const { data, error } = await supabase
       .from("customers")
@@ -157,6 +209,8 @@ export async function createBookingRecord(
         phone: normalizePhone(details.phone) ?? (details.phone.trim() || null),
         source: "booking",
         stripe_customer_id: stripeCustomerId,
+        // A new customer always reaches here having just accepted (enforced above).
+        ...(agreementStamp ?? {}),
       })
       .select("id")
       .single();
@@ -248,7 +302,11 @@ export async function createBookingRecord(
 
   // Confirmation email + .ics (spec §8.1). Non-blocking — the job exists
   // whether or not the email lands; only stamp confirmation_sent_at on success.
-  const sent = await sendBookingConfirmationEmail(jobId);
+  // First-time agreement acceptance also gets a PDF copy of the agreement
+  // attached alongside the .ics (once per customer, not per booking).
+  const sent = await sendBookingConfirmationEmail(jobId, {
+    attachAgreement: firstAgreementAcceptance,
+  });
   if (sent) {
     await supabase
       .from("jobs")

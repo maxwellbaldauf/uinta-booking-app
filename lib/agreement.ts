@@ -1,0 +1,141 @@
+// ---------------------------------------------------------------------------
+// Uinta Ice Co. Residential Ice Machine Cleaning Service Agreement.
+//
+// SINGLE SOURCE OF TRUTH for the agreement text. It is rendered three ways,
+// all from the blocks below:
+//   1. the scroll-gated consent step in the booking flow
+//      (components/booking/AgreementStep.tsx)
+//   2. the static PDF attached to a customer's first confirmation email
+//      (scripts/generate-agreement-pdf.mjs -> content/service-agreement-<v>.pdf)
+//   3. nothing else — keep it that way.
+//
+// WHEN THE TEXT CHANGES:
+//   1. edit SERVICE_AGREEMENT_BLOCKS below
+//   2. bump SERVICE_AGREEMENT_VERSION (every prior acceptance goes stale and
+//      the customer is re-prompted on their next booking — see
+//      agreementIsCurrent)
+//   3. run `npm run agreement:pdf` and commit the regenerated PDF in /content
+//      (PDF generation is a deliberate manual step, never wired into a build,
+//      so a text edit can't silently ship a mismatched attachment)
+// ---------------------------------------------------------------------------
+
+// Date the current wording was finalized. Stored on the customer row as
+// service_agreement_version so we always know which text a customer agreed to.
+export const SERVICE_AGREEMENT_VERSION = "2026-09-07";
+
+// The committed PDF that carries this exact version of the text.
+export const SERVICE_AGREEMENT_PDF_FILENAME = `service-agreement-${SERVICE_AGREEMENT_VERSION}.pdf`;
+
+export type AgreementBlock =
+  | { kind: "title"; text: string }
+  | { kind: "subtitle"; text: string }
+  | { kind: "intro"; text: string }
+  | { kind: "heading"; text: string }
+  | { kind: "paragraph"; text: string };
+
+// Verbatim. Structure preserved (title, numbered sections, paragraph breaks);
+// the Word document's signature block is dropped — consent here is the checkbox,
+// not a physical signature.
+export const SERVICE_AGREEMENT_BLOCKS: readonly AgreementBlock[] = [
+  { kind: "title", text: "UINTA ICE CO." },
+  { kind: "subtitle", text: "Residential Ice Machine Cleaning Service Agreement" },
+  {
+    kind: "intro",
+    text: 'This Service Agreement ("Agreement") is between Uinta Ice Co., LLC ("Uinta Ice," "we," "us") and the customer identified on the signature page ("Customer," "you"), for recurring residential ice machine cleaning service at the property address listed below.',
+  },
+
+  { kind: "heading", text: "1. Services Provided" },
+  {
+    kind: "paragraph",
+    text: "Uinta Ice provides cleaning, descaling, and sanitizing of the removable, detachable components of your residential ice machine. This includes the ice bin, water distribution components, and other parts designed to be removed for cleaning.",
+  },
+  {
+    kind: "paragraph",
+    text: "Uinta Ice does not open the machine's sealed refrigerant system, perform electrical repairs, or perform any repair work. If a component is not designed to be removed for routine cleaning, it is outside the scope of this Agreement.",
+  },
+
+  { kind: "heading", text: "2. Recurring Service & Term" },
+  {
+    kind: "paragraph",
+    text: "Service is provided on a recurring basis, approximately every six (6) months, for as long as this Agreement remains in effect. The exact date and time window of each visit is scheduled by Uinta Ice based on routing and availability, within that approximate window.",
+  },
+  {
+    kind: "paragraph",
+    text: "This Agreement continues automatically from visit to visit until cancelled by either party as described in Section 4.",
+  },
+
+  { kind: "heading", text: "3. Scheduling & Notice" },
+  {
+    kind: "paragraph",
+    text: "Uinta Ice will contact you by email multiple times in the week leading up to your scheduled visit to confirm the appointment. Text message reminders are available in addition to email upon request.",
+  },
+
+  { kind: "heading", text: "4. Cancellation" },
+  {
+    kind: "paragraph",
+    text: "You may cancel this Agreement at any time, free of charge, effective immediately. Cancellation stops all future scheduled visits; it does not entitle you to a refund of any service already completed.",
+  },
+  {
+    kind: "paragraph",
+    text: "Uinta Ice may decline to continue service to any property for reasonable business reasons, including but not limited to safety concerns, access issues, or non-payment, with reasonable notice where practical.",
+  },
+
+  { kind: "heading", text: "5. Access & Missed Appointments" },
+  {
+    kind: "paragraph",
+    text: "You are responsible for providing safe, working access to the property and the ice machine at the scheduled appointment time. If our technician arrives at the scheduled time and is unable to complete the service — whether because the property is locked and no one is present, or because conditions at the property are unsafe (including but not limited to an unrestrained animal or a hazardous condition) — a $50 fee will be automatically charged to the card on file, and the visit will need to be rescheduled once the issue is resolved.",
+  },
+
+  { kind: "heading", text: "6. Payment & Card on File" },
+  {
+    kind: "paragraph",
+    text: "You authorize Uinta Ice to keep a valid payment card on file and to automatically charge that card the applicable service price upon completion of each visit.",
+  },
+  {
+    kind: "paragraph",
+    text: "If a charge is declined, Uinta Ice will attempt to process the charge again and may pause scheduling of future visits until payment is resolved. Service resumes once a successful charge is made.",
+  },
+  {
+    kind: "paragraph",
+    text: "Uinta Ice may change its pricing for future visits with at least 7 days' notice before the new price takes effect. Notice will be sent to the email address on file.",
+  },
+
+  { kind: "heading", text: "7. What We Are Not Responsible For" },
+  {
+    kind: "paragraph",
+    text: "Uinta Ice is not responsible for pre-existing conditions of your ice machine, including but not limited to wear from age, prior lack of maintenance, or component failure that existed before our visit. If we observe a condition of concern during a visit (such as a failing part or a leak), we will report it to you, but repair of any such condition is outside the scope of this Agreement and is your responsibility to address.",
+  },
+  {
+    kind: "paragraph",
+    text: "This Agreement is for cleaning service only and is not a warranty on your ice machine, its parts, or its continued operation.",
+  },
+
+  { kind: "heading", text: "8. Limitation of Liability" },
+  {
+    kind: "paragraph",
+    text: "Uinta Ice is not liable for any machine failure, damage, or malfunction that results from a pre-existing condition or that is not caused by our work. To the extent any liability is found to arise from a service we performed, our total liability for that visit is limited to the amount you paid for that specific service.",
+  },
+
+  { kind: "heading", text: "9. Photos" },
+  {
+    kind: "paragraph",
+    text: "Uinta Ice may take before-and-after photos of your ice machine during service and may use those photos for marketing purposes. Photos used this way will not include your address or other identifying information.",
+  },
+
+  { kind: "heading", text: "10. General" },
+  {
+    kind: "paragraph",
+    text: "This Agreement is governed by the laws of the State of Utah. This document represents the entire agreement between you and Uinta Ice regarding recurring ice machine cleaning service and supersedes any prior discussions on this subject.",
+  },
+];
+
+// The agreement a customer accepted is "current" only when the version string
+// stored on their row matches the version compiled into the app right now.
+// A wording change bumps SERVICE_AGREEMENT_VERSION, which makes every prior
+// acceptance stale — so a returning customer is re-prompted rather than being
+// treated as having agreed to text they never saw.
+export function agreementIsCurrent(
+  storedVersion: string | null | undefined
+): boolean {
+  return storedVersion === SERVICE_AGREEMENT_VERSION;
+}
