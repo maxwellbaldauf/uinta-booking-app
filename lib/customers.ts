@@ -80,21 +80,26 @@ export async function matchCustomerByEmailOrPhone(
 
   const trimmedEmail = email.trim();
   if (trimmedEmail) {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("customers")
       .select(MATCH_COLS)
       .ilike("email", trimmedEmail)
       .limit(1);
+    // A select error here (e.g. a MATCH_COLS column the shared schema doesn't
+    // have yet) would otherwise look identical to "no match" and silently treat
+    // every returning customer as brand-new — fail loud instead.
+    if (error) throw new Error(`customer match by email failed: ${error.message}`);
     if (data && data[0]) return data[0] as unknown as MatchedCustomer;
   }
 
   const digits = normalizePhone(phone);
   if (digits) {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("customers")
       .select(MATCH_COLS)
       .eq("phone", digits)
       .limit(1);
+    if (error) throw new Error(`customer match by phone failed: ${error.message}`);
     if (data && data[0]) return data[0] as unknown as MatchedCustomer;
   }
 

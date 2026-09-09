@@ -116,6 +116,15 @@ export function BookingFlow() {
         return;
       }
 
+      // Agreement wasn't accepted / was a stale version — back to the agreement
+      // step, where the error message (incl. the "refresh" hint) is shown.
+      if (res.agreementRequired) {
+        setAgreementAccepted(false);
+        setError(res.error);
+        setStep("agreement");
+        return;
+      }
+
       // Slot got taken mid-flow — refresh the list and send them back to pick again.
       if (res.slotTaken) {
         const fresh = await fetchAvailability(d);
@@ -208,7 +217,6 @@ export function BookingFlow() {
     return (
       <AgreementStep
         staleAcceptance={availability.agreementStale}
-        busy={busy}
         error={error}
         onBack={() => {
           setError(null);

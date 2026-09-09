@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { buttonStyle, secondaryButtonStyle, ErrorBanner } from "@/components/ui/form";
 import { AgreementText } from "./AgreementText";
 
-// Wording lives here (not lib/agreement.ts) — it's UI consent copy that
+// Wording lives here (not lib/agreement.data.json) — it's UI consent copy that
 // summarizes the agreement, not part of the agreement text itself.
 const CONSENT_LABEL =
   "I have read and agree to the Uinta Ice Co. Service Agreement, including the " +
@@ -13,31 +13,37 @@ const CONSENT_LABEL =
 
 export function AgreementStep({
   staleAcceptance,
-  busy,
   error,
   onBack,
   onContinue,
 }: {
   // true = a matched customer who accepted an older version and must re-accept.
   staleAcceptance: boolean;
-  busy: boolean;
   error: string | null;
   onBack: () => void;
   onContinue: () => void;
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
-  const [reachedEnd, setReachedEnd] = useState(false);
+  // Latched: set once the user has actually scrolled the text to the bottom.
+  const [scrolledToEnd, setScrolledToEnd] = useState(false);
+  // Live (not latched): the text currently fits without needing a scroll — e.g.
+  // a very tall viewport. Re-evaluated on every resize so that if a late font
+  // swap or rotation makes the text overflow again, the gate re-engages.
+  const [fitsWithoutScroll, setFitsWithoutScroll] = useState(false);
   const [agreed, setAgreed] = useState(false);
 
   const recheck = useCallback(() => {
     const el = scrollRef.current;
     if (!el) return;
-    // Actual scroll position, within 2px of the bottom (tolerance for
-    // sub-pixel rounding and browser zoom). This is also true from the start
-    // when the text is short enough that there's nothing to scroll — e.g. a
-    // very tall viewport — so the checkbox isn't left permanently disabled.
-    const atEnd = el.scrollHeight - el.scrollTop - el.clientHeight <= 2;
-    if (atEnd) setReachedEnd(true); // latch — scrolling back up doesn't undo it
+    // 2px tolerance for sub-pixel rounding and browser zoom.
+    const fits = el.scrollHeight - el.clientHeight <= 2;
+    setFitsWithoutScroll(fits);
+    // Only latch from a genuine scroll (scrollTop > 0) — never from the "it
+    // fits" case, or an early measurement that fits could permanently unlock
+    // the checkbox before the text has grown to its real height.
+    if (el.scrollTop > 0 && el.scrollHeight - el.scrollTop - el.clientHeight <= 2) {
+      setScrolledToEnd(true);
+    }
   }, []);
 
   useEffect(() => {
@@ -53,7 +59,7 @@ export function AgreementStep({
     return () => ro.disconnect();
   }, [recheck]);
 
-  const canContinue = agreed && !busy;
+  const canConsent = scrolledToEnd || fitsWithoutScroll;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
@@ -108,20 +114,20 @@ export function AgreementStep({
             alignItems: "flex-start",
             fontSize: 14,
             lineHeight: 1.5,
-            color: reachedEnd ? "var(--color-fg)" : "var(--color-fg-muted)",
-            cursor: reachedEnd ? "pointer" : "default",
+            color: canConsent ? "var(--color-fg)" : "var(--color-fg-muted)",
+            cursor: canConsent ? "pointer" : "default",
           }}
         >
           <input
             type="checkbox"
             checked={agreed}
-            disabled={!reachedEnd}
+            disabled={!canConsent}
             onChange={(e) => setAgreed(e.target.checked)}
             style={{ marginTop: 3, width: 18, height: 18, flexShrink: 0 }}
           />
           <span>{CONSENT_LABEL}</span>
         </label>
-        {!reachedEnd && (
+        {!canConsent && (
           <p style={{ margin: "0 0 0 28px", fontSize: 13, color: "var(--color-fg-muted)" }}>
             Scroll to the end of the agreement to enable this.
           </p>
@@ -145,11 +151,11 @@ export function AgreementStep({
         </button>
         <button
           type="button"
-          disabled={!canContinue}
+          disabled={!agreed}
           onClick={onContinue}
-          style={{ ...buttonStyle, opacity: canContinue ? 1 : 0.6 }}
+          style={{ ...buttonStyle, opacity: agreed ? 1 : 0.6 }}
         >
-          {busy ? "Working…" : "Continue"}
+          Continue
         </button>
       </div>
     </div>

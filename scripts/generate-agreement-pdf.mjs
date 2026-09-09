@@ -2,29 +2,31 @@
 // email attaches on a customer's FIRST acceptance
 // (see lib/email/bookingConfirmation.ts).
 //
-// The text lives in lib/agreement.ts — this script only renders it. Whenever the
-// agreement wording changes:
-//   1. edit SERVICE_AGREEMENT_BLOCKS in lib/agreement.ts
-//   2. bump SERVICE_AGREEMENT_VERSION in lib/agreement.ts
+// The text lives in lib/agreement.data.json — this script only renders it.
+// Whenever the agreement wording changes:
+//   1. edit `blocks` in lib/agreement.data.json
+//   2. bump `version` in lib/agreement.data.json
 //   3. run:  npm run agreement:pdf
 //   4. commit the regenerated content/service-agreement-<version>.pdf
 //
 // Deliberately NOT part of `next build`: PDF generation is a manual step so a
 // text edit can never silently ship an attachment that doesn't match.
+//
+// Plain Node + JSON on purpose — no TypeScript loader, so it runs on any Node.
 
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import PDFDocument from "pdfkit";
-import {
-  SERVICE_AGREEMENT_BLOCKS,
-  SERVICE_AGREEMENT_VERSION,
-  SERVICE_AGREEMENT_PDF_FILENAME,
-} from "../lib/agreement.ts";
+
+const root = fileURLToPath(new URL("..", import.meta.url));
+const { version, blocks } = JSON.parse(
+  fs.readFileSync(path.join(root, "lib", "agreement.data.json"), "utf8")
+);
+const pdfFilename = `service-agreement-${version}.pdf`;
+const outPath = path.join(root, "content", pdfFilename);
 
 const MARGIN = 72; // 1 inch
-const contentDir = fileURLToPath(new URL("../content", import.meta.url));
-const outPath = path.join(contentDir, SERVICE_AGREEMENT_PDF_FILENAME);
 
 const doc = new PDFDocument({
   size: "LETTER",
@@ -33,7 +35,10 @@ const doc = new PDFDocument({
   info: {
     Title: "Uinta Ice Co. — Residential Ice Machine Cleaning Service Agreement",
     Author: "Uinta Ice Co., LLC",
-    Subject: `Service Agreement, version ${SERVICE_AGREEMENT_VERSION}`,
+    Subject: `Service Agreement, version ${version}`,
+    // Pin to the version date so re-running the generator on unchanged text
+    // produces a byte-identical PDF (no spurious git diffs).
+    CreationDate: new Date(`${version}T00:00:00Z`),
   },
 });
 
@@ -41,7 +46,7 @@ const chunks = [];
 doc.on("data", (c) => chunks.push(c));
 const finished = new Promise((resolve) => doc.on("end", resolve));
 
-for (const block of SERVICE_AGREEMENT_BLOCKS) {
+for (const block of blocks) {
   switch (block.kind) {
     case "title":
       doc.font("Helvetica-Bold").fontSize(16).fillColor("#12110f");
@@ -84,7 +89,7 @@ for (let i = 0; i < range.count; i++) {
   const y = doc.page.height - MARGIN + 24;
   doc.font("Helvetica").fontSize(8).fillColor("#8a8276");
   doc.text(
-    `Uinta Ice Co. · Service Agreement · Version ${SERVICE_AGREEMENT_VERSION}`,
+    `Uinta Ice Co. · Service Agreement · Version ${version}`,
     MARGIN,
     y,
     { align: "left", lineBreak: false }
@@ -100,7 +105,7 @@ for (let i = 0; i < range.count; i++) {
 doc.end();
 await finished;
 
-fs.mkdirSync(contentDir, { recursive: true });
+fs.mkdirSync(path.dirname(outPath), { recursive: true });
 const buf = Buffer.concat(chunks);
 fs.writeFileSync(outPath, buf);
 console.log(`Wrote ${path.relative(process.cwd(), outPath)} (${buf.length} bytes)`);

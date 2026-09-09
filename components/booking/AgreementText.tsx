@@ -1,6 +1,6 @@
 // Renders the Service Agreement as semantic HTML from the single source of
-// truth in lib/agreement.ts. Presentational only — the scroll gate, checkbox,
-// and acceptance live in AgreementStep.
+// truth (lib/agreement.data.json, via lib/agreement.ts). Presentational only —
+// the scroll gate, checkbox, and acceptance live in AgreementStep.
 //
 // Heading levels start at <h2>: the booking step owns the page <h1>.
 

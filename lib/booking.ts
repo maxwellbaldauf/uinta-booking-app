@@ -17,6 +17,12 @@ import { subscribeToQuotesList } from "@/lib/kit";
 
 export class SlotUnavailableError extends Error {}
 
+// The customer needs to accept the current Service Agreement and the request
+// didn't carry a valid acceptance. Thrown deep in createBookingRecord; the
+// booking action maps it to a flag that sends the client back to the agreement
+// step rather than stranding them on slots / payment.
+export class AgreementRequiredError extends Error {}
+
 // ---- availability check (spec §1 steps 2–5, §2) --------------------------
 
 export type AvailabilityResult =
@@ -148,8 +154,11 @@ export async function createBookingRecord(
     agreementNeeded &&
     !(input.agreement?.accepted && input.agreement.version === SERVICE_AGREEMENT_VERSION)
   ) {
-    throw new Error(
-      "Please review and accept the current Service Agreement to continue."
+    // Wrong / missing version can also mean the agreement was updated after this
+    // page loaded — the "refresh" hint covers that case.
+    throw new AgreementRequiredError(
+      "Please review and accept the current Service Agreement to continue. " +
+        "If you already did, refresh the page to load the latest version."
     );
   }
   // First-ever acceptance for this customer: the timestamp was null right before
@@ -196,10 +205,6 @@ export async function createBookingRecord(
         .eq("id", customerId)
         .is("stripe_customer_id", null);
     }
-    // Stamp (or re-stamp, on a version bump) the agreement acceptance.
-    if (agreementStamp) {
-      await supabase.from("customers").update(agreementStamp).eq("id", customerId);
-    }
   } else {
     const { data, error } = await supabase
       .from("customers")
@@ -209,8 +214,6 @@ export async function createBookingRecord(
         phone: normalizePhone(details.phone) ?? (details.phone.trim() || null),
         source: "booking",
         stripe_customer_id: stripeCustomerId,
-        // A new customer always reaches here having just accepted (enforced above).
-        ...(agreementStamp ?? {}),
       })
       .select("id")
       .single();
@@ -299,6 +302,13 @@ export async function createBookingRecord(
     throw new Error(`Could not book the visit: ${jobError?.message}`);
   }
   const jobId = (job as { id: string }).id;
+
+  // Record the agreement acceptance (or re-acceptance, on a version bump) only
+  // now that the booking is real — a job-insert failure above must not leave a
+  // stamped acceptance that would suppress the one-time PDF on the retry.
+  if (agreementStamp) {
+    await supabase.from("customers").update(agreementStamp).eq("id", customerId);
+  }
 
   // Confirmation email + .ics (spec §8.1). Non-blocking — the job exists
   // whether or not the email lands; only stamp confirmation_sent_at on success.
