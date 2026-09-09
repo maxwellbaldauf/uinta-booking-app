@@ -39,3 +39,14 @@ export const CHAT_GREETING =
 // generous hourly ceiling that still bounds a single scripted abuser.
 export const RATE_LIMIT_BURST = { limit: 20, windowMs: 60_000 };
 export const RATE_LIMIT_SUSTAINED = { limit: 120, windowMs: 60 * 60_000 };
+
+// A separate, stricter budget for the one chat action that writes to the DB.
+// The per-request limiter already bounds writes 1:1 with requests, but a
+// scripted capture conversation could still trickle junk leads onto the
+// dashboard within that budget — this caps them hard, per IP.
+export const LEAD_WRITE_LIMIT = { limit: 5, windowMs: 60 * 60_000 };
+
+// A chat lead is skipped (not written) when a contact submission for the same
+// customer already exists within this window. Guards against a double-submit or
+// a client that lies about the leadCaptured hint.
+export const LEAD_DEDUP_WINDOW_MS = 60 * 60_000;

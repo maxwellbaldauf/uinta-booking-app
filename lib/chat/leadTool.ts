@@ -5,7 +5,11 @@
 // the field-app dashboard's "New messages" list like any other.
 
 import Anthropic from "@anthropic-ai/sdk";
+import { LEAD_DEDUP_WINDOW_MS } from "@/lib/chat/config";
+import { allowLeadWrite } from "@/lib/chat/rateLimit";
 import { submitContact } from "@/lib/contact";
+import { matchCustomerByEmailOrPhone } from "@/lib/customers";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 export type LeadReason = "general_interest" | "handoff_to_human" | "out_of_scope";
 
@@ -142,10 +146,56 @@ export function composeLeadMessage(input: LeadInput, turns: ChatTurn[]): string 
     : body;
 }
 
+// True when the customer this lead resolves to already has a contact submission
+// inside the dedup window. Resolves the customer the same way submitContact()
+// will, so the two agree. Fails open (returns false) on a query error — losing
+// dedup on a transient blip is better than dropping a real lead, and
+// allowLeadWrite() still caps abuse.
+async function hasRecentSubmission(
+  email: string,
+  phone: string,
+): Promise<boolean> {
+  try {
+    const matched = await matchCustomerByEmailOrPhone(email, phone);
+    if (!matched) return false;
+    const since = new Date(Date.now() - LEAD_DEDUP_WINDOW_MS).toISOString();
+    const { data, error } = await createAdminClient()
+      .from("contact_submissions")
+      .select("id")
+      .eq("customer_id", matched.id)
+      .gte("created_at", since)
+      .limit(1);
+    if (error) {
+      console.error("chat: dedup check failed", error);
+      return false;
+    }
+    return !!data?.length;
+  } catch (err) {
+    console.error("chat: dedup check threw", err);
+    return false;
+  }
+}
+
+export type CaptureLeadResult = {
+  ok: boolean;
+  deduped?: boolean;
+  rateLimited?: boolean;
+};
+
 export async function runCaptureLead(
   input: LeadInput,
   turns: ChatTurn[],
-): Promise<{ ok: boolean }> {
+  ip: string,
+): Promise<CaptureLeadResult> {
+  // Real, server-side dedup — the client's leadCaptured flag is only a hint and
+  // is not trusted for this decision.
+  if (await hasRecentSubmission(input.email, input.phone)) {
+    return { ok: true, deduped: true };
+  }
+  // Write-only budget, consumed only for an actual write.
+  if (!allowLeadWrite(ip)) {
+    return { ok: false, rateLimited: true };
+  }
   try {
     await submitContact({
       fullName: input.name,

@@ -7,7 +7,11 @@
 // exact global limits are ever needed, move this to Upstash Redis or Netlify's
 // platform rate limiting.
 
-import { RATE_LIMIT_BURST, RATE_LIMIT_SUSTAINED } from "@/lib/chat/config";
+import {
+  LEAD_WRITE_LIMIT,
+  RATE_LIMIT_BURST,
+  RATE_LIMIT_SUSTAINED,
+} from "@/lib/chat/config";
 
 type Window = { limit: number; windowMs: number };
 type Bucket = { hits: number[] }; // request timestamps (ms), ascending
@@ -81,6 +85,39 @@ export function checkRateLimit(ip: string): RateLimitResult {
   bucket.hits.push(now);
   store.set(ip, bucket);
   return { ok: true };
+}
+
+// A second, stricter budget consumed ONLY when a chat lead is actually written
+// to the DB (after dedup) — not on every request. Separate store, same
+// sliding-window shape. Returns false when the IP is over budget; the caller
+// then skips the write and hands the visitor the phone/email instead.
+const LEAD_STORE = Symbol.for("uinta.chat.leadWrites");
+const gl = globalThis as typeof globalThis & {
+  [LEAD_STORE]?: Map<string, number[]>;
+};
+const leadStore: Map<string, number[]> = (gl[LEAD_STORE] ??= new Map());
+
+export function allowLeadWrite(ip: string): boolean {
+  const now = Date.now();
+  const cutoff = now - LEAD_WRITE_LIMIT.windowMs;
+
+  if (leadStore.size > MAX_TRACKED_IPS) {
+    for (const [k, hits] of leadStore) {
+      const kept = hits.filter((t) => t > cutoff);
+      if (kept.length === 0) leadStore.delete(k);
+      else leadStore.set(k, kept);
+    }
+    if (leadStore.size > MAX_TRACKED_IPS * 2) leadStore.clear();
+  }
+
+  const hits = (leadStore.get(ip) ?? []).filter((t) => t > cutoff);
+  if (hits.length >= LEAD_WRITE_LIMIT.limit) {
+    leadStore.set(ip, hits);
+    return false;
+  }
+  hits.push(now);
+  leadStore.set(ip, hits);
+  return true;
 }
 
 // x-nf-client-connection-ip is Netlify's real client IP; x-forwarded-for is the

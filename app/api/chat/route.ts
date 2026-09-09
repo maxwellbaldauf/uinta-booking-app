@@ -90,7 +90,8 @@ export async function POST(req: Request) {
     );
   }
 
-  const rate = checkRateLimit(clientIpFromHeaders(req.headers));
+  const ip = clientIpFromHeaders(req.headers);
+  const rate = checkRateLimit(ip);
   if (!rate.ok) {
     return errorJson(
       "You've sent a lot of messages in a short time. Give it a minute and try again.",
@@ -212,15 +213,19 @@ export async function POST(req: Request) {
           } else if (!leadHasContact(parsed)) {
             note =
               "Not saved — you also need an email or a phone number. Ask for whichever is missing.";
-          } else if (alreadyCaptured || leadCapturedThisTurn) {
+          } else if (leadCapturedThisTurn) {
             note =
-              "Already saved earlier in this conversation — just reassure the visitor that Max has their details.";
+              "Already saved in this reply — just reassure the visitor that Max has their details.";
           } else {
-            const saved = await runCaptureLead(parsed, turns);
+            // runCaptureLead does its own server-side dedup against
+            // contact_submissions; the client's leadCaptured flag is not
+            // trusted for that.
+            const saved = await runCaptureLead(parsed, turns, ip);
             if (saved.ok) {
               leadCapturedThisTurn = true;
-              note =
-                "Saved. Max will follow up. Confirm with the visitor and read back the email or phone you saved.";
+              note = saved.deduped
+                ? "The visitor's details are already on file from a recent message. Reassure them that Max has what he needs."
+                : "Saved. Max will follow up. Confirm with the visitor and read back the email or phone you saved.";
             } else {
               note = `Could not save it. Apologize briefly and give the visitor the phone ${NAP.phoneDisplay} and email ${NAP.email}.`;
             }
@@ -236,10 +241,10 @@ export async function POST(req: Request) {
       apiMessages.push({ role: "user", content: toolResults });
     }
   } catch (err) {
-    // The lead is already in the DB; a failure in the follow-up call must not
-    // send the client back with leadCaptured:false, or a retry writes a
-    // duplicate row (the retry's request would carry leadCaptured:false and the
-    // model would capture again).
+    // The lead is already in the DB; report it as captured even though the
+    // follow-up call failed. (runCaptureLead's dedup would also catch a retry,
+    // but this avoids the wasted round-trip and a stray duplicate on the
+    // dashboard.)
     if (leadCapturedThisTurn) {
       return NextResponse.json({
         reply: `Thanks. I've passed your details to Max and he'll follow up. You can also ${CONTACT_TAIL.toLowerCase()}`,
