@@ -25,6 +25,14 @@ export const MAX_TOTAL_CHARS = 12_000;
 // misbehaving model can't run the tool round-trip forever.
 export const MAX_TOOL_ROUNDS = 2;
 
+// The widget shows this as the first (assistant) bubble. It is NOT sent to the
+// API as a message — the model is told about it in the system prompt instead,
+// so the visitor's first reply has a referent. Keep the two in sync via this
+// one constant.
+export const CHAT_GREETING =
+  "Hi. I can help with questions about our ice machine cleaning: what's " +
+  "involved, pricing, the service area, or getting booked. What's on your mind?";
+
 // ---- Rate limiting (lib/chat/rateLimit.ts) ---------------------------------
 
 // Burst: a real conversation is one request every few seconds. Sustained: a

@@ -60,7 +60,13 @@ export function checkRateLimit(ip: string): RateLimitResult {
     RATE_LIMIT_SUSTAINED.windowMs,
   );
 
-  if (store.size > MAX_TRACKED_IPS) sweep(now);
+  if (store.size > MAX_TRACKED_IPS) {
+    sweep(now);
+    // If a flood of distinct IPs keeps the map oversized even after pruning
+    // expired entries, drop it wholesale. Everyone gets a fresh window — an
+    // acceptable trade for a hard memory bound on a warm instance.
+    if (store.size > MAX_TRACKED_IPS * 2) store.clear();
+  }
 
   const bucket = store.get(ip) ?? { hits: [] };
   bucket.hits = bucket.hits.filter((t) => t > now - longest);

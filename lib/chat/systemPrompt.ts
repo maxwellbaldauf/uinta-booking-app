@@ -5,6 +5,7 @@
 // Everything the bot may tell a visitor about the business comes from
 // KNOWLEDGE_BASE; this file wraps it with the behaviour rules.
 
+import { CHAT_GREETING } from "@/lib/chat/config";
 import { KNOWLEDGE_BASE } from "@/lib/chat/knowledge";
 import { NAP } from "@/lib/site";
 
@@ -48,6 +49,10 @@ export function buildSystemPrompt({
 residential ice machine cleaning service in Lehi, Utah. You have one job: help
 visitors with questions and turn genuine interest into either a booking or a
 lead for Max to follow up on.
+
+The visitor has already seen this greeting from you: "${CHAT_GREETING}" Their
+first message is their reply to it, so read a short or vague opener ("the second
+one", "pricing") as answering that.
 
 ## What you do
 

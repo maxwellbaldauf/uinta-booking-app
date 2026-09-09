@@ -97,8 +97,10 @@ export function parseLeadInput(raw: unknown): LeadInput | null {
   return {
     name,
     email: EMAIL_RE.test(email) ? email : "",
-    // keep the visitor's own formatting, but only if it carries a real number
-    phone: phoneDigits.length >= 7 && phoneDigits.length <= 15 ? phone : "",
+    // Keep the visitor's own formatting, but only for a dialable number.
+    // >= 10 digits matches normalizePhone() in lib/customers.ts — a shorter
+    // string would be stored raw and never match a customer.
+    phone: phoneDigits.length >= 10 && phoneDigits.length <= 15 ? phone : "",
     reason,
     summary: clean(r.summary, 600),
   };

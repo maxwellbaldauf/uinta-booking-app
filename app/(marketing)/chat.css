@@ -77,7 +77,9 @@
   bottom: calc(8px + var(--botbar-h));
 }
 
-@media (min-width: 30rem) {
+/* Desktop card. Breakpoint matches the launcher and .mkt-botbar (both flip at
+   48rem) so the panel never lands on top of the mobile CTA bar. */
+@media (min-width: 48rem) {
   .uic-panel {
     top: auto;
     left: auto;

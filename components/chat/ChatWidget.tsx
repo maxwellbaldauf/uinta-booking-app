@@ -8,6 +8,8 @@ import {
   type KeyboardEvent,
   type ReactNode,
 } from "react";
+import Link from "next/link";
+import { CHAT_GREETING } from "@/lib/chat/config";
 import { NAP } from "@/lib/site";
 
 // Floating lead-gen assistant, mounted once in the marketing layout so it
@@ -20,10 +22,6 @@ type Turn = { role: "user" | "assistant"; content: string };
 const STORAGE_KEY = "uinta_chat_v1";
 const MAX_INPUT = 1000; // mirrors MAX_MESSAGE_CHARS in lib/chat/config.ts
 const INPUT_MAX_HEIGHT = 96; // keep in sync with .uic-composer__input max-height
-
-const GREETING =
-  "Hi — I can help with questions about our ice machine cleaning: what's " +
-  "involved, pricing, the service area, or getting booked. What's on your mind?";
 
 type Convo = { turns: Turn[]; leadCaptured: boolean; limitReached: boolean };
 
@@ -105,6 +103,20 @@ export function ChatWidget() {
   }, [input, open]);
 
   const close = useCallback(() => setOpen(false), []);
+
+  // Wipe the stored transcript and drop back to a fresh composer. This is the
+  // only way out of the length-limit state — a plain reload would just restore
+  // the persisted limitReached flag.
+  const startNewChat = useCallback(() => {
+    try {
+      sessionStorage.removeItem(STORAGE_KEY);
+    } catch {
+      /* storage disabled — the in-memory reset below still works */
+    }
+    setConvo(emptyConvo());
+    setInput("");
+    setNotice(null);
+  }, []);
 
   useEffect(() => {
     if (!open) return;
@@ -196,9 +208,9 @@ export function ChatWidget() {
         >
           <header className="uic-panel__head">
             <span className="uic-panel__title">Ask Uinta Ice Co.</span>
-            <a href="/book" className="uic-panel__book">
+            <Link href="/book" className="uic-panel__book">
               Book a cleaning
-            </a>
+            </Link>
             <button
               type="button"
               className="uic-panel__close"
@@ -210,7 +222,7 @@ export function ChatWidget() {
           </header>
 
           <div className="uic-log" ref={logRef} aria-live="polite">
-            <Bubble role="assistant">{GREETING}</Bubble>
+            <Bubble role="assistant">{CHAT_GREETING}</Bubble>
             {turns.map((t, i) => (
               <Bubble key={i} role={t.role}>
                 {t.role === "assistant" ? renderAssistant(t.content) : renderPlain(t.content)}
@@ -234,9 +246,9 @@ export function ChatWidget() {
               <button
                 type="button"
                 className="uic-limit__refresh"
-                onClick={() => window.location.reload()}
+                onClick={startNewChat}
               >
-                Refresh to start a new chat
+                Start a new chat
               </button>
             </div>
           ) : (
@@ -324,7 +336,13 @@ function renderInline(segment: string): ReactNode[] {
     if (linkText && linkHref) {
       const href = safeHref(linkHref);
       out.push(
-        href ? (
+        !href ? (
+          <span key={`l${key}`}>{linkText}</span>
+        ) : href.startsWith("/") ? (
+          <Link key={`l${key}`} href={href} className="uic-inline-link">
+            {linkText}
+          </Link>
+        ) : (
           <a
             key={`l${key}`}
             href={href}
@@ -335,8 +353,6 @@ function renderInline(segment: string): ReactNode[] {
           >
             {linkText}
           </a>
-        ) : (
-          <span key={`l${key}`}>{linkText}</span>
         ),
       );
     } else if (boldText) {
@@ -363,11 +379,12 @@ function withBreaks(text: string, keyBase: number): ReactNode[] {
 }
 
 // Internal paths, tel:, mailto:, and the site's own https URLs only. Anything
-// else renders as plain text — the bot should never be emitting other links,
-// and this guarantees it can't.
+// else renders as plain text: the bot should never emit other links, and this
+// makes sure it can't. The internal-path check rejects a leading "//" or "/\"
+// (both normalize to a protocol-relative URL in browsers).
 function safeHref(raw: string): string | null {
   const h = raw.trim();
-  if (h.startsWith("/") && !h.startsWith("//")) return h;
+  if (/^\/(?![/\\])/.test(h)) return h;
   if (/^tel:\+?[0-9()\-.\s]+$/i.test(h)) return h;
   if (/^mailto:[^\s@]+@[^\s@]+\.[^\s@]+$/i.test(h)) return h;
   if (/^https:\/\/(www\.)?uintaice\.com(\/|$)/i.test(h)) return h;

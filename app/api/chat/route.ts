@@ -25,12 +25,13 @@ export const runtime = "nodejs";
 // POST { messages: {role, content}[], leadCaptured?: boolean }
 //   -> { reply, leadCaptured?, limitReached? }  |  { error, limitReached? }
 //
-// One Anthropic call per turn (a second only when the model runs capture_lead).
-// The system prompt + tool are cached; the growing message list is not.
+// One Anthropic call per turn, plus a follow-up call after the model runs
+// capture_lead (bounded by MAX_TOOL_ROUNDS). The system prompt + tool are
+// cached; the growing message list is not.
 
 const CONTACT_TAIL = `Call or text ${NAP.phoneDisplay}.`;
 const LIMIT_MESSAGE =
-  "This chat has reached its length limit. Refresh the page to start a new one.";
+  "This chat has reached its length limit. Start a new chat to keep going.";
 
 function errorJson(
   error: string,
@@ -124,6 +125,9 @@ export async function POST(req: Request) {
   const turns: ChatTurn[] = rawMessages;
 
   if (turns[0].role !== "user" || turns[turns.length - 1].role !== "user") {
+    return errorJson("Invalid request.", 400);
+  }
+  if (turns.some((t) => t.content.trim().length === 0)) {
     return errorJson("Invalid request.", 400);
   }
   if (turns.length > MAX_MESSAGES) {
@@ -232,6 +236,17 @@ export async function POST(req: Request) {
       apiMessages.push({ role: "user", content: toolResults });
     }
   } catch (err) {
+    // The lead is already in the DB; a failure in the follow-up call must not
+    // send the client back with leadCaptured:false, or a retry writes a
+    // duplicate row (the retry's request would carry leadCaptured:false and the
+    // model would capture again).
+    if (leadCapturedThisTurn) {
+      return NextResponse.json({
+        reply: `Thanks. I've passed your details to Max and he'll follow up. You can also ${CONTACT_TAIL.toLowerCase()}`,
+        leadCaptured: true,
+        limitReached,
+      });
+    }
     if (err instanceof Anthropic.RateLimitError) {
       return errorJson("We're busy right now. Try again in a moment.", 429);
     }
