@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   metadataBase: new URL(SITE_ORIGIN),
   title: "Uinta Ice Co — Book a Cleaning",
   description:
-    "Book a residential ice machine cleaning with Uinta Ice Co. Semi-annual service, cards on file, no account needed.",
+    "Book a residential or light commercial ice machine cleaning with Uinta Ice Co. Semi-annual service, cards on file, no account needed.",
 };
 
 export const viewport: Viewport = {

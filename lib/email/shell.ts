@@ -39,7 +39,7 @@ ${opts.preheader ? `<div style="display:none;max-height:0;overflow:hidden;opacit
         </tr>
         <tr>
           <td style="padding:16px 24px;border-top:1px solid ${BORDER};color:${MUTED};font-size:12px;line-height:1.5;">
-            Uinta Ice Co · residential ice machine cleaning
+            Uinta Ice Co · residential and light commercial ice machine cleaning
           </td>
         </tr>
       </table>

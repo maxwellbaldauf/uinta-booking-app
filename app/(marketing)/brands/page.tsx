@@ -8,7 +8,7 @@ import { Accordion, AccordionItem } from "@/components/marketing/Accordion";
 export const metadata = pageMetadata({
   title: "Ice Machine Cleaning by Brand | Scotsman, Sub-Zero, U-Line",
   description:
-    "We service Scotsman, Sub-Zero, U-Line, KitchenAid and GE undercounter ice machines, plus most other makes. Brand-specific quirks and clean light behavior.",
+    "Scotsman, Sub-Zero, U-Line, KitchenAid and GE for homes. Manitowoc, Hoshizaki and Scotsman for light commercial. Plus most other makes.",
   path: "/brands",
 });
 
@@ -18,6 +18,7 @@ const JUMP = [
   { id: "u-line", label: "U-Line" },
   { id: "kitchenaid", label: "KitchenAid" },
   { id: "ge", label: "GE Profile and GE Monogram" },
+  { id: "commercial-brands", label: "Commercial brands" },
   { id: "other-brands", label: "Every other brand" },
 ];
 
@@ -27,7 +28,7 @@ const schema = [
   serviceSchema({
     name: "Ice machine cleaning by brand",
     description:
-      "Brand-specific residential ice machine cleaning for Scotsman, Sub-Zero, U-Line, KitchenAid, GE Profile and GE Monogram, plus most other residential makes.",
+      "Brand-specific residential and light commercial ice machine cleaning for Scotsman, Sub-Zero, U-Line, KitchenAid, GE Profile and GE Monogram, plus Manitowoc and Hoshizaki for light commercial, and most other makes.",
     path: "/brands",
   }),
   breadcrumbSchema([
@@ -43,11 +44,11 @@ export default function BrandsPage() {
       <header className="mkt-pagehead">
         <h1>The Brands We Service Most Often</h1>
         <p className="mkt-lead">
-          Uinta Ice Co. cleans residential ice machines from every major
-          manufacturer. The brands below are the ones we see most often in Utah
-          homes, and each section covers what that brand’s machines actually
-          need, how its clean indicator behaves, and where that make tends to
-          fail.
+          Uinta Ice Co. cleans residential and light commercial ice machines
+          from every major manufacturer. The brands below are the ones we see
+          most often in Utah homes, and each section covers what that brand’s
+          machines actually need, how its clean indicator behaves, and where
+          that make tends to fail.
         </p>
         <p>
           If yours isn’t listed, call or text{" "}
@@ -113,6 +114,15 @@ export default function BrandsPage() {
               Common failure points: gearbox and auger motor strain from scale,
               condenser fins packed with dust, and reservoir biofilm on nugget
               units, which hold standing water by design.
+            </p>
+            <p>
+              Scotsman is also the brand we most expect to find in a light
+              commercial setting, since the company’s core business is
+              commercial ice equipment.{" "}
+              <Link href="#commercial-brands">
+                The commercial brands we service
+              </Link>
+              .
             </p>
             <p>
               <Link href="/troubleshooting#how-often">
@@ -263,14 +273,61 @@ export default function BrandsPage() {
           </AccordionItem>
 
           <AccordionItem
+            id="commercial-brands"
+            headingLevel={2}
+            summary="Which Commercial Ice Machine Brands Do You Service?"
+          >
+            <p>
+              The three we see most in light commercial settings are Scotsman,
+              Manitowoc, and Hoshizaki. We also service Follett, Ice-O-Matic,
+              Icetro, and most other commercial makes.
+            </p>
+            <p>
+              These are the machines in offices, retail showrooms, and small
+              business breakrooms. Larger than a residential undercounter unit,
+              with more components, which is why a commercial visit runs about
+              an hour and a half.
+            </p>
+            <p>
+              <strong>Scotsman.</strong> The most common of the three, and
+              unsurprising given that commercial ice equipment is the company’s
+              core business. Modular cubers and nugget machines, undercounter
+              and freestanding.
+            </p>
+            <p>
+              <strong>Manitowoc.</strong> Widely installed in offices and
+              breakrooms, mostly modular cubers sitting on a separate storage
+              bin. The bin is a distinct cleaning job from the machine itself
+              and gets treated as one.
+            </p>
+            <p>
+              <strong>Hoshizaki.</strong> Known for crescent cube machines and
+              for running a long time with minimal complaint, which in practice
+              means they often go longer between cleanings than they should.
+            </p>
+            <p>
+              One thing worth knowing across all of these: evaporator
+              construction varies more among commercial brands than it does
+              among residential ones. We match the descaler to the machine
+              rather than using one chemical on everything.
+            </p>
+            <p>
+              <Link href="/ice-machine-cleaning#commercial">
+                What’s different about a commercial cleaning
+              </Link>
+              .
+            </p>
+          </AccordionItem>
+
+          <AccordionItem
             id="other-brands"
             headingLevel={2}
             summary="What If My Brand Isn’t Listed?"
           >
             <p>
-              We service most residential ice machine brands. The list above is
-              what we see most often in Utah homes, not the limit of what we work
-              on.
+              We service most residential and light commercial ice machine
+              brands. The lists above are what we see most often in Utah, not
+              the limit of what we work on.
             </p>
             <p>
               The service is the same across makes: a nickel-safe descale of the

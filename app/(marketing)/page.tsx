@@ -8,6 +8,7 @@ import {
   breadcrumbSchema,
   faqPageSchema,
   localBusinessSchema,
+  serviceSchema,
 } from "@/lib/schema";
 import { Accordion, AccordionItem } from "@/components/marketing/Accordion";
 import { SocialLinks } from "@/components/marketing/SocialLinks";
@@ -28,6 +29,7 @@ export const metadata = pageMetadata({
 const TRUST_BAR = [
   "Licensed and insured",
   "Serving Utah homes since 2022",
+  "Residential and light commercial",
   "Scotsman, Sub-Zero, U-Line, KitchenAid, GE",
   "Locally owned in Lehi",
   "Utah County and Salt Lake County",
@@ -35,10 +37,16 @@ const TRUST_BAR = [
 
 export default async function HomePage() {
   let price: string | null = null;
+  let commercialPrice: string | null = null;
+  let priceCents: number | null = null;
+  let commercialPriceCents: number | null = null;
   let geo: { lat: number; lng: number } | undefined;
   try {
     const settings = await getSettings();
     price = formatUsdWhole(settings.base_price_cents);
+    commercialPrice = formatUsdWhole(settings.commercial_price_cents);
+    priceCents = settings.base_price_cents;
+    commercialPriceCents = settings.commercial_price_cents;
     // Only emit GeoCoordinates in the JSON-LD if both values are real numbers.
     // The Settings type says `number`, but the row is cast unchecked, so a NULL
     // column would otherwise produce `latitude: null` in the schema.
@@ -48,12 +56,42 @@ export default async function HomePage() {
     }
   } catch {
     price = null;
+    commercialPrice = null;
   }
 
   const schema = [
     localBusinessSchema(geo),
     breadcrumbSchema([{ name: "Home", path: "/" }]),
     faqPageSchema(HOME_FAQ),
+    // Two distinct Service offerings under the same provider (rather than one
+    // service at two prices) so a crawler can tell the tiers apart — price and
+    // duration both live here, DB-sourced, never a literal in this file.
+    ...(priceCents != null
+      ? [
+          serviceSchema({
+            name: "Residential ice machine cleaning",
+            description:
+              "Full teardown of removable components, nickel-safe descale, reservoir and bin deep clean, food-contact sanitize, and test, in a Utah home.",
+            path: "/",
+            serviceType: "Residential ice machine cleaning",
+            offer: { priceCents, durationIso: "PT1H" },
+            idSuffix: "-residential",
+          }),
+        ]
+      : []),
+    ...(commercialPriceCents != null
+      ? [
+          serviceSchema({
+            name: "Light commercial ice machine cleaning",
+            description:
+              "Full teardown of removable components, nickel-safe descale, reservoir and bin deep clean, food-contact sanitize, and test, for offices, retail showrooms, and small business breakrooms.",
+            path: "/",
+            serviceType: "Light commercial ice machine cleaning",
+            offer: { priceCents: commercialPriceCents, durationIso: "PT1H30M" },
+            idSuffix: "-commercial",
+          }),
+        ]
+      : []),
   ];
 
   return (
@@ -72,12 +110,18 @@ export default async function HomePage() {
         />
         <div className="mkt-hero__inner">
           <p className="mkt-hero__wordmark">Uinta Ice&nbsp;Co</p>
-          <p className="mkt-hero__eyebrow">Residential ice machine cleaning</p>
+          <p className="mkt-hero__eyebrow">
+            Residential and light commercial ice machine cleaning
+          </p>
           <h1>Get Your Utah Ice Machine Making Clean Ice Again</h1>
           <p className="mkt-hero__subhead">
             Professional descaling, deep cleaning, and sanitizing for Scotsman,
             Sub-Zero, U-Line, and most other undercounter ice machines. We just
             need an hour of your ice time.
+          </p>
+          <p className="mkt-hero__subhead mkt-hero__subhead--muted">
+            Homes across Utah County and Salt Lake County, plus light
+            commercial machines in offices, showrooms, and breakrooms.
           </p>
           <div className="mkt-cta-row">
             <Link href="/book" className="mkt-btn mkt-btn--primary">
@@ -345,6 +389,13 @@ export default async function HomePage() {
             ice.
           </p>
           <p>
+            <strong>Light commercial.</strong> Offices, retail showrooms, and
+            small business breakrooms. Same descale, deep clean, and sanitize,
+            on a larger machine with more components. Those visits run about
+            an hour and a half.{" "}
+            <Link href="#pricing">Residential and commercial pricing</Link>.
+          </p>
+          <p>
             <strong>Where we work.</strong> Based in Lehi, serving a 75-mile
             radius across Utah County and Salt Lake County, including Alpine,
             Highland, Salt Lake City, Holladay, Park City, Heber City, Draper,
@@ -383,11 +434,93 @@ export default async function HomePage() {
         {/* SECTION 11 — PRICING */}
         <section id="pricing" className="mkt-section">
           <h2>What It Costs</h2>
-          {price ? (
-            <p className="mkt-price">
-              {price}
-              <span>per visit</span>
-            </p>
+          {price && commercialPrice ? (
+            <>
+              <p>
+                Two tiers, priced to the work. Each block below states what the
+                visit covers before it states the number.
+              </p>
+              <div className="mkt-pricing-cards">
+                <div className="mkt-pricing-card">
+                  <h3>Residential</h3>
+                  <p>
+                    Full teardown of removable components, nickel-safe descale,
+                    reservoir and bin deep cleaned by hand, food-contact
+                    sanitize, reassembly and test, and an email breakdown
+                    afterward with before-and-after photos, our notes, and the
+                    receipt. All supplies included. About an hour in your
+                    kitchen.
+                  </p>
+                  <p className="mkt-price">
+                    {price}
+                    <span>per visit</span>
+                  </p>
+                  <p>Two visits a year, on a machine that cost four figures to install.</p>
+                  <div className="mkt-pricing-photos">
+                    <Image
+                      src="/images/scotsman-residential.jpg"
+                      alt="Residential undercounter ice machine being descaled in a Utah home."
+                      width={200}
+                      height={200}
+                    />
+                    <Image
+                      src="/images/subzero-residential.jpg"
+                      alt="Residential undercounter ice machine being hand cleaned in a Utah home."
+                      width={200}
+                      height={200}
+                    />
+                    <Image
+                      src="/images/viking-residential.jpg"
+                      alt="Residential undercounter ice machine being sanitized in a Utah home."
+                      width={200}
+                      height={200}
+                    />
+                  </div>
+                </div>
+                <div className="mkt-pricing-card">
+                  <h3>Light commercial</h3>
+                  <p>
+                    A larger machine with more components. More parts to
+                    disassemble, clean, and reassemble, which is why the visit
+                    runs about an hour and a half rather than an hour. Same
+                    nickel-safe descale, hand cleaning, and food-contact
+                    sanitizing, across more surface area. All supplies
+                    included. Offices, retail showrooms, and small business
+                    breakrooms.
+                  </p>
+                  <p className="mkt-price">
+                    {commercialPrice}
+                    <span>per visit</span>
+                  </p>
+                  <div className="mkt-pricing-photos">
+                    <Image
+                      src="/images/scotsman-commercial.jpg"
+                      alt="Light commercial ice machine being descaled in a Utah office."
+                      width={200}
+                      height={200}
+                    />
+                    <Image
+                      src="/images/manitowoc-commercial.jpg"
+                      alt="Light commercial ice machine being hand cleaned in a Utah office."
+                      width={200}
+                      height={200}
+                    />
+                    <Image
+                      src="/images/hoshizaki-commercial.jpg"
+                      alt="Light commercial ice machine being sanitized in a Utah showroom."
+                      width={200}
+                      height={200}
+                    />
+                  </div>
+                </div>
+              </div>
+              <p>
+                Both are flat rates. Not starting prices, not estimates, and
+                not quotes that change when we open the machine. Both run on
+                the same six-month schedule — you sign a short agreement, we
+                handle the scheduling, and you can stop any time.
+              </p>
+            </>
           ) : (
             <p className="mkt-price">
               <span>
@@ -396,24 +529,6 @@ export default async function HomePage() {
               </span>
             </p>
           )}
-          <p>
-            That’s the complete service. Full teardown of removable components,
-            nickel-safe descale, reservoir and bin deep cleaned by hand,
-            food-contact sanitize, reassembly and test, and an email breakdown
-            afterward with before-and-after photos, our notes, and the receipt.
-            All supplies included. About an hour.
-          </p>
-          <p>
-            Flat rate. Not a starting price, not an estimate, and not a quote
-            that changes when we open the machine.
-          </p>
-          <p>
-            This is a recurring service. Utah water makes six months the right
-            interval, so you sign a short agreement and we come back every six
-            months to clean the machine again at the same flat rate. We handle
-            the scheduling. If you want to stop, tell us and we stop. It comes to
-            two visits a year on a machine that cost four figures to install.
-          </p>
           <div className="mkt-cta-row mkt-anchor-cta">
             <Link href="/book" className="mkt-btn mkt-btn--primary">
               Book a cleaning
@@ -442,11 +557,13 @@ export default async function HomePage() {
         <section id="about" className="mkt-section">
           <h2>About Uinta Ice Co.</h2>
           <p>
-            Uinta Ice Co. is a residential ice machine cleaning service based in
-            Lehi, Utah. We descale, deep clean, and sanitize undercounter and
-            built-in residential ice machines in customers’ homes across Utah
-            County and Salt Lake County, within a 75-mile service radius. We have
-            served Utah homeowners since 2022 and we are licensed and insured.
+            Uinta Ice Co. is an ice machine cleaning service based in Lehi,
+            Utah. We descale, deep clean, and sanitize undercounter and
+            built-in ice machines on site, for homes across Utah County and
+            Salt Lake County and for light commercial accounts including
+            offices, retail showrooms, and small business breakrooms, within a
+            75-mile service radius. We have served Utah since 2022 and we are
+            licensed and insured.
           </p>
           <p>
             We service Scotsman, Sub-Zero, U-Line, KitchenAid, GE Profile, and GE
@@ -457,7 +574,10 @@ export default async function HomePage() {
             typically recommend.
           </p>
           <p>
-            A visit takes about one hour and includes all supplies. Call or text{" "}
+            A residential visit takes about one hour. A light commercial visit
+            takes about an hour and a half, because the units are larger and
+            have more components to disassemble and clean. All supplies are
+            included in both. Call or text{" "}
             <a href={NAP.phoneHref}>{NAP.phoneDisplay}</a>. Email{" "}
             <a href={NAP.emailHref}>{NAP.email}</a>.
           </p>

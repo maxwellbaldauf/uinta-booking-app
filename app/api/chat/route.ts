@@ -58,6 +58,14 @@ async function currentPriceLabel(): Promise<string | null> {
   }
 }
 
+async function currentCommercialPriceLabel(): Promise<string | null> {
+  try {
+    return formatUsdWhole((await getSettings()).commercial_price_cents);
+  } catch {
+    return null;
+  }
+}
+
 function extractText(message: Anthropic.Message): string {
   return message.content
     .filter((b): b is Anthropic.TextBlock => b.type === "text")
@@ -154,10 +162,14 @@ export async function POST(req: Request) {
   // blip recoverable without risking a pile-up. Bump the function timeout in
   // netlify.toml if real traffic shows this being cut off.
   const anthropic = new Anthropic({ apiKey, maxRetries: 1 });
+  const [priceLabel, commercialPriceLabel] = await Promise.all([
+    currentPriceLabel(),
+    currentCommercialPriceLabel(),
+  ]);
   const system: Anthropic.TextBlockParam[] = [
     {
       type: "text",
-      text: buildSystemPrompt({ priceLabel: await currentPriceLabel() }),
+      text: buildSystemPrompt({ priceLabel, commercialPriceLabel }),
       cache_control: { type: "ephemeral" },
     },
   ];

@@ -2,7 +2,7 @@
 **Uinta Ice Co., LLC** | Slug: `/ice-machine-cleaning`
 
 **Title tag (56):** Residential Ice Machine Cleaning Service | Uinta Ice Co.
-**Meta description (153):** A full teardown, nickel-safe descale, reservoir and bin deep clean, and food-safe sanitize, done in your kitchen in about an hour. All supplies included.
+**Meta description (153):** Full teardown, nickel-safe descale, reservoir and bin deep clean, and food-safe sanitize. About an hour for homes, 90 minutes for light commercial units.
 
 Approx. 1,420 words of body copy. No price anywhere on this page.
 
@@ -18,14 +18,16 @@ Residential Ice Machine Cleaning in Utah, Start to Finish
 
 Uinta Ice Co. descales, deep cleans, and sanitizes residential ice machines in the customer's home. A visit takes about an hour, covers every component the water and ice touch, and includes all supplies. We're based in Lehi and serve Utah County and Salt Lake County within a 75-mile radius.
 
-This page covers exactly what that visit involves, what we use, and what we send you afterward.
+We also service light commercial machines in offices, retail showrooms, and small business breakrooms. Those visits run about an hour and a half, because the units are larger and have more components.
+
+This page covers exactly what that visit involves, what we use, and what we'll tell you when we're done.
 
 **CTA button (top of page):** Book a cleaning → `/book`
 **Secondary:** Call or text (801) 796-2675 → `tel:+18017962675`
 
 ---
 
-## SECTION 1 — WHAT'S INCLUDED
+## SECTION 1
 `anchor id: #included`
 
 > **PSYCHOLOGY: Specificity as authority.** The home page gives the seven steps in outline. This is the same visit at full resolution, because the detail is what separates a specialist from a guy with a bucket, and this is the page where a serious buyer comes to check.
@@ -36,7 +38,7 @@ What's Included in a Professional Ice Machine Cleaning?
 Every visit covers four things: descaling the water path, deep cleaning the reservoir and bin, sanitizing every ice-contact surface, and testing the machine before we leave. Here's what each of those actually involves.
 
 **We start by looking at the machine before we touch it.**
-Power down, panels off, and an assessment of what condition it's in. How much scale is on the evaporator, whether there's biofilm in the reservoir, whether the machine has ever been serviced. That assessment shapes the rest of the visit, and it's the first thing in the writeup we send you.
+Power down, panels off, and an assessment of what condition it's in. How much scale is on the evaporator, whether there's biofilm in the reservoir, whether the machine has ever been serviced. That assessment shapes the rest of the visit and it's the first thing we'll tell you about at the end.
 
 **We remove the components that hold buildup.**
 The bin, the reservoir, the water distribution parts, and the pump components come out. This is the step that separates a real cleaning from a clean cycle. A built-in cleaning cycle circulates solution through the water path and then drains. It does not reach the parts that hold the most residue, because those parts sit outside the circulating path or hold standing water at the bottom of the machine. Those pieces get cleaned by hand, off the machine.
@@ -58,7 +60,7 @@ The machine goes back together and cycles while we're still there. We watch it t
 
 ---
 
-## SECTION 2 — THE DESCALER
+## SECTION 2
 `anchor id: #descaler`
 
 > **PSYCHOLOGY: Specificity as authority, sharpest instance on the site.** This is the one fact on the page a competitor almost certainly can't match and a homeowner has never heard. It reframes DIY as a risk rather than a saving, without ever telling them not to try.
@@ -78,7 +80,7 @@ We use a universal nickel-safe descaler on every machine, regardless of brand. I
 
 ---
 
-## SECTION 3 — WHAT YOU DO BEFORE WE ARRIVE
+## SECTION 3
 `anchor id: #before-we-arrive`
 
 > **PSYCHOLOGY: Friction removal.** Short section on purpose. Every sentence removes a reason to postpone booking.
@@ -90,19 +92,19 @@ Nothing. Leave the machine as it is.
 
 We bring the descaler, the sanitizer, the tools, and the towels. You don't need to empty the bin, run a cycle, buy a cleaning kit, or clear the cabinet. If the machine is full of ice, that's fine.
 
-You don't need to be home, but we do need a way into the house — however you arrange that is up to you. We send reminders in the week before the visit, and if we arrive and can't get in, there's a $50 rescheduling fee. We work in one spot, we keep it clean, and we take everything out with us.
+Someone needs to be there to let us in and to hear what we found at the end. Beyond that, you can go about your day. We work in one spot, we keep it clean, and we take everything out with us.
 
 ---
 
-## SECTION 4 — THE WALKTHROUGH
+## SECTION 4
 `anchor id: #walkthrough`
 
 > **PSYCHOLOGY: Value stacking, non-physical.** The part of the service that isn't labor. Ends the visit with the customer knowing something they didn't, which is what generates the referral.
 
 ### H2
-What We Send You After the Visit
+What We Tell You Before We Leave
 
-Every visit ends with an email breakdown, with before-and-after photos attached. It covers four things.
+Every visit ends with a short walkthrough. You'll hear four things.
 
 **What condition the machine was in.** How heavy the scale was, whether there was biofilm in the reservoir, and how that compares to what we typically see in your area.
 
@@ -110,13 +112,13 @@ Every visit ends with an email breakdown, with before-and-after photos attached.
 
 **When yours should be serviced again.** Six months is standard for Utah. Machines on especially hard water, in heavy-use households, or that have gone years without service sometimes need a shorter interval, and we'll say so if yours does.
 
-**Whether anything looks mechanical.** If we see something that cleaning won't fix, it's in the writeup, called out plainly. We don't do repairs, so we have no reason to find problems.
+**Whether anything looks mechanical.** If we see something that cleaning won't fix, you'll hear it directly. We don't do repairs, so we have no reason to find problems.
 
-The receipt comes with it. This is a recurring six-month service, so we schedule the next visit and track the date — you don't have to keep a calendar for it.
+We track your next service date and reach out when it comes due. You don't have to keep a calendar for it.
 
 ---
 
-## SECTION 5 — SERVICE INTERVAL
+## SECTION 5
 `anchor id: #how-often`
 
 > **PSYCHOLOGY: Honest scarcity is unavailable (routing is ad hoc), so the urgency here comes from the interval itself.** Manufacturer range cited, local reality stated, standard set.
@@ -128,13 +130,36 @@ Every six months for most Utah homes. Manufacturers typically recommend descalin
 
 The U.S. Geological Survey classifies water above 180 mg/L as very hard. Mountain Regional Water, which supplies much of the Park City area, publishes its hardness at roughly 300 mg/L, about 17.5 grains per gallon. Herriman City reports Jordan Valley Water Conservancy District supply generally running 12 to 15 grains per gallon. Machines here scale faster than the same unit would in most of the country.
 
-We run it as a recurring service. You sign a short agreement, we come back every six months at the same flat rate, and we handle the scheduling. Semi-annual service keeps an undercounter machine at full production and keeps the reservoir from becoming a problem in the first place. Waiting until the ice tastes wrong means the buildup has been there a long time.
+Semi-annual service keeps an undercounter machine at full production and keeps the reservoir from becoming a problem in the first place. Waiting until the ice tastes wrong means the buildup has been there a long time.
 
 → Link: [what happens to a machine that's never cleaned](/troubleshooting#never-cleaned)
 
 ---
 
-## SECTION 6 — WHAT WE DON'T DO
+## SECTION 6
+`anchor id: #commercial`
+
+> **PSYCHOLOGY: Specificity as authority.** The price difference is explained by three concrete facts stated once, without apology or hedging. A reader who sees the reason does not need to be persuaded of the fairness.
+
+### H2
+What's Different About a Commercial Cleaning?
+
+Three things. The machine is larger, it has more components, and the visit takes about an hour and a half instead of an hour.
+
+We service light commercial accounts: offices, retail showrooms, and small business breakrooms. The process is the same one described above. Nickel-safe descale of the water path, hand cleaning of the reservoir and bin, food-contact sanitizing of every surface the ice touches, and a test cycle before we leave.
+
+What changes is the scope of the disassembly. A commercial unit has more removable parts, more surface area in the water path, and a larger bin. Every one of those has to come apart, get cleaned, and go back together. That's where the additional half hour goes, and it's the whole of the difference in price.
+
+Light commercial is the boundary. We're not a restaurant equipment company. We don't service high-volume food-service machines and we don't provide health-code inspection support.
+
+→ Link: [residential and commercial pricing](/#pricing)
+
+**FAQ schema pair:**
+Q: What's the difference between commercial and residential ice machine cleaning?
+A: The cleaning process is the same. Commercial units are larger and have more components to disassemble, clean, and reassemble, so a commercial visit takes about an hour and a half compared with about an hour for a residential machine.
+
+
+## SECTION 7
 `anchor id: #what-we-dont-do`
 
 > **PSYCHOLOGY: Authority through honest concession.** Naming the boundary of the business is the strongest trust signal available on a page that has no reviews on it yet.
@@ -150,7 +175,7 @@ That boundary is deliberate. A repair company that also cleans has a reason to f
 
 ---
 
-## SECTION 7 — MACHINES AND BRANDS
+## SECTION 8
 `anchor id: #machines`
 
 > **PSYCHOLOGY: Self-selection plus internal linking.** Confirms the visitor qualifies and moves them to the two pages that close geographic and brand doubt.
@@ -162,12 +187,14 @@ Undercounter and built-in residential ice machines producing nugget, pebble, gou
 
 The brands we see most often are Scotsman, Sub-Zero, U-Line, KitchenAid, GE Profile, and GE Monogram. We service most other residential makes as well, so call if yours isn't on that list.
 
+On the light commercial side, we service undercounter and freestanding machines in offices, retail showrooms, and breakrooms.
+
 → Link: [what each brand needs, and where each one tends to fail](/brands)
 → Link: [the cities we serve across Utah County and Salt Lake County](/service-areas)
 
 ---
 
-## SECTION 8 — FAQ
+## SECTION 9
 `anchor id: #faq`
 
 > **PSYCHOLOGY: Objection handling, service-specific.** Deliberately different questions from the home page FAQ so the two pages don't compete for the same snippets.
@@ -188,13 +215,13 @@ If scale is the cause, yes, and scale is the most common cause we see in Utah. I
 It's a food-contact sanitizer, applied to surfaces the ice touches and used as directed for that purpose.
 
 **Do you service commercial machines?**
-This page covers residential service. For anything commercial, call or text (801) 796-2675 and we'll talk it through directly.
+Yes, light commercial. Offices, retail showrooms, and small business breakrooms. Those visits run about an hour and a half because the units are larger and have more components. We don't service high-volume food-service or restaurant equipment.
 
-**Schema note:** mark up all six as FAQPage question/answer pairs.
+**Schema note:** mark up all six as FAQPage question/answer pairs, plus the commercial pair in Section 6.
 
 ---
 
-## SECTION 9 — PRICING POINTER, GUARANTEE, CTA
+## SECTION 10
 `anchor id: #book`
 
 > **PSYCHOLOGY: Risk reversal immediately before the ask.** The price lives on the home page only. This sends the reader there in one click rather than restating it.
@@ -218,10 +245,10 @@ If you're not satisfied with the cleaning, we come back and clean it again at no
 |---|---|---|
 | 2 — The descaler | `/troubleshooting#descaling-vs-sanitizing` | descaling and sanitizing do different jobs |
 | 5 — Service interval | `/troubleshooting#never-cleaned` | what happens to a machine that's never cleaned |
-| 7 — Machines and brands | `/brands` | what each brand needs, and where each one tends to fail |
-| 7 — Machines and brands | `/service-areas` | the cities we serve across Utah County and Salt Lake County |
-| 9 — Pricing pointer | `/#pricing` | see what a cleaning costs |
-| Top, 9 | `/book` | Book a cleaning |
+| 8 — Machines and brands | `/brands` | what each brand needs, and where each one tends to fail |
+| 8 — Machines and brands | `/service-areas` | the cities we serve across Utah County and Salt Lake County |
+| 10 — Pricing pointer | `/#pricing` | see what a cleaning costs |
+| Top, 10 | `/book` | Book a cleaning |
 
 Note: the two `/troubleshooting` anchors above are reserved. I'll assign matching anchor ids when I write that page in Phase 4.
 

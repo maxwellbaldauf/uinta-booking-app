@@ -28,11 +28,34 @@ export const ARRIVAL_BLOCKS: ArrivalBlockDef[] = [
 export const ARRIVAL_BLOCK_OPTIONS: { value: ArrivalBlock; label: string }[] =
   ARRIVAL_BLOCKS.map((b) => ({ value: b.index, label: b.label }));
 
+function to12Hour(time24: string): string {
+  const [h, m] = time24.split(":").map(Number);
+  const period = h >= 12 ? "PM" : "AM";
+  const h12 = h % 12 === 0 ? 12 : h % 12;
+  return `${h12}:${String(m).padStart(2, "0")} ${period}`;
+}
+
 // Display helper — tolerant of the null/legacy values that can still turn up
 // (an old cached offline snapshot, a job row from before this column existed).
-export function arrivalBlockLabel(index: number | null | undefined): string {
+//
+// blocksNeeded > 1 (a commercial reservation) formats a combined range across
+// the start block's startsAt and the end block's endsAt, always showing AM/PM
+// on both sides (unlike the hand-authored single-block labels above, which
+// sometimes omit it when both ends share a period) since the synthesized
+// range is more often read out of context (e.g. a calendar badge).
+export function arrivalBlockLabel(
+  index: number | null | undefined,
+  blocksNeeded = 1
+): string {
   if (index == null) return "—";
-  return ARRIVAL_BLOCKS.find((b) => b.index === index)?.label ?? `Block ${index}`;
+  const start = ARRIVAL_BLOCKS.find((b) => b.index === index);
+  if (!start) return `Block ${index}`;
+  if (blocksNeeded <= 1) return start.label;
+
+  const end = ARRIVAL_BLOCKS.find((b) => b.index === index + blocksNeeded - 1);
+  if (!end) return start.label; // defensive: server enforces the range fits within block 7
+
+  return `${to12Hour(start.startsAt)} – ${to12Hour(end.endsAt)}`;
 }
 
 export function isArrivalBlock(value: unknown): value is ArrivalBlock {

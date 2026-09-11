@@ -2,7 +2,7 @@
 **Uinta Ice Co., LLC** | Slug: `/brands`
 
 **Title tag (58):** Ice Machine Cleaning by Brand | Scotsman, Sub-Zero, U-Line
-**Meta description (154):** We service Scotsman, Sub-Zero, U-Line, KitchenAid and GE undercounter ice machines, plus most other makes. Brand-specific quirks and clean light behavior.
+**Meta description (135):** Scotsman, Sub-Zero, U-Line, KitchenAid and GE for homes. Manitowoc, Hoshizaki and Scotsman for light commercial. Plus most other makes.
 
 Approx. 1,180 words of body copy. No price on this page.
 
@@ -15,7 +15,7 @@ Approx. 1,180 words of body copy. No price on this page.
 ### H1
 The Brands We Service Most Often
 
-Uinta Ice Co. cleans residential ice machines from every major manufacturer. The brands below are the ones we see most often in Utah homes, and each section covers what that brand's machines actually need, how its clean indicator behaves, and where that make tends to fail.
+Uinta Ice Co. cleans residential and light commercial ice machines from every major manufacturer. The brands below are the ones we see most often in Utah homes, and each section covers what that brand's machines actually need, how its clean indicator behaves, and where that make tends to fail.
 
 If yours isn't listed, call or text (801) 796-2675. We service most residential makes.
 
@@ -31,6 +31,7 @@ If yours isn't listed, call or text (801) 796-2675. We service most residential 
 - [U-Line](#u-line)
 - [KitchenAid](#kitchenaid)
 - [GE Profile and GE Monogram](#ge)
+- [Commercial brands](#commercial-brands)
 - [Every other brand](#other-brands)
 
 ---
@@ -52,6 +53,9 @@ Scotsman machines carry a "Time to Clean" indicator, and the reset is a button-h
 Scotsman specifies its Clear 1 scale remover, which is nickel-safe. That specification is not marketing. The evaporator surfaces in these machines are plated, and a general-purpose descaler strips the plating.
 
 Common failure points: gearbox and auger motor strain from scale, condenser fins packed with dust, and reservoir biofilm on nugget units, which hold standing water by design.
+
+Scotsman is also the brand we most expect to find in a light commercial setting, since the company's core business is commercial ice equipment.
+→ Link: [the commercial brands we service](#commercial-brands)
 
 **FAQ schema pair:**
 Q: How often does a Scotsman ice machine need cleaning?
@@ -148,12 +152,40 @@ A: A nickel-safe ice machine cleaner. GE's parts catalog specifies one for its u
 ---
 
 ## SECTION 6
+`anchor id: #commercial-brands`
+
+> **PSYCHOLOGY: Self-selection.** A facilities manager needs to see their machine's name on the page before they read anything else. This section exists to be scanned, not studied.
+
+### H2
+Which Commercial Ice Machine Brands Do You Service?
+
+The three we see most in light commercial settings are Scotsman, Manitowoc, and Hoshizaki. We also service Follett, Ice-O-Matic, Icetro, and most other commercial makes.
+
+These are the machines in offices, retail showrooms, and small business breakrooms. Larger than a residential undercounter unit, with more components, which is why a commercial visit runs about an hour and a half.
+
+**Scotsman.** The most common of the three, and unsurprising given that commercial ice equipment is the company's core business. Modular cubers and nugget machines, undercounter and freestanding.
+
+**Manitowoc.** Widely installed in offices and breakrooms, mostly modular cubers sitting on a separate storage bin. The bin is a distinct cleaning job from the machine itself and gets treated as one.
+
+**Hoshizaki.** Known for crescent cube machines and for running a long time with minimal complaint, which in practice means they often go longer between cleanings than they should.
+
+One thing worth knowing across all of these: evaporator construction varies more among commercial brands than it does among residential ones. We match the descaler to the machine rather than using one chemical on everything.
+
+→ Link: [what's different about a commercial cleaning](/ice-machine-cleaning#commercial)
+
+**FAQ schema pair:**
+Q: What commercial ice machine brands does Uinta Ice Co. clean?
+A: Most commonly Scotsman, Manitowoc, and Hoshizaki. We also service Follett, Ice-O-Matic, Icetro, and most other light commercial makes in offices, retail showrooms, and breakrooms.
+
+---
+
+## SECTION 7
 `anchor id: #other-brands`
 
 ### H2
 What If My Brand Isn't Listed?
 
-We service most residential ice machine brands. The list above is what we see most often in Utah homes, not the limit of what we work on.
+We service most residential and light commercial ice machine brands. The lists above are what we see most often in Utah, not the limit of what we work on.
 
 The service is the same across makes: a nickel-safe descale of the water path, hand cleaning of the reservoir and bin, food-contact sanitizing of every surface the ice touches, and a test cycle before we leave. What changes between brands is the disassembly, the indicator behavior, and where that particular machine tends to fail.
 
@@ -161,7 +193,7 @@ Call or text (801) 796-2675 with your make and model and we'll tell you straight
 
 **FAQ schema pair:**
 Q: Do you service ice machine brands other than the ones listed?
-A: Yes. Uinta Ice Co. services most residential ice machine makes. The listed brands are the ones most commonly found in Utah homes.
+A: Yes. Uinta Ice Co. services most residential and light commercial ice machine makes. The listed brands are the ones most commonly found in Utah homes and offices.
 
 ---
 
@@ -192,8 +224,9 @@ If you're not satisfied with the cleaning, we come back and clean it again at no
 | 1 — Scotsman | `/troubleshooting#how-often` | how often Utah machines need service |
 | 3 — U-Line | `/troubleshooting#clean-light` | why a clean light stays on |
 | 4 — KitchenAid | `/troubleshooting#cloudy-ice` | what cloudy and hollow ice means |
-| 5 — GE | `/ice-machine-cleaning#descaler` | why the descaler has to be nickel-safe |
-| 6 — Other brands | `/service-areas` | the cities we serve |
+| 5 — GE |
+| 6 — Commercial brands | `/ice-machine-cleaning#commercial` | what's different about a commercial cleaning | `/ice-machine-cleaning#descaler` | why the descaler has to be nickel-safe |
+| 7 — Other brands | `/service-areas` | the cities we serve |
 | Closing | `/book` | Book a cleaning |
 
 **Developer note:** place these links inline in the sections named, using the anchor text given. I've listed them here rather than inside the copy so the prose reads clean during your review.

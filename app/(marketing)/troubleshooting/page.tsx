@@ -45,6 +45,10 @@ const JUMP = [
     label: "Descaling vs. sanitizing: what’s the difference?",
   },
   { id: "diy", label: "Can I clean my own ice machine?" },
+  {
+    id: "commercial-vs-residential",
+    label: "Why does commercial cost more than residential?",
+  },
 ];
 
 const COMPARISON = [
@@ -511,6 +515,36 @@ export default function TroubleshootingPage() {
               doing nothing, and on a newer machine it will slow scale down. It
               won’t remove biofilm from the reservoir, and in Utah’s water it
               won’t keep up with scale on its own.
+            </p>
+          </AccordionItem>
+
+          <AccordionItem
+            id="commercial-vs-residential"
+            headingLevel={2}
+            summary="Why Does Commercial Ice Machine Cleaning Cost More Than Residential?"
+          >
+            <p>
+              Because the job is bigger. A residential cleaning is $150 and
+              takes about an hour. A light commercial cleaning is $300 and
+              takes about an hour and a half, on a larger machine with more
+              components to take apart, clean, and put back.
+            </p>
+            <p>
+              The process itself doesn’t change. Both get a nickel-safe
+              descale of the water path, hand cleaning of the reservoir and
+              bin, and food-contact sanitizing of every surface the ice
+              touches. What changes is how much there is to take apart. More
+              removable parts, more surface area in the water path, and a
+              larger bin all have to come out, get cleaned, and go back in.
+            </p>
+            <p>
+              Light commercial means offices, retail showrooms, and small
+              business breakrooms. It does not mean restaurant or high-volume
+              food-service equipment, which is a different category of machine
+              and a different kind of service company.
+            </p>
+            <p>
+              <Link href="/#pricing">Residential and commercial pricing</Link>.
             </p>
           </AccordionItem>
         </Accordion>

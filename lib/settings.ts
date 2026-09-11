@@ -5,6 +5,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 // area, the scheduling window, the same-day cutoff, business contact info.
 export type Settings = {
   base_price_cents: number;
+  commercial_price_cents: number;
   service_interval_months: number;
   service_center_lat: number;
   service_center_lng: number;
@@ -20,7 +21,7 @@ export type Settings = {
 };
 
 const SETTINGS_COLUMNS =
-  "base_price_cents, service_interval_months, service_center_lat, " +
+  "base_price_cents, commercial_price_cents, service_interval_months, service_center_lat, " +
   "service_center_lng, service_area_max_miles, match_radius_miles, " +
   "lookahead_days, max_jobs_per_tech_per_day, weekly_days_off, " +
   "same_day_cutoff, business_name, business_email, business_phone";

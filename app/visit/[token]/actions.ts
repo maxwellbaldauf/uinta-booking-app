@@ -44,6 +44,7 @@ export async function rescheduleVisit(
       visit.longitude,
       choice.slotDate,
       choice.arrivalBlock,
+      visit.blocksNeeded,
       { excludeJobId: visit.jobId }
     );
     if (!fresh) {
@@ -77,7 +78,7 @@ export async function rescheduleVisit(
       ok: true,
       scheduledDate: choice.slotDate,
       arrivalBlock: choice.arrivalBlock,
-      blockLabel: arrivalBlockLabel(choice.arrivalBlock),
+      blockLabel: arrivalBlockLabel(choice.arrivalBlock, visit.blocksNeeded),
     };
   } catch (err) {
     console.error("rescheduleVisit: unexpected error", err);

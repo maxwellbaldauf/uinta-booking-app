@@ -15,7 +15,7 @@ Approx. 1,090 words of body copy. No price on this page. No routing days referen
 ### H1
 Ice Machine Cleaning Near You in Utah
 
-Uinta Ice Co. is based in Lehi and cleans residential ice machines within a 75-mile radius, covering Utah County, Salt Lake County, and the Park City and Heber corridor. We come to the house. A visit takes about an hour.
+Uinta Ice Co. is based in Lehi and cleans residential and light commercial ice machines within a 75-mile radius, covering Utah County, Salt Lake County, and the Park City and Heber corridor. We come to you. A residential visit takes about an hour, a light commercial visit about an hour and a half.
 
 **CTA button:** Book a cleaning → `/book`
 **Secondary:** Call or text (801) 796-2675
@@ -131,7 +131,7 @@ We're based in Lehi and serve a 75-mile radius, so if your city isn't on the lis
 
 **FAQ schema pair:**
 Q: How far does Uinta Ice Co. travel?
-A: We're based in Lehi, Utah and serve a 75-mile radius, covering Utah County, Salt Lake County, and the Park City and Heber corridor.
+A: We're based in Lehi, Utah and serve a 75-mile radius, covering Utah County, Salt Lake County, and the Park City and Heber corridor. The same radius applies to residential and light commercial accounts.
 
 ---
 

@@ -7,6 +7,7 @@ export type Visit = {
   status: string;
   scheduledDate: string;
   arrivalBlock: number;
+  blocksNeeded: number;
   arrivalWindowLabel: string;
   address: string;
   customerName: string | null;
@@ -25,6 +26,7 @@ type JobRow = {
   status: string;
   scheduled_date: string;
   arrival_block: number;
+  blocks_needed: number;
   access_token_expires_at: string | null;
   property:
     | {
@@ -51,9 +53,9 @@ function flatten<T>(v: T | T[] | null | undefined): T | null {
 }
 
 // Look up a visit by its magic-link token (spec §3). A NULL expiry is treated
-// as valid, not expired — Project A's recurring scheduler currently ships jobs
-// without one, and a customer must never be locked out of their own
-// appointment by a bug on our side.
+// as valid, not expired — a customer must never be locked out of their own
+// appointment by a bug on our side (Project A's recurring scheduler always
+// sets one now, but this stays tolerant of an older/legacy row that doesn't).
 export async function getVisitByToken(token: string): Promise<Visit | null> {
   if (!token || token.length < 16) return null;
 
@@ -61,7 +63,7 @@ export async function getVisitByToken(token: string): Promise<Visit | null> {
   const res = await supabase
     .from("jobs")
     .select(
-      "id, status, scheduled_date, arrival_block, access_token_expires_at, " +
+      "id, status, scheduled_date, arrival_block, blocks_needed, access_token_expires_at, " +
         "property:properties(id, address, plan_status, latitude, longitude, customer:customers(full_name, email))"
     )
     .eq("access_token", token)
@@ -81,7 +83,8 @@ export async function getVisitByToken(token: string): Promise<Visit | null> {
     status: data.status,
     scheduledDate: data.scheduled_date,
     arrivalBlock: data.arrival_block,
-    arrivalWindowLabel: arrivalBlockLabel(data.arrival_block),
+    blocksNeeded: data.blocks_needed,
+    arrivalWindowLabel: arrivalBlockLabel(data.arrival_block, data.blocks_needed),
     address: property?.address ?? "",
     customerName: customer?.full_name ?? null,
     customerEmail: customer?.email ?? null,
@@ -98,9 +101,15 @@ export async function getVisitByToken(token: string): Promise<Visit | null> {
 // booking (spec §3). Empty if the property has no coordinates. Passes the
 // job's own id so get_available_slots doesn't treat it as its own route match
 // (which pinned the picker to the visit's current date).
+//
+// Uses the JOB'S OWN blocksNeeded, never the property's current service_type
+// — a property that changed tier after this job was scheduled must leave the
+// job's existing reservation alone (the field app warns the owner instead of
+// auto-resizing it), so a reschedule has to preserve the same block count the
+// job already holds, not recompute it from whatever the property is today.
 export async function getRescheduleSlots(visit: Visit) {
   if (visit.latitude == null || visit.longitude == null) return [];
-  const slots = await getOfferedSlots(visit.latitude, visit.longitude, {
+  const slots = await getOfferedSlots(visit.latitude, visit.longitude, visit.blocksNeeded, {
     excludeJobId: visit.jobId,
   });
   // Don't offer the exact window it's already in.

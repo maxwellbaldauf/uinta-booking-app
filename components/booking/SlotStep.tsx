@@ -3,11 +3,13 @@
 import { useState } from "react";
 import { buttonStyle, secondaryButtonStyle, ErrorBanner } from "@/components/ui/form";
 import { SlotGrid, type OfferedSlotView } from "./SlotGrid";
+import type { ServiceType } from "./ServiceTypeStep";
 
 export type { OfferedSlotView };
 
 export function SlotStep({
   slots,
+  serviceType,
   matchedCustomer,
   busy,
   error,
@@ -15,6 +17,7 @@ export function SlotStep({
   onContinue,
 }: {
   slots: OfferedSlotView[];
+  serviceType: ServiceType;
   matchedCustomer: { hasPaymentMethod: boolean; paymentDisplay: string | null } | null;
   busy: boolean;
   error: string | null;
@@ -31,7 +34,9 @@ export function SlotStep({
       <div>
         <h1 style={{ fontSize: 22, margin: 0 }}>Choose a time</h1>
         <p style={{ color: "var(--color-fg-muted)", margin: "4px 0 0" }}>
-          We&apos;ll give you a 90-minute arrival window.
+          {serviceType === "commercial"
+            ? "We'll give you a combined arrival window covering the full visit."
+            : "We'll give you a 90-minute arrival window."}
         </p>
       </div>
 

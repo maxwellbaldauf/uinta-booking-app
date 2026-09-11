@@ -9,8 +9,9 @@
 //                          service area, brands). Distilled from the same
 //                          content/*.md sources.
 //
-// The price is NOT here — it is read live from settings.base_price_cents and
-// injected by lib/chat/systemPrompt.ts, same rule as everywhere else on the site.
+// Price is NOT here — it is read live from settings.base_price_cents /
+// commercial_price_cents and injected by lib/chat/systemPrompt.ts, same rule
+// as everywhere else on the site.
 //
 // MAINTENANCE: when the marketing copy for scope / plan / logistics / area /
 // brands changes, update CURATED_SUPPLEMENT to match. The FAQ portion updates
@@ -31,8 +32,22 @@ const CURATED_SUPPLEMENT = `
 
 Uinta Ice Co. descales the water path, hand-cleans the reservoir and bin,
 applies a food-contact sanitizer to every surface the ice touches, then
-reassembles and test-runs the machine. About an hour, start to finish. All
-supplies included. There is nothing for the homeowner to buy, move, or prepare.
+reassembles and test-runs the machine. About an hour for a residential visit,
+about an hour and a half for light commercial, start to finish. All supplies
+included. There is nothing for the customer to buy, move, or prepare.
+
+### Light commercial — the boundary
+
+Light commercial means offices, retail showrooms, and small business
+breakrooms, on a larger machine with more components than a residential unit
+— same process, same nickel-safe descale and food-contact sanitize, just more
+to take apart, so the visit runs about an hour and a half instead of an hour.
+Light commercial is the boundary: Uinta Ice Co. is not a restaurant equipment
+company. It does not service high-volume food-service machines and does not
+provide health-code inspection support. If a visitor describes a restaurant,
+commercial kitchen, or high-volume food-service machine, say plainly that it's
+outside what Uinta services and offer the phone/email or a lead instead of
+guessing.
 
 ### What it is NOT — never imply otherwise
 
@@ -87,19 +102,23 @@ service itself.
 ### Service area
 
 Based in ${NAP.locality}, ${NAP.region}. A 75-mile radius covering Utah County,
-Salt Lake County, and the Park City and Heber corridor. The cities named on the
+Salt Lake County, and the Park City and Heber corridor — the same radius
+applies to residential and light commercial accounts. The cities named on the
 site: ${SERVICE_CITIES.join(", ")}. If a city is not on that list it may still
 be inside the radius — do NOT promise service there; say it is likely and offer
 to have someone confirm.
 
 ### Brands and machines
 
-Seen most often: Scotsman, Sub-Zero, U-Line, KitchenAid, GE Profile, GE
-Monogram. Machine types: undercounter and built-in residential ice machines
-producing nugget, pebble, gourmet, clear, and crescent ice. Most other
-residential makes are serviced too — for a make that is not listed, ask the
-visitor to call or text with the make and model. Never invent a brand-specific
-reset sequence or clean-cycle procedure.
+Residential, seen most often: Scotsman, Sub-Zero, U-Line, KitchenAid, GE
+Profile, GE Monogram. Machine types: undercounter and built-in residential ice
+machines producing nugget, pebble, gourmet, clear, and crescent ice. Light
+commercial, seen most often: Scotsman, Manitowoc, and Hoshizaki, plus Follett,
+Ice-O-Matic, Icetro, and most other commercial makes, in undercounter and
+freestanding configurations. Most other makes are serviced too, either tier —
+for a make that is not listed, ask the visitor to call or text with the make
+and model. Never invent a brand-specific reset sequence or clean-cycle
+procedure.
 
 ### Company
 

@@ -31,15 +31,24 @@ export type OfferedSlot = {
 // excludeJobId: rescheduling — the job being moved must not count as its own
 // nearby match (it would pin the picker to that job's current date) or occupy
 // its own block.
+//
+// blocksNeeded: 2 for a commercial booking (always, never customer-chosen —
+// see ServiceTypeStep), 1 for residential. A reschedule must pass the JOB'S
+// OWN current blocks_needed here, never recompute from the property's live
+// service_type — a type-changed property leaves its existing job's
+// reservation alone, so the reschedule picker has to match what the job
+// actually holds today, not what a new booking would request now.
 export async function getOfferedSlots(
   lat: number,
   lng: number,
+  blocksNeeded = 1,
   opts?: { excludeJobId?: string }
 ): Promise<OfferedSlot[]> {
   const supabase = createAdminClient();
   const { data, error } = await supabase.rpc("get_available_slots", {
     target_lat: lat,
     target_lng: lng,
+    p_blocks_needed: blocksNeeded,
     ...(opts?.excludeJobId ? { exclude_job_id: opts.excludeJobId } : {}),
   });
   if (error) throw new Error(`get_available_slots failed: ${error.message}`);
@@ -52,10 +61,12 @@ export async function getOfferedSlots(
     const cutoffMin = timeToMinutes(settings.same_day_cutoff);
     const nowMin = nowDenverMinutes();
 
-    return rows.filter((r) => keepSlot(r, today, nowMin, cutoffMin)).map(toOffered);
+    return rows
+      .filter((r) => keepSlot(r, today, nowMin, cutoffMin))
+      .map((r) => toOffered(r, blocksNeeded));
   }
 
-  return rows.map(toOffered);
+  return rows.map((r) => toOffered(r, blocksNeeded));
 }
 
 function keepSlot(r: RawSlot, today: string, nowMin: number, cutoffMin: number): boolean {
@@ -66,11 +77,11 @@ function keepSlot(r: RawSlot, today: string, nowMin: number, cutoffMin: number):
   return nowMin + 60 <= timeToMinutes(block.startsAt);
 }
 
-function toOffered(r: RawSlot): OfferedSlot {
+function toOffered(r: RawSlot, blocksNeeded: number): OfferedSlot {
   return {
     slotDate: r.slot_date,
     arrivalBlock: r.arrival_block,
-    blockLabel: arrivalBlockLabel(r.arrival_block),
+    blockLabel: arrivalBlockLabel(r.arrival_block, blocksNeeded),
     isFallback: r.is_fallback,
   };
 }
@@ -83,9 +94,10 @@ export async function slotStillAvailable(
   lng: number,
   slotDate: string,
   arrivalBlock: number,
+  blocksNeeded = 1,
   opts?: { excludeJobId?: string }
 ): Promise<OfferedSlot | null> {
-  const fresh = await getOfferedSlots(lat, lng, opts);
+  const fresh = await getOfferedSlots(lat, lng, blocksNeeded, opts);
   return (
     fresh.find((s) => s.slotDate === slotDate && s.arrivalBlock === arrivalBlock) ?? null
   );

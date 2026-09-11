@@ -17,7 +17,10 @@ Approx. 2,050 words of body copy.
 Get Your Utah Ice Machine Making Clean Ice Again
 
 ### Subhead
-Professional descaling, deep cleaning, and sanitizing for Scotsman, Sub-Zero, U-Line, and most other undercounter ice machines. We just need an hour of your ice time.
+Professional descaling, deep cleaning, and sanitizing for Scotsman, Sub-Zero, U-Line, KitchenAid, and GE undercounter ice machines. We work in your kitchen. It takes about an hour.
+
+### Subhead, second line (set smaller)
+Homes across Utah County and Salt Lake County, plus light commercial machines in offices, showrooms, and breakrooms.
 
 ### CTAs
 - **Primary button:** Book a cleaning → `/book`
@@ -25,7 +28,9 @@ Professional descaling, deep cleaning, and sanitizing for Scotsman, Sub-Zero, U-
 - **Tertiary text link:** See pricing → `#pricing`
 
 ### Trust bar (directly beneath, single row)
-Licensed and insured · Serving Utah homes since 2022 · Scotsman, Sub-Zero, U-Line, KitchenAid, GE · Locally owned in Lehi · Utah County and Salt Lake County
+Licensed and insured · Serving Utah since 2022 · Residential and light commercial · Scotsman, Sub-Zero, U-Line, KitchenAid, GE · Locally owned in Lehi · Utah County and Salt Lake County
+
+**Developer note:** six items is long for one row on a 380px viewport. If it wraps badly, drop "Locally owned in Lehi" first. Do not drop "Licensed and insured" or "Residential and light commercial."
 
 **Image slot:** Hero image. Real photo preferred once available.
 **Alt text (when photo exists):** Technician cleaning the evaporator plate of a Scotsman undercounter ice machine in a Utah home kitchen.
@@ -87,7 +92,7 @@ Mountain Regional Water, the Summit County district that supplies much of the Pa
 
 It also moves through the year. Salt Lake City's Department of Public Utilities gets most of its water from Wasatch canyon streams, then supplements with deep valley wells during high-demand summer months, and says plainly that the well water is harder. Your machine's summer is not the same as its winter.
 
-Manufacturers typically call for descaling every three to six months. That range assumes average water. Utah is at the hard end of it, which is why we service most homes here at least every six months, with some clients needing quarterly cleanings. If that's the case for you, we'll let you know.
+Manufacturers typically call for descaling every three to six months. That range assumes average water. Utah is at the hard end of it, which is why we service most homes here every six months rather than annually.
 
 **Source note for the developer, not for publication:**
 - USGS very-hard threshold and Mountain Regional Water hardness figure: `https://mtregional.specialdistrict.org/files/882bc66a4/MRW-Water-Hardness.pdf`
@@ -131,7 +136,7 @@ About an hour, start to finish. We bring everything. There is nothing for you to
 4. **We deep clean the reservoir and bin by hand.** Biofilm doesn't come off in a rinse cycle. It has to be broken down and physically removed.
 5. **We sanitize every surface your ice touches.** Food-contact sanitizer, applied to the evaporator, the tubes, the reservoir, and the bin.
 6. **We reassemble and run it.** We stay until it's cycling and making ice correctly.
-7. **We send you the breakdown.** An email with before-and-after photos, the condition of the evaporator, how much buildup came out, and anything that looked mechanical. Six months is the standard interval for Utah, and we schedule the next visit so you don't have to track it.
+7. **We tell you what we found.** Condition of the evaporator, how much buildup came out, and when your specific make and model should be serviced next. We track that date so you don't have to.
 
 We work clean, we take our mess with us, and we're out of your kitchen.
 
@@ -171,6 +176,8 @@ Why Homeowners Call Us
 
 We've been cleaning residential ice machines in Utah since 2022. We're licensed and insured. And if you're not satisfied with the cleaning, we come back and do it again at no charge.
 
+That's the whole pitch. We'd rather earn the review than write one.
+
 ---
 
 ## SECTION 9 — WHO THIS IS FOR
@@ -185,6 +192,9 @@ Do We Service Your Machine?
 → Link: [brand-specific cleaning notes for each machine](/brands)
 
 **Machine types.** Undercounter and built-in residential ice machines producing nugget, pebble, gourmet, clear, and crescent ice.
+
+**Light commercial.** Offices, retail showrooms, and small business breakrooms. Same descale, deep clean, and sanitize, on a larger machine with more components. Those visits run about an hour and a half.
+→ Link: [residential and commercial pricing](#pricing)
 
 **Where we work.** Based in Lehi, serving a 75-mile radius across Utah County and Salt Lake County, including Alpine, Highland, Salt Lake City, Holladay, Park City, Heber City, Draper, and Sandy.
 → Link: [the full list of cities we serve](/service-areas)
@@ -209,7 +219,7 @@ Usually not. Most of the work happens through the front of the unit. If yours ne
 About an hour, depending on the machine and how long it's been.
 
 **Do I need to be home?**
-No, but we have to be able to get into the house to do the work — how you arrange that is up to you. We remind you several times in the week leading up to the visit, so it won't sneak up on you. If we still show up and can't get in, there's a $50 rescheduling fee. When the visit is done, you get an email with before-and-after photos, our notes, and the receipt.
+Someone needs to let us in and be there at the end so we can walk you through what we found. You don't need to stand over us.
 
 **My machine is still under warranty. Does this affect it?**
 No. Professional descaling and sanitizing is maintenance the manufacturer recommends. It's the absence of it that causes warranty problems.
@@ -220,11 +230,14 @@ Then it's a mechanical or electrical fault, not buildup, and we'll tell you that
 **Do you repair ice machines too?**
 No. We clean them. That's the entire business.
 
+**How do I know if mine has ever been cleaned?**
+We'll know within a few minutes of opening it, and we'll show you.
+
 **What do you use? Is it safe around food?**
 A universal nickel-safe descaler for the mineral buildup, and a food-contact sanitizer for every surface the ice touches. Nickel-safe matters more than most homeowners realize, because the wrong descaler permanently damages an evaporator plate.
 
 **How often does it actually need this?**
-Every six months for most Utah homes, so it's a recurring service. You sign a short agreement, we come back on that schedule at the same flat rate, and we handle the scheduling. Heavy use or unusually hard water can mean sooner, and we'll tell you which category yours is in after we've seen inside it.
+Every six months for most Utah homes. Heavy use or unusually hard water can mean sooner, and we'll tell you which category yours is in after we've seen inside it.
 
 **Do you come out to Park City and Heber?**
 Yes. We're based in Lehi and serve a 75-mile radius.
@@ -244,13 +257,37 @@ We come back and clean it again at no charge.
 ### H2
 What It Costs
 
+Two tiers, priced to the work. Each block below states what the visit covers before it states the number.
+
+**Developer note:** render these as two side-by-side cards on desktop, stacked on mobile with residential first. The included-work paragraph must sit above the price inside each card, never beside it or below it. A commercial reader who sees the two numbers before the two scopes will read this as the same job at double the price.
+
+---
+
+#### Residential
+
+Full teardown of removable components, nickel-safe descale, reservoir and bin deep cleaned by hand, food-contact sanitize, reassembly and test, and a walkthrough of what we found. All supplies included. About an hour in your kitchen.
+
 **$150 per visit.**
 
-That's the complete service. Full teardown of removable components, nickel-safe descale, reservoir and bin deep cleaned by hand, food-contact sanitize, reassembly and test, and an email breakdown afterward with before-and-after photos, our notes, and the receipt. All supplies included. About an hour.
+Two visits a year, on a machine that cost four figures to install.
 
-Flat rate. Not a starting price, not an estimate, and not a quote that changes when we open the machine.
+**[ASSET SLOT — three photos, residential. Real photos only.]**
+Alt text pattern: "Residential undercounter ice machine being [descaled / hand cleaned / sanitized] in a Utah home."
 
-This is a recurring service. Utah water makes six months the right interval, so you sign a short agreement and we come back every six months to clean the machine again at the same flat rate. We handle the scheduling. If you want to stop, tell us and we stop. It comes to two visits a year on a machine that cost four figures to install.
+---
+
+#### Light commercial
+
+A larger machine with more components. More parts to disassemble, clean, and reassemble, which is why the visit runs about an hour and a half rather than an hour. Same nickel-safe descale, hand cleaning, and food-contact sanitizing, across more surface area. All supplies included. Offices, retail showrooms, and small business breakrooms.
+
+**$300 per visit.**
+
+**[ASSET SLOT — three photos, commercial. Real photos only.]**
+Alt text pattern: "Light commercial ice machine being [descaled / hand cleaned / sanitized] in a Utah [office / showroom]."
+
+---
+
+Both are flat rates. Not starting prices, not estimates, and not quotes that change when we open the machine. Both run on the same six-month schedule, and we track your service date and reach out when it's due.
 
 **CTA button:** Book a cleaning → `/book`
 
@@ -278,11 +315,11 @@ If you're not satisfied with the cleaning, we come back and clean it again at no
 ### H2
 About Uinta Ice Co.
 
-Uinta Ice Co. is a residential ice machine cleaning service based in Lehi, Utah. We descale, deep clean, and sanitize undercounter and built-in residential ice machines in customers' homes across Utah County and Salt Lake County, within a 75-mile service radius. We have served Utah homeowners since 2022 and we are licensed and insured.
+Uinta Ice Co. is an ice machine cleaning service based in Lehi, Utah. We descale, deep clean, and sanitize undercounter and built-in ice machines on site, for homes across Utah County and Salt Lake County and for light commercial accounts including offices, retail showrooms, and small business breakrooms, within a 75-mile service radius. We have served Utah since 2022 and we are licensed and insured.
 
 We service Scotsman, Sub-Zero, U-Line, KitchenAid, GE Profile, and GE Monogram machines producing nugget, pebble, gourmet, clear, and crescent ice, along with most other residential makes. Our standard service interval is every six months, which reflects the hardness of Utah water relative to the three-to-six-month range manufacturers typically recommend.
 
-A visit takes about one hour and includes all supplies. Call or text (801) 796-2675. Email max@uintaice.com.
+A residential visit takes about one hour. A light commercial visit takes about an hour and a half, because the units are larger and have more components to disassemble and clean. All supplies are included in both. Call or text (801) 796-2675. Email max@uintaice.com.
 
 ---
 
@@ -300,3 +337,17 @@ Missing on purpose: no link to `/ice-machine-cleaning` yet. Recommend adding one
 
 ## VOICE AUDIT — run before delivery
 Checked and clear: no "peace of mind," "we've got you covered," "look no further," "trusted partner," "here at Uinta Ice Co. we believe," "truly," "absolutely," "incredibly," "seamlessly," "effortlessly," "state-of-the-art," "cutting-edge." No exclamation points. No em-dash asides. No "not just X, but Y." No colon-then-reveal headlines.
+
+---
+
+## SCHEMA NOTES
+
+**LocalBusiness** on the home page. Name Uinta Ice Co., LLC, address Lehi UT, telephone (801) 796-2675, email max@uintaice.com, areaServed the 75-mile radius, foundingDate 2022.
+
+**Service, two offerings** under the same provider, so both tiers are machine-readable as distinct services rather than one service at two prices:
+- Residential ice machine cleaning. Price 150 USD, per visit, duration approx. PT1H.
+- Light commercial ice machine cleaning. Price 300 USD, per visit, duration approx. PT1H30M.
+
+Set the duration on both. It is the field that carries the reason for the price difference in structured form, and leaving it off makes the two offerings look identical to a crawler.
+
+**FAQPage** on Section 10, covering all eleven questions.

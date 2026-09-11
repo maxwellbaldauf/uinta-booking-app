@@ -35,6 +35,7 @@ Uinta Ice Co. is a residential ice machine cleaning service based in Lehi, Utah,
 - [What happens if you never clean your ice machine?](#never-cleaned)
 - [Descaling vs. sanitizing: what's the difference?](#descaling-vs-sanitizing)
 - [Can I clean my own ice machine?](#diy)
+- [Why does commercial cost more than residential?](#commercial-vs-residential)
 
 ---
 
@@ -303,6 +304,28 @@ A: You can safely empty and wash the bin, keep the vent and condenser clear, and
 
 ---
 
+## SECTION 10
+`anchor id: #commercial-vs-residential`
+
+> **PSYCHOLOGY: Specificity as authority.** A prospect comparing two numbers wants a reason, not reassurance. Three facts, stated once, in the same register as everything else on the page. This is also the strongest AI-citation candidate added in this round, because it's a real question with a short, self-contained, checkable answer.
+
+### H2
+Why Does Commercial Ice Machine Cleaning Cost More Than Residential?
+
+Because the job is bigger. A residential cleaning is $150 and takes about an hour. A light commercial cleaning is $300 and takes about an hour and a half, on a larger machine with more components to take apart, clean, and put back.
+
+The process itself doesn't change. Both get a nickel-safe descale of the water path, hand cleaning of the reservoir and bin, and food-contact sanitizing of every surface the ice touches. What changes is how much there is to take apart. More removable parts, more surface area in the water path, and a larger bin all have to come out, get cleaned, and go back in.
+
+Light commercial means offices, retail showrooms, and small business breakrooms. It does not mean restaurant or high-volume food-service equipment, which is a different category of machine and a different kind of service company.
+
+→ Link: [residential and commercial pricing](/#pricing)
+
+**FAQ schema pair:**
+Q: Why does commercial ice machine cleaning cost more than residential?
+A: Residential cleaning is $150 for a visit of about an hour. Light commercial cleaning is $300 for a visit of about an hour and a half, because the units are larger and have more components to disassemble, clean, and reassemble. The cleaning process itself is the same.
+
+---
+
 ## CLOSING CTA
 `anchor id: #book`
 
@@ -337,6 +360,7 @@ All three are real-photo slots. Leave them empty rather than filling with stock.
 | 1 — Black slime | `/ice-machine-cleaning#included` | what a professional cleaning includes |
 | 3 — Bad taste | `/ice-machine-cleaning#descaler` | why the descaler has to be nickel-safe |
 | 5 — Clean light | `/brands` | clean light behavior by brand |
+| 10 — Commercial vs residential | `/#pricing` | residential and commercial pricing |
 | Closing | `/book` | Book a cleaning |
 
 Inbound links already pointing here from Phase 3: `/ice-machine-cleaning#descaler` → `#descaling-vs-sanitizing`, and `/ice-machine-cleaning#how-often` → `#never-cleaned`. Both anchors exist as written.

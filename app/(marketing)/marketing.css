@@ -432,6 +432,13 @@
   max-width: 42ch;
   margin: 0 0 var(--space-lg);
 }
+.mkt-hero__subhead--muted {
+  font-size: var(--text-sm);
+  opacity: 0.85;
+}
+.mkt-hero__subhead + .mkt-hero__subhead--muted {
+  margin-top: calc(var(--space-lg) * -1);
+}
 @media (min-width: 40rem) {
   .mkt-hero__wordmark {
     font-size: var(--text-lg);
@@ -663,6 +670,51 @@
   letter-spacing: 0;
   color: var(--ink-soft);
   margin-top: var(--space-2xs);
+}
+
+/* Two tier cards: residential + commercial. Scope paragraph sits above the
+   price inside each card on purpose — a reader who sees both numbers before
+   both scopes reads it as the same job at double the price. */
+.mkt-pricing-cards {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-lg);
+  margin: var(--space-lg) 0;
+}
+@media (min-width: 48rem) {
+  .mkt-pricing-cards {
+    grid-template-columns: 1fr 1fr;
+    align-items: start;
+  }
+}
+
+.mkt-pricing-card {
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-lg);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--paper-raised);
+}
+.mkt-pricing-card h3 {
+  margin: 0 0 var(--space-2xs);
+}
+.mkt-pricing-card .mkt-price {
+  font-size: clamp(var(--text-2xl), 6vw, var(--text-3xl));
+  margin-bottom: var(--space-2xs);
+}
+
+.mkt-pricing-photos {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-2xs);
+  margin-top: var(--space-sm);
+}
+.mkt-pricing-photos img {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: var(--radius);
 }
 
 /* ---- Accordion ------------------------------------------------------ */

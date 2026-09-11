@@ -41,7 +41,10 @@ export type AvailabilityResult =
       agreementStale: boolean;
     };
 
-export async function checkAvailability(details: LeadDetails): Promise<AvailabilityResult> {
+export async function checkAvailability(
+  details: LeadDetails,
+  serviceType: "residential" | "commercial"
+): Promise<AvailabilityResult> {
   const geo = await geocodeAddress(details.address);
 
   // Geocode failure: keep it a dead end but DON'T auto-persist (decision — a
@@ -54,7 +57,12 @@ export async function checkAvailability(details: LeadDetails): Promise<Availabil
     return { status: "out_of_area" };
   }
 
-  const slots = await getOfferedSlots(geo.lat, geo.lng);
+  // A commercial booking always requests 2 blocks — no 1-block option is ever
+  // offered to a customer (that's an owner-only override, set later from the
+  // field app). See ServiceTypeStep.
+  const blocksNeeded = serviceType === "commercial" ? 2 : 1;
+
+  const slots = await getOfferedSlots(geo.lat, geo.lng, blocksNeeded);
   if (slots.length === 0) {
     await saveFlaggedLead(details, geo, { needs_followup: true });
     return { status: "no_availability" };
@@ -97,6 +105,7 @@ export async function checkAvailability(details: LeadDetails): Promise<Availabil
 
 export type CreateBookingInput = {
   details: LeadDetails;
+  serviceType: "residential" | "commercial";
   chosenSlot: { slotDate: string; arrivalBlock: number };
   // true = a matched customer chose to reuse the card already on file.
   useExistingCard: boolean;
@@ -125,7 +134,11 @@ export async function createBookingRecord(
   const { details, chosenSlot } = input;
   const supabase = createAdminClient();
 
-  // Re-validate everything server-side — never trust what the client carried.
+  // Re-validate everything server-side — never trust what the client carried,
+  // including serviceType: a commercial booking always resolves to 2 blocks
+  // here regardless of what blocksNeeded the client's chosen slot implies.
+  const blocksNeeded = input.serviceType === "commercial" ? 2 : 1;
+
   const geo = await geocodeAddress(details.address);
   if (!geo) throw new Error("Could not verify that address. Please check it and try again.");
   if (!(await isInServiceArea(geo.lat, geo.lng))) {
@@ -136,7 +149,8 @@ export async function createBookingRecord(
     geo.lat,
     geo.lng,
     chosenSlot.slotDate,
-    chosenSlot.arrivalBlock
+    chosenSlot.arrivalBlock,
+    blocksNeeded
   );
   if (!fresh) {
     throw new SlotUnavailableError("That time was just taken. Please choose another.");
@@ -238,6 +252,7 @@ export async function createBookingRecord(
       geocode_failed: false,
       ice_maker_brand: details.iceMakerBrand || null,
       ice_maker_model: details.iceMakerModel || null,
+      service_type: input.serviceType,
       plan_status: "active",
       source: "booking",
       ...(asPropertyOverride && resolvedCard
@@ -287,7 +302,11 @@ export async function createBookingRecord(
       status: "scheduled",
       scheduled_date: chosenSlot.slotDate,
       arrival_block: chosenSlot.arrivalBlock,
-      quoted_price_cents: settings.base_price_cents,
+      blocks_needed: blocksNeeded,
+      quoted_price_cents:
+        input.serviceType === "commercial"
+          ? settings.commercial_price_cents
+          : settings.base_price_cents,
       booking_match_type: fresh.isFallback ? "fallback" : "route_matched",
       access_token: token,
       // "expires the day after the appointment" — valid through all of the

@@ -9,15 +9,15 @@ import { Accordion, AccordionItem } from "@/components/marketing/Accordion";
 export const metadata = pageMetadata({
   title: "Residential Ice Machine Cleaning Service | Uinta Ice Co.",
   description:
-    "A full teardown, nickel-safe descale, reservoir and bin deep clean, and food-safe sanitize, done in your kitchen in about an hour. All supplies included.",
+    "Full teardown, nickel-safe descale, reservoir and bin deep clean, and food-safe sanitize. About an hour for homes, 90 minutes for light commercial units.",
   path: "/ice-machine-cleaning",
 });
 
 const schema = [
   serviceSchema({
-    name: "Residential ice machine cleaning",
+    name: "Residential and light commercial ice machine cleaning",
     description:
-      "A full teardown, nickel-safe descale, reservoir and bin deep clean, food-contact sanitize, and test cycle, done in the customer's home in about an hour. All supplies included.",
+      "A full teardown, nickel-safe descale, reservoir and bin deep clean, food-contact sanitize, and test cycle. About an hour for a residential visit, about an hour and a half for light commercial. All supplies included.",
     path: "/ice-machine-cleaning",
   }),
   breadcrumbSchema([
@@ -39,6 +39,12 @@ export default function IceMachineCleaningPage() {
           every component the water and ice touch, and includes all supplies.
           We’re based in Lehi and serve Utah County and Salt Lake County within a
           75-mile radius.
+        </p>
+        <p>
+          We also service light commercial machines in offices, retail
+          showrooms, and small business breakrooms. Those visits run about an
+          hour and a half, because the units are larger and have more
+          components.
         </p>
         <p>
           This page covers exactly what that visit involves, what we use, and
@@ -258,6 +264,39 @@ export default function IceMachineCleaningPage() {
           </AccordionItem>
 
           <AccordionItem
+            id="commercial"
+            headingLevel={2}
+            summary="What’s Different About a Commercial Cleaning?"
+          >
+            <p>
+              Three things. The machine is larger, it has more components, and
+              the visit takes about an hour and a half instead of an hour.
+            </p>
+            <p>
+              We service light commercial accounts: offices, retail showrooms,
+              and small business breakrooms. The process is the same one
+              described above. Nickel-safe descale of the water path, hand
+              cleaning of the reservoir and bin, food-contact sanitizing of
+              every surface the ice touches, and a test cycle before we leave.
+            </p>
+            <p>
+              What changes is the scope of the disassembly. A commercial unit
+              has more removable parts, more surface area in the water path,
+              and a larger bin. Every one of those has to come apart, get
+              cleaned, and go back together. That’s where the additional half
+              hour goes, and it’s the whole of the difference in price.
+            </p>
+            <p>
+              Light commercial is the boundary. We’re not a restaurant
+              equipment company. We don’t service high-volume food-service
+              machines and we don’t provide health-code inspection support.
+            </p>
+            <p>
+              <Link href="/#pricing">Residential and commercial pricing</Link>.
+            </p>
+          </AccordionItem>
+
+          <AccordionItem
             id="what-we-dont-do"
             headingLevel={2}
             summary="What We Don’t Do"
@@ -288,6 +327,11 @@ export default function IceMachineCleaningPage() {
               The brands we see most often are Scotsman, Sub-Zero, U-Line,
               KitchenAid, GE Profile, and GE Monogram. We service most other
               residential makes as well, so call if yours isn’t on that list.
+            </p>
+            <p>
+              On the light commercial side, we service undercounter and
+              freestanding machines in offices, retail showrooms, and
+              breakrooms.
             </p>
             <p>
               <Link href="/brands">

@@ -4,6 +4,7 @@ import { useCallback, useMemo, useState } from "react";
 import { PaymentSetup, type PaymentSetupResult } from "@/components/payment/PaymentSetup";
 import { createBooking, type CreateBookingResponse } from "@/app/book/actions";
 import { ErrorBanner, secondaryButtonStyle } from "@/components/ui/form";
+import { ServiceTypeStep, type ServiceType } from "./ServiceTypeStep";
 import { DetailsStep, type BookingDetails } from "./DetailsStep";
 import { AgreementStep } from "./AgreementStep";
 import { SlotStep, type OfferedSlotView } from "./SlotStep";
@@ -12,6 +13,7 @@ import { BookedConfirmation } from "./BookedConfirmation";
 import { SERVICE_AGREEMENT_VERSION } from "@/lib/agreement";
 
 type Step =
+  | "service-type"
   | "details"
   | "agreement"
   | "slots"
@@ -27,8 +29,15 @@ type Availability = {
   agreementStale: boolean;
 };
 
-export function BookingFlow() {
-  const [step, setStep] = useState<Step>("details");
+export function BookingFlow({
+  basePriceCents,
+  commercialPriceCents,
+}: {
+  basePriceCents: number | null;
+  commercialPriceCents: number | null;
+}) {
+  const [step, setStep] = useState<Step>("service-type");
+  const [serviceType, setServiceType] = useState<ServiceType | null>(null);
   const [details, setDetails] = useState<BookingDetails | null>(null);
   const [availability, setAvailability] = useState<Availability | null>(null);
   const [deadEnd, setDeadEnd] = useState<{ kind: DeadEndKind; saved: boolean } | null>(null);
@@ -43,21 +52,27 @@ export function BookingFlow() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchAvailability = useCallback(async (d: BookingDetails) => {
+  const fetchAvailability = useCallback(async (d: BookingDetails, st: ServiceType) => {
     const res = await fetch("/api/booking/availability", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(d),
+      body: JSON.stringify({ ...d, serviceType: st }),
     });
     return res.json();
   }, []);
 
+  function handleServiceType(st: ServiceType) {
+    setServiceType(st);
+    setStep("details");
+  }
+
   async function handleDetails(d: BookingDetails) {
+    if (!serviceType) return;
     setDetails(d);
     setBusy(true);
     setError(null);
     try {
-      const data = await fetchAvailability(d);
+      const data = await fetchAvailability(d, serviceType);
       if (data.error) {
         setError(data.error);
         return;
@@ -87,6 +102,7 @@ export function BookingFlow() {
   const runCreateBooking = useCallback(
     async (
       d: BookingDetails,
+      st: ServiceType,
       choice: { slot: OfferedSlotView; useExistingCard: boolean },
       pay: PaymentSetupResult | null
     ) => {
@@ -101,6 +117,7 @@ export function BookingFlow() {
           iceMakerBrand: d.iceMakerBrand,
           iceMakerModel: d.iceMakerModel,
         },
+        serviceType: st,
         chosenSlot: { slotDate: choice.slot.slotDate, arrivalBlock: choice.slot.arrivalBlock },
         useExistingCard: choice.useExistingCard,
         payment: pay ? { setupIntentId: pay.setupIntentId, stripeCustomerId: pay.stripeCustomerId } : undefined,
@@ -127,7 +144,7 @@ export function BookingFlow() {
 
       // Slot got taken mid-flow — refresh the list and send them back to pick again.
       if (res.slotTaken) {
-        const fresh = await fetchAvailability(d);
+        const fresh = await fetchAvailability(d, st);
         if (fresh.status === "ok") {
           setAvailability({
             slots: fresh.slots,
@@ -149,10 +166,10 @@ export function BookingFlow() {
   );
 
   function handleSlotContinue(choice: { slot: OfferedSlotView; useExistingCard: boolean }) {
-    if (!details) return;
+    if (!details || !serviceType) return;
     setChosen(choice);
     if (choice.useExistingCard) {
-      void runCreateBooking(details, choice, null);
+      void runCreateBooking(details, serviceType, choice, null);
     } else {
       setStep("payment");
     }
@@ -161,9 +178,11 @@ export function BookingFlow() {
   const handlePaymentComplete = useCallback(
     async (pr: PaymentSetupResult) => {
       setPayment(pr);
-      if (details && chosen) await runCreateBooking(details, chosen, pr);
+      if (details && serviceType && chosen) {
+        await runCreateBooking(details, serviceType, chosen, pr);
+      }
     },
-    [details, chosen, runCreateBooking]
+    [details, serviceType, chosen, runCreateBooking]
   );
 
   const paymentRequest = useMemo(
@@ -180,12 +199,27 @@ export function BookingFlow() {
   );
 
   // ---- render ----
+  if (step === "service-type") {
+    return (
+      <ServiceTypeStep
+        basePriceCents={basePriceCents}
+        commercialPriceCents={commercialPriceCents}
+        busy={busy}
+        onSubmit={handleServiceType}
+      />
+    );
+  }
+
   if (step === "details") {
     return (
       <DetailsStep
         initial={details ?? undefined}
         busy={busy}
         error={error}
+        onBack={() => {
+          setError(null);
+          setStep("service-type");
+        }}
         onSubmit={handleDetails}
       />
     );
@@ -231,10 +265,11 @@ export function BookingFlow() {
     );
   }
 
-  if (step === "slots" && availability) {
+  if (step === "slots" && availability && serviceType) {
     return (
       <SlotStep
         slots={availability.slots}
+        serviceType={serviceType}
         matchedCustomer={availability.matchedCustomer}
         busy={busy}
         error={error}

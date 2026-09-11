@@ -1,17 +1,21 @@
 {
-  "version": "2026-09-07",
+  "version": "2026-09-11",
   "blocks": [
     { "kind": "title", "text": "UINTA ICE CO." },
-    { "kind": "subtitle", "text": "Residential Ice Machine Cleaning Service Agreement" },
+    { "kind": "subtitle", "text": "Ice Machine Cleaning Service Agreement" },
     {
       "kind": "intro",
-      "text": "This Service Agreement (\"Agreement\") is between Uinta Ice Co., LLC (\"Uinta Ice,\" \"we,\" \"us\") and the customer identified on the signature page (\"Customer,\" \"you\"), for recurring residential ice machine cleaning service at the property address listed below."
+      "text": "This Service Agreement (\"Agreement\") is between Uinta Ice Co., LLC (\"Uinta Ice,\" \"we,\" \"us\") and the customer identified on the signature page (\"Customer,\" \"you\"), for recurring ice machine cleaning service — residential or commercial — at the property address listed below."
     },
 
     { "kind": "heading", "text": "1. Services Provided" },
     {
       "kind": "paragraph",
-      "text": "Uinta Ice provides cleaning, descaling, and sanitizing of the removable, detachable components of your residential ice machine. This includes the ice bin, water distribution components, and other parts designed to be removed for cleaning."
+      "text": "Uinta Ice provides cleaning, descaling, and sanitizing of the removable, detachable components of your ice machine, whether a residential under-counter unit or a commercial-grade unit. This includes the ice bin, water distribution components, and other parts designed to be removed for cleaning."
+    },
+    {
+      "kind": "paragraph",
+      "text": "Commercial-grade units are generally larger, contain more components, and involve a more extensive cleaning process than residential units — commercial visits typically take longer as a result."
     },
     {
       "kind": "paragraph",
