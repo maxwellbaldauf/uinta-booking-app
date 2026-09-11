@@ -2,14 +2,23 @@
    route group, so it rides the same tokens as theme.css / marketing.css and
    flips with color-scheme for free. Prefix: uic- (Uinta Ice Chat). */
 
+:root {
+  /* Extra clearance above third-party UI that can occupy the bottom-right
+     corner outside our control (e.g. the host's own badge) — only the closed
+     launcher needs this; the open panel is a full overlay and covering that
+     corner while it's open is normal. Bump this one value if it still overlaps. */
+  --uic-corner-clear: 88px;
+}
+
 /* ---- Launcher --------------------------------------------------------- */
 
 .uic-launcher {
   position: fixed;
   right: 16px;
   /* --botbar-h is 0 on desktop and ~55px + safe-area under 48rem, so this
-     always sits clear of the mobile bottom CTA bar and its call/book buttons. */
-  bottom: calc(16px + var(--botbar-h));
+     always sits clear of the mobile bottom CTA bar and its call/book buttons;
+     --uic-corner-clear adds clearance above the corner badge on top of that. */
+  bottom: calc(16px + var(--botbar-h) + var(--uic-corner-clear));
   z-index: 70;
 
   display: inline-flex;
@@ -41,7 +50,7 @@
 @media (min-width: 48rem) {
   .uic-launcher {
     right: 24px;
-    bottom: 24px;
+    bottom: calc(24px + var(--uic-corner-clear));
   }
 }
 
