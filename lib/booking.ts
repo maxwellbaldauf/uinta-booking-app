@@ -103,9 +103,15 @@ export async function checkAvailability(
 
 // ---- booking creation (spec §1 steps 6–7) -------------------------------
 
+export type ServiceType = "residential" | "commercial";
+
+export function isServiceType(v: unknown): v is ServiceType {
+  return v === "residential" || v === "commercial";
+}
+
 export type CreateBookingInput = {
   details: LeadDetails;
-  serviceType: "residential" | "commercial";
+  serviceType: ServiceType;
   chosenSlot: { slotDate: string; arrivalBlock: number };
   // true = a matched customer chose to reuse the card already on file.
   useExistingCard: boolean;
@@ -134,9 +140,21 @@ export async function createBookingRecord(
   const { details, chosenSlot } = input;
   const supabase = createAdminClient();
 
-  // Re-validate everything server-side — never trust what the client carried,
-  // including serviceType: a commercial booking always resolves to 2 blocks
-  // here regardless of what blocksNeeded the client's chosen slot implies.
+  // Re-validate everything server-side — never trust what the client carried.
+  // createBooking (a Server Action) is a real POST-able endpoint independent
+  // of the UI; CreateBookingInput's "residential" | "commercial" union is a
+  // compile-time-only guarantee that says nothing about a raw request body,
+  // so an unchecked serviceType here would let any value other than the exact
+  // literal "commercial" silently fall through to residential pricing and a
+  // 1-block reservation — a deterministic, one-directional underpayment/
+  // under-provisioning bug, not just a type mismatch. Same guard the
+  // availability route already applies before its own use of this field.
+  if (!isServiceType(input.serviceType)) {
+    throw new Error("Invalid service type.");
+  }
+
+  // A commercial booking always resolves to 2 blocks here regardless of what
+  // blocksNeeded the client's chosen slot implies.
   const blocksNeeded = input.serviceType === "commercial" ? 2 : 1;
 
   const geo = await geocodeAddress(details.address);

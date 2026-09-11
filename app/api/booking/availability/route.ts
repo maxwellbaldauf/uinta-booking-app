@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { checkAvailability } from "@/lib/booking";
+import { checkAvailability, isServiceType } from "@/lib/booking";
 import type { LeadDetails } from "@/lib/leads";
 
 export const runtime = "nodejs";
@@ -10,10 +10,6 @@ export const runtime = "nodejs";
 // lead for Project A's dashboard (the response's `saved` says so).
 function isNonEmpty(v: unknown): v is string {
   return typeof v === "string" && v.trim().length > 0;
-}
-
-function isServiceType(v: unknown): v is "residential" | "commercial" {
-  return v === "residential" || v === "commercial";
 }
 
 export async function POST(req: Request) {
