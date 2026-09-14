@@ -106,7 +106,13 @@ export async function POST(req: Request) {
     await setStripeDefaultPaymentMethod(stripeCustomerId, paymentMethodId);
 
     const supabase = createAdminClient();
-    const { error: updateError } = await supabase
+    // Guarded on payment_setup_token still matching, and .select() so we can
+    // tell whether a row actually changed — a double-tap or two open tabs
+    // can both pass findPendingBacklogJobsForToken before either update
+    // commits; whichever request's UPDATE loses the race matches zero rows
+    // here (the token was already consumed by the other one) and must not
+    // go on to charge the same jobs a second time.
+    const { data: updatedRows, error: updateError } = await supabase
       .from("customers")
       .update({
         default_payment_method_id: paymentMethodId,
@@ -123,7 +129,9 @@ export async function POST(req: Request) {
             }
           : {}),
       })
-      .eq("id", customer.id);
+      .eq("id", customer.id)
+      .eq("payment_setup_token", body.token)
+      .select("id");
 
     if (updateError) {
       console.error("finalize-backlog: customer update failed", updateError, {
@@ -135,13 +143,17 @@ export async function POST(req: Request) {
       );
     }
 
+    if (!updatedRows || updatedRows.length === 0) {
+      // Lost the race — a concurrent request already consumed this token
+      // and is handling (or has handled) the charge. The card is saved
+      // either way; don't charge the same jobs again here.
+      return NextResponse.json({ ok: true, paymentDisplay: displayLabel, results: [] });
+    }
+
     // Card is already durably saved above — a charge failure here doesn't
     // block the response. It surfaces on Project A's dashboard (Failed
     // charges) rather than needing its own owner-facing surface here.
-    const results: ChargeResult[] = [];
-    for (const job of pending.jobs) {
-      results.push(await chargeBacklogJob(job.id));
-    }
+    const results = await Promise.all(pending.jobs.map((job) => chargeBacklogJob(job.id)));
 
     return NextResponse.json({ ok: true, paymentDisplay: displayLabel, results });
   } catch (err) {

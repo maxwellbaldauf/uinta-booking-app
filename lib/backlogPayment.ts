@@ -49,6 +49,11 @@ export async function findPendingBacklogJobsForToken(
     )
     .eq("source", "backlog")
     .eq("status", "completed")
+    // Excludes a job with no valid price rather than showing it as a
+    // misleading $0 line item — Project A's /api/internal/charge-job
+    // would reject charging it anyway (422, no valid quoted price). It
+    // stays visible on Project A's dashboard for the owner to fix.
+    .gt("quoted_price_cents", 0)
     .order("created_at", { ascending: true });
 
   const pendingJobs: PendingBacklogJob[] = (jobs ?? []).map((j) => ({
