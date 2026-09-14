@@ -7,6 +7,8 @@ export type ImportedCustomer = {
   phone: string | null;
   stripe_customer_id: string | null;
   payment_display: string | null;
+  service_agreement_accepted_at: string | null;
+  service_agreement_version: string | null;
 };
 
 // Resolve the customer behind a payment_setup_token (spec §6 — the imported-
@@ -21,7 +23,7 @@ export async function findCustomerByPaymentSetupToken(
   const { data, error } = await supabase
     .from("customers")
     .select(
-      "id, full_name, email, phone, stripe_customer_id, payment_display, payment_setup_token_expires_at"
+      "id, full_name, email, phone, stripe_customer_id, payment_display, payment_setup_token_expires_at, service_agreement_accepted_at, service_agreement_version"
     )
     .eq("payment_setup_token", token)
     .maybeSingle();
@@ -38,6 +40,8 @@ export async function findCustomerByPaymentSetupToken(
     phone: data.phone,
     stripe_customer_id: data.stripe_customer_id,
     payment_display: data.payment_display,
+    service_agreement_accepted_at: data.service_agreement_accepted_at,
+    service_agreement_version: data.service_agreement_version,
   };
 }
 
