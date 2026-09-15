@@ -99,12 +99,14 @@ export async function findJobByInvoiceToken(token: string): Promise<InvoiceJob |
 
 export type ChargeInvoiceResult = { ok: true } | { ok: false; error: string };
 
-// Shared by /api/payment/approve-invoice (charge the card already on file)
-// and /api/payment/finalize-invoice-card (charge right after saving an
-// updated card) — same server-to-server call finalize-backlog's
-// chargeBacklogJob already makes, just factored out here since this flow has
-// two callers instead of one. createChargeForJob's own idempotency (Stripe
-// idempotency key = jobId) means it's harmless if the owner's manual
+// The one place any of this app's payment flows calls uinta-field-app's
+// internal charge-job endpoint — /api/payment/approve-invoice (charge the
+// card already on file), /api/payment/finalize-invoice-card (charge right
+// after saving an updated card), and /api/payment/finalize-backlog's own
+// chargeBacklogJob (thin wrapper kept for its existing ChargeResult[]
+// response shape) all go through this rather than each keeping its own copy
+// of the fetch/env-var/error-handling. createChargeForJob's own idempotency
+// (Stripe idempotency key = jobId) means it's harmless if the owner's manual
 // "Charge card on file" fallback and a customer's approval click land at
 // nearly the same time — both resolve to the same PaymentIntent.
 export async function chargeInvoiceJob(jobId: string): Promise<ChargeInvoiceResult> {

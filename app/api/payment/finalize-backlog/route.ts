@@ -7,6 +7,7 @@ import {
 } from "@/lib/stripe/payments";
 import { findPendingBacklogJobsForToken } from "@/lib/backlogPayment";
 import { agreementIsCurrent, SERVICE_AGREEMENT_VERSION } from "@/lib/agreement";
+import { chargeInvoiceJob } from "@/lib/invoicePayment";
 
 export const runtime = "nodejs";
 
@@ -26,31 +27,8 @@ type Body = {
 type ChargeResult = { jobId: string; ok: boolean; error?: string };
 
 async function chargeBacklogJob(jobId: string): Promise<ChargeResult> {
-  const baseUrl = (process.env.FIELD_APP_BASE_URL ?? "").trim().replace(/\/+$/, "");
-  const secret = process.env.CHARGE_JOB_API_SECRET;
-  if (!baseUrl || !secret) {
-    console.error("finalize-backlog: FIELD_APP_BASE_URL or CHARGE_JOB_API_SECRET not configured");
-    return { jobId, ok: false, error: "Charging isn't configured yet" };
-  }
-
-  try {
-    const res = await fetch(`${baseUrl}/api/internal/charge-job`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${secret}`,
-      },
-      body: JSON.stringify({ jobId }),
-    });
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok || !data.ok) {
-      return { jobId, ok: false, error: data?.error ?? "Charge failed" };
-    }
-    return { jobId, ok: true };
-  } catch (err) {
-    console.error("finalize-backlog: charge-job request failed", jobId, err);
-    return { jobId, ok: false, error: "Could not reach the charging service" };
-  }
+  const result = await chargeInvoiceJob(jobId);
+  return result.ok ? { jobId, ok: true } : { jobId, ok: false, error: result.error };
 }
 
 export async function POST(req: Request) {

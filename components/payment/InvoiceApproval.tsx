@@ -47,6 +47,14 @@ export function InvoiceApproval({ token, job }: { token: string; job: InvoiceJob
     }
   }
 
+  // Must throw rather than swallow a failure here — PaymentSetup's CardForm
+  // only resets its "completing" phase and its submit-disabled ref inside
+  // the catch block around this call (components/payment/PaymentSetup.tsx's
+  // finish()). Returning normally on a declined-again card or a failed
+  // server update would leave that button stuck showing "Charging…"
+  // forever, with no way to retry short of a page reload. The thrown
+  // message surfaces in CardForm's own error banner, right next to the
+  // retry button, which is exactly where a card-declined message belongs.
   async function handleCardUpdateComplete(result: PaymentSetupResult) {
     setError(null);
     const res = await fetch("/api/payment/finalize-invoice-card", {
@@ -57,8 +65,7 @@ export function InvoiceApproval({ token, job }: { token: string; job: InvoiceJob
     const data = await res.json().catch(() => ({}));
     if (!res.ok || !data.ok) {
       if (data?.paymentDisplay) setPaymentDisplay(data.paymentDisplay);
-      setError(data?.error ?? "We couldn't charge that card either. Please contact us.");
-      return;
+      throw new Error(data?.error ?? "We couldn't charge that card either. Please contact us.");
     }
     setPaymentDisplay(data.paymentDisplay ?? paymentDisplay);
     setStep("done");
