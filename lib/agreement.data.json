@@ -1,5 +1,5 @@
 {
-  "version": "2026-09-11",
+  "version": "2026-09-15",
   "blocks": [
     { "kind": "title", "text": "UINTA ICE CO." },
     { "kind": "subtitle", "text": "Ice Machine Cleaning Service Agreement" },
@@ -57,11 +57,11 @@
     { "kind": "heading", "text": "6. Payment & Card on File" },
     {
       "kind": "paragraph",
-      "text": "You authorize Uinta Ice to keep a valid payment card on file and to automatically charge that card the applicable service price upon completion of each visit."
+      "text": "You authorize Uinta Ice to keep a valid payment card on file. After each visit, we will email you an invoice showing the amount due and a link to review your visit and approve payment — your card is not charged automatically, and nothing is charged until you approve it."
     },
     {
       "kind": "paragraph",
-      "text": "If a charge is declined, Uinta Ice will attempt to process the charge again and may pause scheduling of future visits until payment is resolved. Service resumes once a successful charge is made."
+      "text": "If your card is declined when you approve payment, you can update your card at that time to complete the charge. If an invoice isn't approved, we will follow up by email for several days; unresolved balances may be followed up on directly."
     },
     {
       "kind": "paragraph",
