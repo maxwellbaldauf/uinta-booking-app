@@ -60,6 +60,11 @@ export async function rescheduleVisit(
         booking_match_type: fresh.isFallback ? "fallback" : "route_matched",
         // Token unchanged (spec §3); only the expiry follows the new date.
         access_token_expires_at: denverMidnightUtcISO(addDaysToISODate(choice.slotDate, 2)),
+        // Reset both pre-visit reminder stamps so a rescheduled visit gets
+        // its own fresh 7-day/24-hour window off the new date, rather than
+        // silently inheriting (or skipping) reminders keyed to the old one.
+        reminder_7day_sent_at: null,
+        reminder_24hr_sent_at: null,
       })
       .eq("id", visit.jobId);
 

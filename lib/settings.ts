@@ -1,4 +1,7 @@
-import { createAdminClient } from "@/lib/supabase/admin";
+// Relative, not "@/lib/supabase/admin" — this file is reachable from
+// netlify/functions/pre-visit-reminders.mts, whose bundler doesn't resolve
+// this project's tsconfig path alias. Behaves identically either way.
+import { createAdminClient } from "./supabase/admin";
 
 // The single settings row (id = true) shared with Project A. Everything the
 // booking flow needs to stay in sync with the field app: pricing, the service
