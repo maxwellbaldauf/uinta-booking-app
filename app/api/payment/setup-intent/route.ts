@@ -8,20 +8,25 @@ import {
   findCustomerByPaymentSetupToken,
   matchCustomerByEmailOrPhone,
 } from "@/lib/customers";
+import { findJobByInvoiceToken } from "@/lib/invoicePayment";
 
 export const runtime = "nodejs";
 
 // Creates (or reuses) a Stripe Customer and returns a card-only SetupIntent
-// client secret for Stripe Elements. Two callers:
+// client secret for Stripe Elements. Three callers:
 //
-//   booking       the booking flow. Re-matches the customer by email/phone
-//                 server-side: reuse their Stripe id, lazily create one for a
-//                 matched-but-never-charged customer, or create a fresh one.
-//                 The client never holds a customer id.
-//   setup_token   the imported-customer payment page (spec §6).
+//   booking        the booking flow. Re-matches the customer by email/phone
+//                  server-side: reuse their Stripe id, lazily create one for a
+//                  matched-but-never-charged customer, or create a fresh one.
+//                  The client never holds a customer id.
+//   setup_token    the imported-customer payment page (spec §6).
+//   invoice_token  the customer-approved-invoicing flow's /invoice/[token]
+//                  page, only reached after its card-on-file charge came
+//                  back declined/expired.
 type Body =
   | { context: "booking"; email: string; name?: string; phone?: string }
-  | { context: "setup_token"; token: string };
+  | { context: "setup_token"; token: string }
+  | { context: "invoice_token"; token: string };
 
 function isEmail(v: unknown): v is string {
   return typeof v === "string" && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
@@ -66,6 +71,15 @@ export async function POST(req: Request) {
         );
       }
       ({ stripeCustomerId } = await ensureStripeCustomerForRow(customer.id));
+    } else if (body.context === "invoice_token") {
+      const job = await findJobByInvoiceToken(body.token);
+      if (!job) {
+        return NextResponse.json(
+          { error: "This invoice link has expired, is invalid, or is already settled." },
+          { status: 404 }
+        );
+      }
+      ({ stripeCustomerId } = await ensureStripeCustomerForRow(job.customerId));
     } else {
       return NextResponse.json({ error: "Unknown context" }, { status: 400 });
     }

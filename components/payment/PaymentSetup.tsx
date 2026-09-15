@@ -23,7 +23,8 @@ import { buttonStyle, ErrorBanner } from "@/components/ui/form";
 
 export type SetupIntentRequest =
   | { context: "booking"; email: string; name?: string; phone?: string }
-  | { context: "setup_token"; token: string };
+  | { context: "setup_token"; token: string }
+  | { context: "invoice_token"; token: string };
 
 export type PaymentSetupResult = {
   setupIntentId: string;
