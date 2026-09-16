@@ -682,9 +682,20 @@
   margin: var(--space-lg) 0;
 }
 @media (min-width: 48rem) {
+  /* .mkt-pricing-cards lives inside the page's measure-width (~680px) prose
+     column, which is correct for running text but leaves this, the only
+     card grid on the page, stuck at mobile-ish width on desktop. Break it
+     out to the site's wide container (--width-wide, ~1140px) the same way
+     the hero/header/footer do, centered on the viewport regardless of the
+     narrower parent. Desktop-only (this media query); mobile is untouched. */
   .mkt-pricing-cards {
     grid-template-columns: 1fr 1fr;
-    align-items: start;
+    width: 100vw;
+    max-width: var(--width-wide);
+    margin-left: 50%;
+    transform: translateX(-50%);
+    padding-inline: var(--space-xl);
+    box-sizing: border-box;
   }
 }
 
@@ -708,10 +719,18 @@
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: var(--space-2xs);
-  margin-top: var(--space-sm);
+  /* Pinned to the bottom of the card (not just below the preceding text) so
+     the photo rows line up between the two cards even when one card's copy
+     runs longer than the other's — the grid stretches both cards to equal
+     height by default, and this margin claims the leftover space. The
+     padding guarantees a floor gap for whichever card is tallest, where the
+     auto margin has no leftover space to claim. */
+  margin-top: auto;
+  padding-top: var(--space-sm);
 }
 .mkt-pricing-photos img {
   width: 100%;
+  height: auto;
   aspect-ratio: 1;
   object-fit: cover;
   border-radius: var(--radius);
