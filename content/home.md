@@ -282,6 +282,8 @@ A larger machine with more components. More parts to disassemble, clean, and rea
 
 **$300 per visit.**
 
+Two visits a year, on a machine your business runs on every day.
+
 **[ASSET SLOT — three photos, commercial. Real photos only.]**
 Alt text pattern: "Light commercial ice machine being [descaled / hand cleaned / sanitized] in a Utah [office / showroom]."
 

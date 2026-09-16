@@ -492,6 +492,7 @@ export default async function HomePage() {
                     {commercialPrice}
                     <span>per visit</span>
                   </p>
+                  <p>Two visits a year, on a machine your business runs on every day.</p>
                   <div className="mkt-pricing-photos">
                     <Image
                       src="/images/scotsman-commercial.jpg"
