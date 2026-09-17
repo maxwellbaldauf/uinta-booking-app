@@ -49,13 +49,21 @@ async function readAgreementPdf(): Promise<Buffer | null> {
   }
 }
 
-export type ConfirmationVariant = "new" | "rescheduled";
+export type ConfirmationVariant = "new" | "rescheduled" | "owner_rescheduled";
 
 // Assemble the confirmation email (spec §8.1): date, arrival window, address,
 // price, magic link, .ics invite. Split from the send so it can be previewed.
 // `variant: "rescheduled"` re-sends after a magic-link reschedule — same
 // content, updated heading, and an .ics SEQUENCE bump so calendars replace the
 // existing entry rather than add a duplicate (stable UID does the matching).
+// `variant: "owner_rescheduled"` is the same .ics-replacement mechanics but
+// for the other direction — the owner/tech moved the job's date or arrival
+// window directly in the field app (see uinta-field-app's job edit page and
+// POST /api/internal/owner-reschedule-notify below). "rescheduled"'s copy is
+// written as if the customer just did it themselves ("Your visit has been
+// rescheduled") on the confirmation page they were just looking at — reused
+// here it would read as if the customer took an action they didn't take, so
+// this gets its own owner-voiced copy ("We've updated your appointment").
 export async function buildBookingConfirmationEmail(
   jobId: string,
   opts?: { variant?: ConfirmationVariant; attachAgreement?: boolean }
@@ -102,11 +110,15 @@ export async function buildBookingConfirmationEmail(
     organizerName: settings.business_name,
     // Monotonic (minutes since epoch) so a rescheduled invite always outranks
     // the previous one in calendar clients. "new" stays at 0.
-    sequence: variant === "rescheduled" ? Math.floor(Date.now() / 60000) : 0,
+    sequence: variant !== "new" ? Math.floor(Date.now() / 60000) : 0,
   });
 
   const headline =
-    variant === "rescheduled" ? "Your visit has been rescheduled." : "Your cleaning is booked.";
+    variant === "rescheduled"
+      ? "Your visit has been rescheduled."
+      : variant === "owner_rescheduled"
+        ? "We've updated your appointment."
+        : "Your cleaning is booked.";
 
   const inner = `
     <p style="margin:0 0 12px;">Hi ${escapeHtml(name)},</p>
@@ -122,8 +134,15 @@ export async function buildBookingConfirmationEmail(
     <p style="margin:12px 0 0;color:#5b6470;font-size:13px;">An updated calendar invite is attached. Your reschedule / cancel link expires the day after the visit.</p>
   `;
 
+  const title =
+    variant === "rescheduled"
+      ? "Your Uinta Ice Co visit was rescheduled"
+      : variant === "owner_rescheduled"
+        ? "Your Uinta Ice Co appointment was updated"
+        : "Your Uinta Ice Co cleaning is booked";
+
   const html = renderEmail({
-    title: variant === "rescheduled" ? "Your Uinta Ice Co visit was rescheduled" : "Your Uinta Ice Co cleaning is booked",
+    title,
     preheader: `${dateLong}, ${windowLabel} — ${address}`,
     inner,
   });
@@ -133,7 +152,9 @@ export async function buildBookingConfirmationEmail(
     ``,
     variant === "rescheduled"
       ? `Your Uinta Ice Co visit has been rescheduled.`
-      : `Your Uinta Ice Co cleaning is booked.`,
+      : variant === "owner_rescheduled"
+        ? `We've updated your Uinta Ice Co appointment.`
+        : `Your Uinta Ice Co cleaning is booked.`,
     ``,
     `Date:           ${dateLong}`,
     `Arrival window: ${windowLabel}`,
@@ -164,7 +185,9 @@ export async function buildBookingConfirmationEmail(
     subject:
       variant === "rescheduled"
         ? `Your Uinta Ice Co visit was moved — ${formatVisitDate(job.scheduled_date)}`
-        : `Your Uinta Ice Co cleaning is booked — ${formatVisitDate(job.scheduled_date)}`,
+        : variant === "owner_rescheduled"
+          ? `Your Uinta Ice Co appointment was updated — ${formatVisitDate(job.scheduled_date)}`
+          : `Your Uinta Ice Co cleaning is booked — ${formatVisitDate(job.scheduled_date)}`,
     html,
     text,
     attachments,
