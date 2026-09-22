@@ -89,6 +89,10 @@ export const SERVICE_FAQ: FaqItem[] = [
     q: "Do you service commercial machines?",
     a: "Yes, light commercial. Offices, retail showrooms, and small business breakrooms. Those visits run about an hour and a half because the units are larger and have more components. We don’t service high-volume food-service or restaurant equipment.",
   },
+  {
+    q: "Is this the same as ice machine maintenance?",
+    a: "Yes — descaling and sanitizing is the maintenance a residential ice machine needs. Manufacturers call it maintenance; Uinta Ice Co. calls it cleaning, and it’s the same visit.",
+  },
 ];
 
 // troubleshooting.md — the "FAQ schema pair" from each section
