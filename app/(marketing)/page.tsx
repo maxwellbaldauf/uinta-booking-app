@@ -453,19 +453,19 @@ export default async function HomePage() {
                   <div className="mkt-pricing-photos">
                     <Image
                       src="/images/scotsman-residential.jpg"
-                      alt="Residential undercounter ice machine being descaled in a Utah home."
+                      alt="Scotsman-style undercounter residential ice machine, the type Uinta Ice Co. services."
                       width={200}
                       height={200}
                     />
                     <Image
                       src="/images/subzero-residential.jpg"
-                      alt="Residential undercounter ice machine being hand cleaned in a Utah home."
+                      alt="Sub-Zero-style undercounter residential ice machine, the type Uinta Ice Co. services."
                       width={200}
                       height={200}
                     />
                     <Image
                       src="/images/viking-residential.jpg"
-                      alt="Residential undercounter ice machine being sanitized in a Utah home."
+                      alt="Viking-style undercounter residential ice machine, the type Uinta Ice Co. services."
                       width={200}
                       height={200}
                     />
@@ -490,19 +490,19 @@ export default async function HomePage() {
                   <div className="mkt-pricing-photos">
                     <Image
                       src="/images/scotsman-commercial.jpg"
-                      alt="Light commercial ice machine being descaled in a Utah office."
+                      alt="Scotsman-style modular light commercial ice machine, the type Uinta Ice Co. services."
                       width={200}
                       height={200}
                     />
                     <Image
                       src="/images/manitowoc-commercial.jpg"
-                      alt="Light commercial ice machine being hand cleaned in a Utah office."
+                      alt="Manitowoc-style modular light commercial ice machine, the type Uinta Ice Co. services."
                       width={200}
                       height={200}
                     />
                     <Image
                       src="/images/hoshizaki-commercial.jpg"
-                      alt="Light commercial ice machine being sanitized in a Utah showroom."
+                      alt="Hoshizaki-style modular light commercial ice machine, the type Uinta Ice Co. services."
                       width={200}
                       height={200}
                     />

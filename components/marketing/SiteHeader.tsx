@@ -82,7 +82,7 @@ export function SiteHeader() {
           className="mkt-header__logo"
           aria-label="Uinta Ice Co. — home"
         >
-          <Image src="/images/logo2.png" alt="" width={26} height={26} />
+          <Image src="/images/logo2.png" alt="Uinta Ice Co. logo" width={26} height={26} />
           <span>Uinta Ice Co.</span>
         </Link>
 
