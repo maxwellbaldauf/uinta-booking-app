@@ -243,7 +243,7 @@ export default function IceMachineCleaningPage() {
               hard. Mountain Regional Water, which supplies much of the Park City
               area, publishes its hardness at roughly 300 mg/L, about 17.5 grains
               per gallon. Herriman City reports Jordan Valley Water Conservancy
-              District supply generally running 12 to 15 grains per gallon.
+              District supply generally running 10 to 12 grains per gallon.
               Machines here scale faster than the same unit would in most of the
               country.
             </p>
@@ -381,6 +381,27 @@ export default function IceMachineCleaningPage() {
           </p>
         </div>
       </section>
+
+      <div className="mkt-sources">
+        <h2>Sources</h2>
+        <ul>
+          <li>
+            <a href="https://www.usgs.gov/water-science-school/science/hardness-water">
+              U.S. Geological Survey — water hardness classification
+            </a>
+          </li>
+          <li>
+            <a href="https://www.mtnregionalwaterutah.gov/files/882bc66a4/MRW-Water-Hardness.pdf">
+              Mountain Regional Water — published water hardness
+            </a>
+          </li>
+          <li>
+            <a href="https://www.herriman.gov/waterquality.php">
+              Herriman City — water quality and hardness
+            </a>
+          </li>
+        </ul>
+      </div>
     </div>
   );
 }

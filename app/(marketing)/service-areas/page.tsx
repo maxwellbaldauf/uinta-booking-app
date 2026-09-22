@@ -18,7 +18,39 @@ const JUMP = [
   { id: "park-city-heber", label: "Park City and Heber" },
   { id: "utah-valley", label: "Utah Valley" },
   { id: "full-list", label: "Every city we serve" },
+  { id: "water-hardness", label: "Water hardness by area" },
 ];
+
+// Every figure already stated in the accordion prose above, gathered into one
+// table. Salt Lake City/Holladay has no published numeric figure on this page
+// (only the qualitative "well water is harder" from SLC DPU) — left blank
+// rather than invented.
+const WATER_HARDNESS = [
+  {
+    area: "Park City, Heber, Midway, Sundance",
+    supplier: "Mountain Regional Water",
+    hardness: "≈300 mg/L (≈17.5 gpg)",
+    classification: "Very hard",
+  },
+  {
+    area: "South Jordan",
+    supplier: "Jordan Valley Water Conservancy District",
+    hardness: "7–10 gpg",
+    classification: "Hard",
+  },
+  {
+    area: "Herriman",
+    supplier: "Jordan Valley Water Conservancy District",
+    hardness: "10–12 gpg",
+    classification: "Hard to very hard",
+  },
+  {
+    area: "Salt Lake City, Holladay, east bench",
+    supplier: "SLC Dept. of Public Utilities (canyon streams + wells)",
+    hardness: "Not numerically published; wells confirmed harder",
+    classification: "—",
+  },
+] as const;
 
 // No FAQPage schema: the visible accordion prose doesn't match lib/faq.ts's
 // condensed Q&A verbatim (Google wants the markup answer present on the page).
@@ -198,7 +230,7 @@ export default function ServiceAreasPage() {
               Where we have a published figure, we use it. South Jordan lists its
               Jordan Valley Water Conservancy District supply at 7 to 10 grains
               per gallon, classified as hard. Herriman City reports Jordan Valley
-              supply generally running 12 to 15 grains per gallon. Both sit at or
+              supply generally running 10 to 12 grains per gallon. Both sit at or
               above the threshold where scale becomes a maintenance issue rather
               than a nuisance.
             </p>
@@ -228,6 +260,37 @@ export default function ServiceAreasPage() {
         </Accordion>
       </section>
 
+      {/* WATER HARDNESS BY AREA */}
+      <section id="water-hardness" className="mkt-section">
+        <h2>Water Hardness by Area</h2>
+        <p>
+          The published figures from the water districts we cite above, in one
+          table.
+        </p>
+        <div className="mkt-table-wrap">
+          <table className="mkt-table">
+            <thead>
+              <tr>
+                <th scope="col">Area</th>
+                <th scope="col">Water supplier</th>
+                <th scope="col">Published hardness</th>
+                <th scope="col">Classification</th>
+              </tr>
+            </thead>
+            <tbody>
+              {WATER_HARDNESS.map((row) => (
+                <tr key={row.area}>
+                  <th scope="row">{row.area}</th>
+                  <td data-col="Water supplier">{row.supplier}</td>
+                  <td data-col="Published hardness">{row.hardness}</td>
+                  <td data-col="Classification">{row.classification}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
       {/* CLOSING CTA */}
       <section id="book" className="mkt-section">
         <h2>Book a Cleaning</h2>
@@ -244,6 +307,32 @@ export default function ServiceAreasPage() {
           </p>
         </div>
       </section>
+
+      <div className="mkt-sources">
+        <h2>Sources</h2>
+        <ul>
+          <li>
+            <a href="https://www.mtnregionalwaterutah.gov/files/882bc66a4/MRW-Water-Hardness.pdf">
+              Mountain Regional Water — published water hardness
+            </a>
+          </li>
+          <li>
+            <a href="https://www.herriman.gov/waterquality.php">
+              Herriman City — water quality and hardness
+            </a>
+          </li>
+          <li>
+            <a href="https://www.sjc.utah.gov/325/Water">
+              South Jordan — water hardness
+            </a>
+          </li>
+          <li>
+            <a href="https://www.slc.gov/utilities/water-quality/">
+              Salt Lake City Department of Public Utilities — water sources
+            </a>
+          </li>
+        </ul>
+      </div>
     </div>
   );
 }

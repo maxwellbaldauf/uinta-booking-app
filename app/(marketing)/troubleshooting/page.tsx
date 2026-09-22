@@ -355,7 +355,7 @@ export default function TroubleshootingPage() {
               district supplying much of the Park City area, publishes its
               hardness at roughly 300 mg/L as calcium carbonate, about 17.5 grains
               per gallon. Herriman City reports that Jordan Valley Water
-              Conservancy District supply generally runs 12 to 15 grains per
+              Conservancy District supply generally runs 10 to 12 grains per
               gallon, and South Jordan lists its Jordan Valley supply at 7 to 10
               grains per gallon. Anything above 10.5 grains per gallon is
               classified as very hard.
@@ -571,6 +571,32 @@ export default function TroubleshootingPage() {
           </p>
         </div>
       </section>
+
+      <div className="mkt-sources">
+        <h2>Sources</h2>
+        <ul>
+          <li>
+            <a href="https://www.usgs.gov/water-science-school/science/hardness-water">
+              U.S. Geological Survey — water hardness classification
+            </a>
+          </li>
+          <li>
+            <a href="https://www.mtnregionalwaterutah.gov/files/882bc66a4/MRW-Water-Hardness.pdf">
+              Mountain Regional Water — published water hardness
+            </a>
+          </li>
+          <li>
+            <a href="https://www.herriman.gov/waterquality.php">
+              Herriman City — water quality and hardness
+            </a>
+          </li>
+          <li>
+            <a href="https://www.sjc.utah.gov/325/Water">
+              South Jordan — water hardness
+            </a>
+          </li>
+        </ul>
+      </div>
     </div>
   );
 }

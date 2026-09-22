@@ -365,6 +365,27 @@ export default function BrandsPage() {
           </p>
         </div>
       </section>
+
+      <div className="mkt-sources">
+        <h2>Sources</h2>
+        <ul>
+          <li>
+            <a href="https://www.scotsman-ice.com/service/Application%20Bulletins/pab2019-01.pdf">
+              Scotsman — ice machine cleaning bulletin (Clear 1, nickel-safe)
+            </a>
+          </li>
+          <li>
+            <a href="https://www.geapplianceparts.com/store/parts/spec/WX08X42870">
+              GE Appliance Parts — nickel-safe ice machine cleaner
+            </a>
+          </li>
+          <li>
+            <a href="https://www.u-line.com/80-55667-00.html">
+              U-Line — Clear Ice Machine Cleaner
+            </a>
+          </li>
+        </ul>
+      </div>
     </div>
   );
 }

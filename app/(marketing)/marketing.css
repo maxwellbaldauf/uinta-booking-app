@@ -874,7 +874,7 @@
   text-decoration-color: var(--ink);
 }
 
-/* ---- Comparison table (troubleshooting) --------------------------- */
+/* ---- Comparison table (troubleshooting, home pricing) --------------- */
 
 .mkt-table-wrap {
   margin: var(--space-md) 0;
@@ -942,6 +942,35 @@
     font-weight: 600;
     color: var(--ink-faint);
   }
+}
+
+/* ---- Sources (quiet citation list, bottom of a content page) ------ */
+
+.mkt-sources {
+  margin-top: var(--space-xl);
+  padding-top: var(--space-lg);
+  border-top: 1px solid var(--line);
+}
+.mkt-sources h2 {
+  font-size: var(--text-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-weight: 400;
+  color: var(--ink-faint);
+  margin: 0 0 var(--space-sm);
+}
+.mkt-sources ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--text-sm);
+  color: var(--ink-soft);
+}
+.mkt-sources li {
+  margin: 0 0 var(--space-2xs);
+}
+.mkt-sources a {
+  color: inherit;
 }
 
 /* ---- Footer ------------------------------------------------------- */
