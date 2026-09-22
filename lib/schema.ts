@@ -14,7 +14,9 @@
 import {
   absoluteUrl,
   ESTABLISHED_YEAR,
+  LEHI_CITY_CENTER_GEO,
   NAP,
+  OPENING_HOURS_SPECIFICATION,
   SAME_AS,
   SERVICE_CITIES,
   SITE_ORIGIN,
@@ -22,6 +24,7 @@ import {
 import type { FaqItem } from "./faq";
 
 const BUSINESS_ID = `${SITE_ORIGIN}/#business`;
+const WEBSITE_ID = `${SITE_ORIGIN}/#website`;
 const LOGO_URL = `${SITE_ORIGIN}/images/logo2.png`;
 
 const BUSINESS_DESCRIPTION =
@@ -30,10 +33,7 @@ const BUSINESS_DESCRIPTION =
   "ice machines in homes, offices, retail showrooms, and small business " +
   "breakrooms across Utah County and Salt Lake County, within a 75-mile radius.";
 
-export function localBusinessSchema(geo?: {
-  lat: number;
-  lng: number;
-}): Record<string, unknown> {
+export function localBusinessSchema(): Record<string, unknown> {
   return {
     "@type": "LocalBusiness",
     "@id": BUSINESS_ID,
@@ -44,25 +44,75 @@ export function localBusinessSchema(geo?: {
     email: NAP.email,
     description: BUSINESS_DESCRIPTION,
     foundingDate: String(ESTABLISHED_YEAR),
+    priceRange: "$150–$300",
     logo: LOGO_URL,
     image: [LOGO_URL],
     address: {
       "@type": "PostalAddress",
       addressLocality: NAP.locality,
       addressRegion: NAP.region,
+      postalCode: NAP.postalCode,
       addressCountry: NAP.country,
     },
-    ...(geo
-      ? {
-          geo: {
-            "@type": "GeoCoordinates",
-            latitude: geo.lat,
-            longitude: geo.lng,
-          },
-        }
-      : {}),
+    // A published city-center point, not the private service-center coordinate
+    // the booking-radius gate uses (lib/serviceArea.ts) — see LEHI_CITY_CENTER_GEO.
+    geo: {
+      "@type": "GeoCoordinates",
+      latitude: LEHI_CITY_CENTER_GEO.lat,
+      longitude: LEHI_CITY_CENTER_GEO.lng,
+    },
     areaServed: SERVICE_CITIES.map((city) => ({ "@type": "City", name: city })),
+    openingHoursSpecification: OPENING_HOURS_SPECIFICATION,
     sameAs: SAME_AS,
+  };
+}
+
+export function websiteSchema(): Record<string, unknown> {
+  return {
+    "@type": "WebSite",
+    "@id": WEBSITE_ID,
+    name: NAP.name,
+    url: `${SITE_ORIGIN}/`,
+    publisher: { "@id": BUSINESS_ID },
+  };
+}
+
+// A WebPage node for a content page: ties its dateModified (item 3.6) and,
+// where the page has a byline (item 3.7), its author to the page. Emitted
+// alongside a page's other nodes (breadcrumb, FAQ, etc.), not in place of them.
+export function webPageSchema(opts: {
+  path: string;
+  dateModified: string;
+  authorName?: string;
+}): Record<string, unknown> {
+  return {
+    "@type": "WebPage",
+    "@id": `${SITE_ORIGIN}${opts.path}#webpage`,
+    url: absoluteUrl(opts.path),
+    isPartOf: { "@id": WEBSITE_ID },
+    dateModified: opts.dateModified,
+    ...(opts.authorName
+      ? { author: { "@type": "Person", name: opts.authorName } }
+      : {}),
+    publisher: { "@id": BUSINESS_ID },
+  };
+}
+
+// /about (item 3.8): AboutPage rather than WebPage, with mainEntity pointing
+// at the business node — the standard schema.org pattern for an org's About page.
+export function aboutPageSchema(opts: {
+  dateModified: string;
+  authorName: string;
+}): Record<string, unknown> {
+  return {
+    "@type": "AboutPage",
+    "@id": `${SITE_ORIGIN}/about#webpage`,
+    url: absoluteUrl("/about"),
+    isPartOf: { "@id": WEBSITE_ID },
+    dateModified: opts.dateModified,
+    author: { "@type": "Person", name: opts.authorName },
+    publisher: { "@id": BUSINESS_ID },
+    mainEntity: { "@id": BUSINESS_ID },
   };
 }
 

@@ -9,6 +9,7 @@ import {
   faqPageSchema,
   localBusinessSchema,
   serviceSchema,
+  websiteSchema,
 } from "@/lib/schema";
 import { Accordion, AccordionItem } from "@/components/marketing/Accordion";
 import { SocialLinks } from "@/components/marketing/SocialLinks";
@@ -40,27 +41,20 @@ export default async function HomePage() {
   let commercialPrice: string | null = null;
   let priceCents: number | null = null;
   let commercialPriceCents: number | null = null;
-  let geo: { lat: number; lng: number } | undefined;
   try {
     const settings = await getSettings();
     price = formatUsdWhole(settings.base_price_cents);
     commercialPrice = formatUsdWhole(settings.commercial_price_cents);
     priceCents = settings.base_price_cents;
     commercialPriceCents = settings.commercial_price_cents;
-    // Only emit GeoCoordinates in the JSON-LD if both values are real numbers.
-    // The Settings type says `number`, but the row is cast unchecked, so a NULL
-    // column would otherwise produce `latitude: null` in the schema.
-    const { service_center_lat: lat, service_center_lng: lng } = settings;
-    if (Number.isFinite(lat) && Number.isFinite(lng)) {
-      geo = { lat, lng };
-    }
   } catch {
     price = null;
     commercialPrice = null;
   }
 
   const schema = [
-    localBusinessSchema(geo),
+    localBusinessSchema(),
+    websiteSchema(),
     breadcrumbSchema([{ name: "Home", path: "/" }]),
     faqPageSchema(HOME_FAQ),
     // Two distinct Service offerings under the same provider (rather than one

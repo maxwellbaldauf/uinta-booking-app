@@ -31,6 +31,49 @@ export const NAP = {
   region: "UT",
   regionName: "Utah",
   country: "US",
+  postalCode: "84043",
+} as const;
+
+// A published, 2-decimal Lehi city-center point for public JSON-LD `geo`.
+// Deliberately NOT the same value as settings.service_center_lat/lng (the
+// live booking-radius gate in lib/serviceArea.ts) — this is a home-based
+// business, and that DB value sits ~1-1.5km off Lehi's actual city center,
+// close enough to be an address-level pin at the precision JSON-LD would
+// otherwise publish it at. Keep these two values independent.
+export const LEHI_CITY_CENTER_GEO = { lat: 40.39, lng: -111.87 } as const;
+
+// Business hours, shown nowhere on the site today but needed for JSON-LD
+// openingHoursSpecification. If hours ever get a visible display, read them
+// from BUSINESS_HOURS_DISPLAY so there's still one source of truth.
+export const BUSINESS_HOURS_DISPLAY = "Monday–Saturday, 7:00 AM–7:00 PM. Closed Sunday.";
+export const OPENING_HOURS_SPECIFICATION = [
+  {
+    "@type": "OpeningHoursSpecification",
+    dayOfWeek: [
+      "Monday",
+      "Tuesday",
+      "Wednesday",
+      "Thursday",
+      "Friday",
+      "Saturday",
+    ],
+    opens: "07:00",
+    closes: "19:00",
+  },
+] as const;
+
+// Editorial "Last updated" date per content page, plus the matching ISO date
+// for each page's JSON-LD `dateModified`. Bump the pair by hand whenever a
+// page's content actually changes — this is a recency signal for search and
+// AI answers, so it must reflect real edits, not the current date. One
+// constants object so every page's date (and any future rendering of it)
+// stays in sync from a single edit.
+export const PAGE_UPDATED = {
+  troubleshooting: { display: "September 2026", iso: "2026-09-01" },
+  iceMachineCleaning: { display: "September 2026", iso: "2026-09-01" },
+  brands: { display: "September 2026", iso: "2026-09-01" },
+  serviceAreas: { display: "September 2026", iso: "2026-09-01" },
+  about: { display: "September 2026", iso: "2026-09-01" },
 } as const;
 
 // Social profiles. Rendered as icon links in the home page About section and
