@@ -1,7 +1,7 @@
 import Link from "next/link";
-import { NAP } from "@/lib/site";
+import { NAP, PAGE_UPDATED } from "@/lib/site";
 import { pageMetadata } from "@/lib/seo";
-import { breadcrumbSchema } from "@/lib/schema";
+import { breadcrumbSchema, webPageSchema } from "@/lib/schema";
 import { JsonLd } from "@/components/marketing/JsonLd";
 import { Accordion, AccordionItem } from "@/components/marketing/Accordion";
 
@@ -21,12 +21,12 @@ const schema = [
     { name: "Home", path: "/" },
     { name: "Troubleshooting", path: "/troubleshooting" },
   ]),
+  webPageSchema({
+    path: "/troubleshooting",
+    dateModified: PAGE_UPDATED.troubleshooting.iso,
+    authorName: "Max Baldauf",
+  }),
 ];
-
-// Editorial date, shown under the H1. Bump this by hand whenever a section
-// changes — the copy calls the recency signal load-bearing for search and AI
-// answers, so it must reflect real edits, not the current date.
-const LAST_UPDATED = "September 2026";
 
 const JUMP = [
   { id: "signs", label: "9 signs your ice machine needs cleaning" },
@@ -82,7 +82,12 @@ export default function TroubleshootingPage() {
       <JsonLd graph={schema} />
       <header className="mkt-pagehead">
         <h1>Ice Machine Symptoms and What They Mean</h1>
-        <p className="mkt-updated">Last updated: {LAST_UPDATED}</p>
+        <p className="mkt-updated">
+          Last updated: {PAGE_UPDATED.troubleshooting.display}
+        </p>
+        <p className="mkt-byline">
+          Written by <Link href="/about">Max Baldauf, owner of Uinta Ice Co.</Link>
+        </p>
         <p className="mkt-lead">
           Most residential ice machine problems come down to two things: mineral
           scale in the water path, and biofilm in the reservoir. This page covers

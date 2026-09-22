@@ -1,7 +1,7 @@
 import Link from "next/link";
-import { NAP, SERVICE_CITIES } from "@/lib/site";
+import { NAP, PAGE_UPDATED, SERVICE_CITIES } from "@/lib/site";
 import { pageMetadata } from "@/lib/seo";
-import { breadcrumbSchema } from "@/lib/schema";
+import { breadcrumbSchema, webPageSchema } from "@/lib/schema";
 import { JsonLd } from "@/components/marketing/JsonLd";
 import { Accordion, AccordionItem } from "@/components/marketing/Accordion";
 
@@ -59,6 +59,10 @@ const schema = [
     { name: "Home", path: "/" },
     { name: "Service Areas", path: "/service-areas" },
   ]),
+  webPageSchema({
+    path: "/service-areas",
+    dateModified: PAGE_UPDATED.serviceAreas.iso,
+  }),
 ];
 
 export default function ServiceAreasPage() {
@@ -67,6 +71,9 @@ export default function ServiceAreasPage() {
       <JsonLd graph={schema} />
       <header className="mkt-pagehead">
         <h1>Ice Machine Cleaning Near You in Utah</h1>
+        <p className="mkt-updated">
+          Last updated: {PAGE_UPDATED.serviceAreas.display}
+        </p>
         <p className="mkt-lead">
           Uinta Ice Co. is based in Lehi and cleans residential and light
           commercial ice machines within a 75-mile radius, covering Utah

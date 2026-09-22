@@ -535,9 +535,17 @@
   margin: 0 0 var(--space-md);
 }
 .mkt-pagehead .mkt-updated {
+  margin: 0 0 var(--space-2xs);
+  font-size: var(--text-sm);
+  color: var(--ink-faint);
+}
+.mkt-pagehead .mkt-byline {
   margin: 0 0 var(--space-md);
   font-size: var(--text-sm);
   color: var(--ink-faint);
+}
+.mkt-pagehead .mkt-byline a {
+  color: inherit;
 }
 
 /* ---- Scroll-in reveal ---------------------------------------------- */

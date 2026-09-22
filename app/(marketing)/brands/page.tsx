@@ -1,7 +1,7 @@
 import Link from "next/link";
-import { NAP } from "@/lib/site";
+import { NAP, PAGE_UPDATED } from "@/lib/site";
 import { pageMetadata } from "@/lib/seo";
-import { breadcrumbSchema, serviceSchema } from "@/lib/schema";
+import { breadcrumbSchema, serviceSchema, webPageSchema } from "@/lib/schema";
 import { JsonLd } from "@/components/marketing/JsonLd";
 import { Accordion, AccordionItem } from "@/components/marketing/Accordion";
 
@@ -35,6 +35,11 @@ const schema = [
     { name: "Home", path: "/" },
     { name: "Brands", path: "/brands" },
   ]),
+  webPageSchema({
+    path: "/brands",
+    dateModified: PAGE_UPDATED.brands.iso,
+    authorName: "Max Baldauf",
+  }),
 ];
 
 export default function BrandsPage() {
@@ -43,6 +48,10 @@ export default function BrandsPage() {
       <JsonLd graph={schema} />
       <header className="mkt-pagehead">
         <h1>The Brands We Service Most Often</h1>
+        <p className="mkt-updated">Last updated: {PAGE_UPDATED.brands.display}</p>
+        <p className="mkt-byline">
+          Written by <Link href="/about">Max Baldauf, owner of Uinta Ice Co.</Link>
+        </p>
         <p className="mkt-lead">
           Uinta Ice Co. cleans residential and light commercial ice machines
           from every major manufacturer. The brands below are the ones we see

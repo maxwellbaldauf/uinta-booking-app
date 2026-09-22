@@ -1,8 +1,13 @@
 import Link from "next/link";
-import { NAP } from "@/lib/site";
+import { NAP, PAGE_UPDATED } from "@/lib/site";
 import { pageMetadata } from "@/lib/seo";
 import { SERVICE_FAQ } from "@/lib/faq";
-import { breadcrumbSchema, faqPageSchema, serviceSchema } from "@/lib/schema";
+import {
+  breadcrumbSchema,
+  faqPageSchema,
+  serviceSchema,
+  webPageSchema,
+} from "@/lib/schema";
 import { JsonLd } from "@/components/marketing/JsonLd";
 import { Accordion, AccordionItem } from "@/components/marketing/Accordion";
 
@@ -25,6 +30,11 @@ const schema = [
     { name: "Ice Machine Cleaning", path: "/ice-machine-cleaning" },
   ]),
   faqPageSchema(SERVICE_FAQ),
+  webPageSchema({
+    path: "/ice-machine-cleaning",
+    dateModified: PAGE_UPDATED.iceMachineCleaning.iso,
+    authorName: "Max Baldauf",
+  }),
 ];
 
 export default function IceMachineCleaningPage() {
@@ -33,6 +43,12 @@ export default function IceMachineCleaningPage() {
       <JsonLd graph={schema} />
       <header className="mkt-pagehead">
         <h1>Residential Ice Machine Cleaning in Utah, Start to Finish</h1>
+        <p className="mkt-updated">
+          Last updated: {PAGE_UPDATED.iceMachineCleaning.display}
+        </p>
+        <p className="mkt-byline">
+          Written by <Link href="/about">Max Baldauf, owner of Uinta Ice Co.</Link>
+        </p>
         <p className="mkt-lead">
           Uinta Ice Co. descales, deep cleans, and sanitizes residential ice
           machines in the customer’s home. A visit takes about an hour, covers
