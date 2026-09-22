@@ -430,20 +430,18 @@ export default async function HomePage() {
           <h2>What It Costs</h2>
           {price && commercialPrice ? (
             <>
-              <p>
-                Two tiers, priced to the work. Each block below states what the
-                visit covers before it states the number.
-              </p>
+              <p>Two tiers, priced to the work.</p>
               <div className="mkt-pricing-cards">
                 <div className="mkt-pricing-card">
                   <h3>Residential</h3>
                   <p>
-                    Full teardown of removable components, nickel-safe descale,
-                    reservoir and bin deep cleaned by hand, food-contact
-                    sanitize, reassembly and test, and an email breakdown
-                    afterward with before-and-after photos, our notes, and the
-                    receipt. All supplies included. About an hour in your
-                    kitchen.
+                    A residential ice machine cleaning from Uinta Ice Co. is{" "}
+                    {price} per visit, about an hour, all supplies included.
+                    Full teardown of removable components, nickel-safe
+                    descale, reservoir and bin deep cleaned by hand,
+                    food-contact sanitize, reassembly and test, and an email
+                    breakdown afterward with before-and-after photos, our
+                    notes, and the receipt.
                   </p>
                   <p className="mkt-price">
                     {price}
@@ -474,13 +472,13 @@ export default async function HomePage() {
                 <div className="mkt-pricing-card">
                   <h3>Light commercial</h3>
                   <p>
-                    A larger machine with more components. More parts to
-                    disassemble, clean, and reassemble, which is why the visit
-                    runs about an hour and a half rather than an hour. Same
-                    nickel-safe descale, hand cleaning, and food-contact
-                    sanitizing, across more surface area. All supplies
-                    included. Offices, retail showrooms, and small business
-                    breakrooms.
+                    A light commercial ice machine cleaning from Uinta Ice
+                    Co. is {commercialPrice} per visit, about an hour and a
+                    half, all supplies included. A larger machine with more
+                    components means more parts to disassemble, clean, and
+                    reassemble. Same nickel-safe descale, hand cleaning, and
+                    food-contact sanitizing, across more surface area, for
+                    offices, retail showrooms, and small business breakrooms.
                   </p>
                   <p className="mkt-price">
                     {commercialPrice}
@@ -509,6 +507,48 @@ export default async function HomePage() {
                   </div>
                 </div>
               </div>
+
+              <div className="mkt-table-wrap">
+                <table className="mkt-table">
+                  <thead>
+                    <tr>
+                      <td />
+                      <th scope="col">Residential</th>
+                      <th scope="col">Light commercial</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <th scope="row">Price</th>
+                      <td data-col="Residential">{price} per visit</td>
+                      <td data-col="Light commercial">{commercialPrice} per visit</td>
+                    </tr>
+                    <tr>
+                      <th scope="row">Visit length</th>
+                      <td data-col="Residential">About an hour</td>
+                      <td data-col="Light commercial">About an hour and a half</td>
+                    </tr>
+                    <tr>
+                      <th scope="row">Cadence</th>
+                      <td data-col="Residential">Two visits a year</td>
+                      <td data-col="Light commercial">Two visits a year</td>
+                    </tr>
+                    <tr>
+                      <th scope="row">Supplies</th>
+                      <td data-col="Residential">All included</td>
+                      <td data-col="Light commercial">All included</td>
+                    </tr>
+                    <tr>
+                      <th scope="row">Typical settings</th>
+                      <td data-col="Residential">Homes</td>
+                      <td data-col="Light commercial">
+                        Offices, retail showrooms, small business breakrooms
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
               <p>
                 Both are flat rates. Not starting prices, not estimates, and
                 not quotes that change when we open the machine. Both run on
@@ -535,8 +575,8 @@ export default async function HomePage() {
         <section id="guarantee" className="mkt-section">
           <h2>Our Guarantee</h2>
           <p>
-            If you’re not satisfied with the cleaning, we come back and clean it
-            again at no charge.
+            If you’re not satisfied with the cleaning, Uinta Ice Co. comes back
+            and cleans it again at no charge.
           </p>
           <div className="mkt-cta-row mkt-anchor-cta">
             <Link href="/book" className="mkt-btn mkt-btn--primary">

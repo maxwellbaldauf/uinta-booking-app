@@ -23,7 +23,7 @@ export type FaqItem = {
 export const HOME_FAQ: FaqItem[] = [
   {
     q: "Do you have to pull the machine out of the cabinet?",
-    a: "Usually not. Most of the work happens through the front of the unit. If yours needs to come out, we’ll tell you before we start.",
+    a: "Usually not — Uinta Ice Co. cleans most undercounter machines through the front of the unit. If yours needs to come out, we’ll tell you before we start.",
   },
   {
     q: "How long does it take?",
@@ -35,7 +35,7 @@ export const HOME_FAQ: FaqItem[] = [
   },
   {
     q: "My machine is still under warranty. Does this affect it?",
-    a: "No. Professional descaling and sanitizing is maintenance the manufacturer recommends. It’s the absence of it that causes warranty problems.",
+    a: "No, it doesn’t affect your warranty — professional descaling and sanitizing is maintenance the manufacturer recommends. It’s the absence of it that causes warranty problems.",
   },
   {
     q: "What if it still isn’t making ice after you clean it?",
@@ -43,7 +43,7 @@ export const HOME_FAQ: FaqItem[] = [
   },
   {
     q: "Do you repair ice machines too?",
-    a: "No. We clean them. That’s the entire business.",
+    a: "No, Uinta Ice Co. only cleans ice machines — that’s the entire business.",
   },
   {
     q: "What do you use? Is it safe around food?",
@@ -55,7 +55,7 @@ export const HOME_FAQ: FaqItem[] = [
   },
   {
     q: "Do you come out to Park City and Heber?",
-    a: "Yes. We’re based in Lehi and serve a 75-mile radius.",
+    a: "Yes — Uinta Ice Co. is based in Lehi and serves a 75-mile radius.",
     link: {
       href: "/service-areas",
       text: "See whether you’re in our service area",
@@ -71,11 +71,11 @@ export const HOME_FAQ: FaqItem[] = [
 export const SERVICE_FAQ: FaqItem[] = [
   {
     q: "Do you have to pull the machine out of the cabinet?",
-    a: "Usually not. Most of the work is done through the front. If yours needs to come out, we’ll say so before we start.",
+    a: "Usually not — Uinta Ice Co. does most of the work through the front of the unit. If yours needs to come out, we’ll say so before we start.",
   },
   {
     q: "Can you clean a machine that hasn’t been touched in years?",
-    a: "Yes. Those are the ones where the difference is most obvious. Heavily scaled machines occasionally need a second descale pass, which we do on the same visit.",
+    a: "Yes — heavily scaled machines that haven’t been touched in years are often where the difference is most obvious. They occasionally need a second descale pass, which we do on the same visit.",
   },
   {
     q: "Will cleaning fix my ice production?",
