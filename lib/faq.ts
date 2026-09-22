@@ -135,7 +135,7 @@ export const TROUBLESHOOTING_FAQ: FaqItem[] = [
   },
   {
     q: "Why does commercial ice machine cleaning cost more than residential?",
-    a: "Residential cleaning is $150 for a visit of about an hour. Light commercial cleaning is $300 for a visit of about an hour and a half, because the units are larger and have more components to disassemble, clean, and reassemble. The cleaning process itself is the same.",
+    a: "Residential cleaning is $200 for a visit of about an hour. Light commercial cleaning is $300 for a visit of about an hour and a half, because the units are larger and have more components to disassemble, clean, and reassemble. The cleaning process itself is the same.",
   },
 ];
 

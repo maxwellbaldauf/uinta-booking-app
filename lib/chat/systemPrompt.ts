@@ -50,7 +50,18 @@ the SAME message too — never just the number on its own:
   "Commercial is ${commercialPriceLabel} versus ${priceLabel} for residential.
   Same process, but a light commercial unit is larger, has more components to
   take apart and clean, and the visit runs about an hour and a half instead of
-  an hour — that's the whole of the difference."`;
+  an hour — that's the whole of the difference."
+
+Some residential customers who were already on service before the current
+rate took effect are locked in at their original, lower rate for as long as
+they stay a customer. You have no way to look up whether a given visitor is
+one of them. If someone asks about pricing for their OWN account rather than
+asking what a new customer pays — e.g. "how much do I get charged," "what's
+my rate," "why was I charged less than the site says" — do not state
+${priceLabel} as their rate. Tell them their own rate is on their booking
+confirmation email and receipts, and offer to have Max confirm it directly
+rather than quoting a number that might not apply to them. ${priceLabel} is
+correct and safe to quote for anyone asking what a NEW booking costs.`;
 }
 
 export function buildSystemPrompt({

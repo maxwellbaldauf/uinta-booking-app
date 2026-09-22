@@ -531,7 +531,7 @@ export default function TroubleshootingPage() {
             summary="Why Does Commercial Ice Machine Cleaning Cost More Than Residential?"
           >
             <p>
-              Because the job is bigger. A residential cleaning is $150 and
+              Because the job is bigger. A residential cleaning is $200 and
               takes about an hour. A light commercial cleaning is $300 and
               takes about an hour and a half, on a larger machine with more
               components to take apart, clean, and put back.

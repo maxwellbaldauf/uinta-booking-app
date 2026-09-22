@@ -123,7 +123,7 @@ The machine is already yours. Keeping it running is cheaper than replacing it, b
 ## SECTION 6 — WHAT WE DO ON A VISIT
 `anchor id: #what-we-do`
 
-> **PSYCHOLOGY: Value stacking before the anchor.** Every included element itemized here, five sections above the price, so $150 lands against an accumulated total rather than against nothing.
+> **PSYCHOLOGY: Value stacking before the anchor.** Every included element itemized here, five sections above the price, so $200 lands against an accumulated total rather than against nothing.
 
 ### H2
 What Happens When We Clean Your Machine
@@ -267,7 +267,7 @@ Two tiers, priced to the work. Each block below states what the visit covers bef
 
 Full teardown of removable components, nickel-safe descale, reservoir and bin deep cleaned by hand, food-contact sanitize, reassembly and test, and a walkthrough of what we found. All supplies included. About an hour in your kitchen.
 
-**$150 per visit.**
+**$200 per visit.**
 
 Two visits a year, on a machine that cost four figures to install.
 
@@ -347,7 +347,7 @@ Checked and clear: no "peace of mind," "we've got you covered," "look no further
 **LocalBusiness** on the home page. Name Uinta Ice Co., LLC, address Lehi UT, telephone (801) 796-2675, email max@uintaice.com, areaServed the 75-mile radius, foundingDate 2022.
 
 **Service, two offerings** under the same provider, so both tiers are machine-readable as distinct services rather than one service at two prices:
-- Residential ice machine cleaning. Price 150 USD, per visit, duration approx. PT1H.
+- Residential ice machine cleaning. Price 200 USD, per visit, duration approx. PT1H.
 - Light commercial ice machine cleaning. Price 300 USD, per visit, duration approx. PT1H30M.
 
 Set the duration on both. It is the field that carries the reason for the price difference in structured form, and leaving it off makes the two offerings look identical to a crawler.

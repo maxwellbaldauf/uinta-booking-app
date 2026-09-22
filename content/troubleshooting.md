@@ -312,7 +312,7 @@ A: You can safely empty and wash the bin, keep the vent and condenser clear, and
 ### H2
 Why Does Commercial Ice Machine Cleaning Cost More Than Residential?
 
-Because the job is bigger. A residential cleaning is $150 and takes about an hour. A light commercial cleaning is $300 and takes about an hour and a half, on a larger machine with more components to take apart, clean, and put back.
+Because the job is bigger. A residential cleaning is $200 and takes about an hour. A light commercial cleaning is $300 and takes about an hour and a half, on a larger machine with more components to take apart, clean, and put back.
 
 The process itself doesn't change. Both get a nickel-safe descale of the water path, hand cleaning of the reservoir and bin, and food-contact sanitizing of every surface the ice touches. What changes is how much there is to take apart. More removable parts, more surface area in the water path, and a larger bin all have to come out, get cleaned, and go back in.
 
@@ -322,7 +322,7 @@ Light commercial means offices, retail showrooms, and small business breakrooms.
 
 **FAQ schema pair:**
 Q: Why does commercial ice machine cleaning cost more than residential?
-A: Residential cleaning is $150 for a visit of about an hour. Light commercial cleaning is $300 for a visit of about an hour and a half, because the units are larger and have more components to disassemble, clean, and reassemble. The cleaning process itself is the same.
+A: Residential cleaning is $200 for a visit of about an hour. Light commercial cleaning is $300 for a visit of about an hour and a half, because the units are larger and have more components to disassemble, clean, and reassemble. The cleaning process itself is the same.
 
 ---
 

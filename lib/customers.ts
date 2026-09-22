@@ -66,12 +66,13 @@ export type MatchedCustomer = {
   payment_display: string | null;
   service_agreement_accepted_at: string | null;
   service_agreement_version: string | null;
+  grandfathered_price_cents: number | null;
 };
 
 const MATCH_COLS =
   "id, full_name, email, phone, stripe_customer_id, default_payment_method_id, " +
   "default_payment_method_type, payment_display, service_agreement_accepted_at, " +
-  "service_agreement_version";
+  "service_agreement_version, grandfathered_price_cents";
 
 // Repeat-customer match (spec §1.4): by email OR phone, no extra verification.
 // Two targeted queries rather than a PostgREST .or() so an email with a "+" in

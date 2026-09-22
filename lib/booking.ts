@@ -4,6 +4,7 @@ import { getSettings } from "@/lib/settings";
 import { isInServiceArea } from "@/lib/serviceArea";
 import { getOfferedSlots, slotStillAvailable, type OfferedSlot } from "@/lib/scheduling";
 import { matchCustomerByEmailOrPhone, normalizePhone } from "@/lib/customers";
+import { getEffectivePriceCents } from "@/lib/pricing";
 import { agreementIsCurrent, SERVICE_AGREEMENT_VERSION } from "@/lib/agreement";
 import { saveFlaggedLead, type LeadDetails } from "@/lib/leads";
 import {
@@ -258,6 +259,15 @@ export async function createBookingRecord(
   const asPropertyOverride =
     !!resolvedCard && !!matched && !!matched.default_payment_method_id;
 
+  // A matched, grandfathered customer's rate gets baked into this new
+  // property's custom_price_cents at creation time — same mechanism as the
+  // field app's createProperty/createBacklogVisit (see
+  // uinta-field-app/supabase/customer-grandfathered-price.sql). Residential
+  // only: grandfathering exists for the $150 -> $200 residential increase
+  // and does not touch commercial pricing.
+  const customPriceCents =
+    input.serviceType === "residential" ? (matched?.grandfathered_price_cents ?? null) : null;
+
   // --- property ---
   const { data: property, error: propertyError } = await supabase
     .from("properties")
@@ -273,6 +283,7 @@ export async function createBookingRecord(
       service_type: input.serviceType,
       plan_status: "active",
       source: "booking",
+      custom_price_cents: customPriceCents,
       ...(asPropertyOverride && resolvedCard
         ? {
             payment_method_id: resolvedCard.paymentMethodId,
@@ -321,10 +332,19 @@ export async function createBookingRecord(
       scheduled_date: chosenSlot.slotDate,
       arrival_block: chosenSlot.arrivalBlock,
       blocks_needed: blocksNeeded,
-      quoted_price_cents:
-        input.serviceType === "commercial"
-          ? settings.commercial_price_cents
-          : settings.base_price_cents,
+      // Via getEffectivePriceCents rather than reading settings directly —
+      // must respect the property's just-set custom_price_cents (a
+      // grandfathered rate, above) or the confirmation email / pre-visit
+      // reminder / backlog payment would quote a different price than what
+      // the property record says, since those all trust quoted_price_cents
+      // as the source of truth rather than recomputing live.
+      quoted_price_cents: getEffectivePriceCents(
+        { service_type: input.serviceType, custom_price_cents: customPriceCents },
+        {
+          basePriceCents: settings.base_price_cents,
+          commercialPriceCents: settings.commercial_price_cents,
+        }
+      ),
       booking_match_type: fresh.isFallback ? "fallback" : "route_matched",
       access_token: token,
       // "expires the day after the appointment" — valid through all of the
