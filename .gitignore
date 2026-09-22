@@ -34,3 +34,6 @@ next-env.d.ts
 
 # supabase CLI local cache
 /supabase/.temp/
+
+# raw customer job photos — never commit originals, only the stripped/exported copies in public/images/jobs
+/photo-intake/
