@@ -33,7 +33,11 @@ const BUSINESS_DESCRIPTION =
   "ice machines in homes, offices, retail showrooms, and small business " +
   "breakrooms across Utah County and Salt Lake County, within a 75-mile radius.";
 
-export function localBusinessSchema(): Record<string, unknown> {
+export function localBusinessSchema(opts?: {
+  // Live-sourced, like serviceSchema()'s offer — never a literal, so this
+  // can't drift from the actual price the way a hardcoded range could.
+  priceRangeCents?: { residential: number; commercial: number };
+}): Record<string, unknown> {
   return {
     "@type": "LocalBusiness",
     "@id": BUSINESS_ID,
@@ -44,7 +48,11 @@ export function localBusinessSchema(): Record<string, unknown> {
     email: NAP.email,
     description: BUSINESS_DESCRIPTION,
     foundingDate: String(ESTABLISHED_YEAR),
-    priceRange: "$150–$300",
+    ...(opts?.priceRangeCents
+      ? {
+          priceRange: `$${Math.round(opts.priceRangeCents.residential / 100)}–$${Math.round(opts.priceRangeCents.commercial / 100)}`,
+        }
+      : {}),
     logo: LOGO_URL,
     image: [LOGO_URL],
     address: {

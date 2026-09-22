@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { getSettings, formatUsdWhole } from "@/lib/settings";
-import { NAP } from "@/lib/site";
+import { NAP, PAGE_UPDATED } from "@/lib/site";
 import { pageMetadata } from "@/lib/seo";
 import { HOME_FAQ } from "@/lib/faq";
 import {
@@ -9,13 +9,16 @@ import {
   faqPageSchema,
   localBusinessSchema,
   serviceSchema,
+  webPageSchema,
   websiteSchema,
 } from "@/lib/schema";
 import { Accordion, AccordionItem } from "@/components/marketing/Accordion";
 import { BeforeAfter } from "@/components/marketing/BeforeAfter";
 import { SocialLinks } from "@/components/marketing/SocialLinks";
+import { Sources } from "@/components/marketing/Sources";
 import { JsonLd } from "@/components/marketing/JsonLd";
 import { JOB_PHOTOS } from "@/lib/jobPhotos";
+import { SOURCE_LINKS } from "@/lib/sources";
 
 // The price is read from settings.base_price_cents on every request so the site
 // and the amount actually charged can't drift. Everything else on this page is
@@ -55,10 +58,15 @@ export default async function HomePage() {
   }
 
   const schema = [
-    localBusinessSchema(),
+    localBusinessSchema(
+      priceCents != null && commercialPriceCents != null
+        ? { priceRangeCents: { residential: priceCents, commercial: commercialPriceCents } }
+        : undefined
+    ),
     websiteSchema(),
     breadcrumbSchema([{ name: "Home", path: "/" }]),
     faqPageSchema(HOME_FAQ),
+    webPageSchema({ path: "/", dateModified: PAGE_UPDATED.home.iso }),
     // Two distinct Service offerings under the same provider (rather than one
     // service at two prices) so a crawler can tell the tiers apart — price and
     // duration both live here, DB-sourced, never a literal in this file.
@@ -634,36 +642,15 @@ export default async function HomePage() {
           <SocialLinks />
         </section>
 
-        <div className="mkt-sources">
-          <h2>Sources</h2>
-          <ul>
-            <li>
-              <a href="https://www.usgs.gov/water-science-school/science/hardness-water">
-                U.S. Geological Survey — water hardness classification
-              </a>
-            </li>
-            <li>
-              <a href="https://www.mtnregionalwaterutah.gov/files/882bc66a4/MRW-Water-Hardness.pdf">
-                Mountain Regional Water — published water hardness
-              </a>
-            </li>
-            <li>
-              <a href="https://www.herriman.gov/waterquality.php">
-                Herriman City — water quality and hardness
-              </a>
-            </li>
-            <li>
-              <a href="https://www.sjc.utah.gov/325/Water">
-                South Jordan — water hardness
-              </a>
-            </li>
-            <li>
-              <a href="https://www.slc.gov/utilities/water-quality/">
-                Salt Lake City Department of Public Utilities — water sources
-              </a>
-            </li>
-          </ul>
-        </div>
+        <Sources
+          links={[
+            SOURCE_LINKS.usgs,
+            SOURCE_LINKS.mountainRegional,
+            SOURCE_LINKS.herriman,
+            SOURCE_LINKS.southJordan,
+            SOURCE_LINKS.slcDpu,
+          ]}
+        />
       </div>
     </>
   );

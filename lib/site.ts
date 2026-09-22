@@ -69,6 +69,7 @@ export const OPENING_HOURS_SPECIFICATION = [
 // constants object so every page's date (and any future rendering of it)
 // stays in sync from a single edit.
 export const PAGE_UPDATED = {
+  home: { display: "September 2026", iso: "2026-09-01" },
   troubleshooting: { display: "September 2026", iso: "2026-09-01" },
   iceMachineCleaning: { display: "September 2026", iso: "2026-09-01" },
   brands: { display: "September 2026", iso: "2026-09-01" },

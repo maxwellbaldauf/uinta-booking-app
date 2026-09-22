@@ -8,7 +8,7 @@ import { absoluteUrl, PAGE_UPDATED } from "@/lib/site";
 // rather than stamp a build timestamp.
 export default function sitemap(): MetadataRoute.Sitemap {
   const pages: { path: string; priority: number; dateKey?: keyof typeof PAGE_UPDATED }[] = [
-    { path: "/", priority: 1 },
+    { path: "/", priority: 1, dateKey: "home" },
     { path: "/ice-machine-cleaning", priority: 0.9, dateKey: "iceMachineCleaning" },
     { path: "/troubleshooting", priority: 0.9, dateKey: "troubleshooting" },
     { path: "/brands", priority: 0.8, dateKey: "brands" },

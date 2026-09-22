@@ -4,6 +4,8 @@ import { pageMetadata } from "@/lib/seo";
 import { breadcrumbSchema, webPageSchema } from "@/lib/schema";
 import { JsonLd } from "@/components/marketing/JsonLd";
 import { Accordion, AccordionItem } from "@/components/marketing/Accordion";
+import { Sources } from "@/components/marketing/Sources";
+import { SOURCE_LINKS } from "@/lib/sources";
 
 export const metadata = pageMetadata({
   title: "Ice Machine Cleaning Service Areas | Utah County & SLC",
@@ -315,31 +317,14 @@ export default function ServiceAreasPage() {
         </div>
       </section>
 
-      <div className="mkt-sources">
-        <h2>Sources</h2>
-        <ul>
-          <li>
-            <a href="https://www.mtnregionalwaterutah.gov/files/882bc66a4/MRW-Water-Hardness.pdf">
-              Mountain Regional Water — published water hardness
-            </a>
-          </li>
-          <li>
-            <a href="https://www.herriman.gov/waterquality.php">
-              Herriman City — water quality and hardness
-            </a>
-          </li>
-          <li>
-            <a href="https://www.sjc.utah.gov/325/Water">
-              South Jordan — water hardness
-            </a>
-          </li>
-          <li>
-            <a href="https://www.slc.gov/utilities/water-quality/">
-              Salt Lake City Department of Public Utilities — water sources
-            </a>
-          </li>
-        </ul>
-      </div>
+      <Sources
+        links={[
+          SOURCE_LINKS.mountainRegional,
+          SOURCE_LINKS.herriman,
+          SOURCE_LINKS.southJordan,
+          SOURCE_LINKS.slcDpu,
+        ]}
+      />
     </div>
   );
 }

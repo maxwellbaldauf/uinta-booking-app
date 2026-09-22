@@ -4,6 +4,8 @@ import { pageMetadata } from "@/lib/seo";
 import { breadcrumbSchema, serviceSchema, webPageSchema } from "@/lib/schema";
 import { JsonLd } from "@/components/marketing/JsonLd";
 import { Accordion, AccordionItem } from "@/components/marketing/Accordion";
+import { Sources } from "@/components/marketing/Sources";
+import { SOURCE_LINKS } from "@/lib/sources";
 
 export const metadata = pageMetadata({
   title: "Ice Machine Cleaning by Brand | Scotsman, Sub-Zero, U-Line",
@@ -375,26 +377,7 @@ export default function BrandsPage() {
         </div>
       </section>
 
-      <div className="mkt-sources">
-        <h2>Sources</h2>
-        <ul>
-          <li>
-            <a href="https://www.scotsman-ice.com/service/Application%20Bulletins/pab2019-01.pdf">
-              Scotsman — ice machine cleaning bulletin (Clear 1, nickel-safe)
-            </a>
-          </li>
-          <li>
-            <a href="https://www.geapplianceparts.com/store/parts/spec/WX08X42870">
-              GE Appliance Parts — nickel-safe ice machine cleaner
-            </a>
-          </li>
-          <li>
-            <a href="https://www.u-line.com/80-55667-00.html">
-              U-Line — Clear Ice Machine Cleaner
-            </a>
-          </li>
-        </ul>
-      </div>
+      <Sources links={[SOURCE_LINKS.scotsman, SOURCE_LINKS.geParts, SOURCE_LINKS.uline]} />
     </div>
   );
 }
