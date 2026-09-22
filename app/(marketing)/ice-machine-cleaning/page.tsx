@@ -10,6 +10,8 @@ import {
 } from "@/lib/schema";
 import { JsonLd } from "@/components/marketing/JsonLd";
 import { Accordion, AccordionItem } from "@/components/marketing/Accordion";
+import { BeforeAfter } from "@/components/marketing/BeforeAfter";
+import { JOB_PHOTOS } from "@/lib/jobPhotos";
 
 export const metadata = pageMetadata({
   title: "Residential Ice Machine Cleaning Service | Uinta Ice Co.",
@@ -242,6 +244,8 @@ export default function IceMachineCleaningPage() {
               so we schedule the next visit and track the date — you don’t have
               to keep a calendar for it.
             </p>
+            <p>An example of the before-and-after photos a visit produces:</p>
+            <BeforeAfter pairs={JOB_PHOTOS.filter((p) => p.id === "ge-reservoir-park-city")} />
           </AccordionItem>
 
           <AccordionItem

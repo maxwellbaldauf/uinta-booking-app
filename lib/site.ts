@@ -117,6 +117,7 @@ export const NAV_ITEMS = [
 export const FOOTER_LINKS = [
   { href: "/", label: "Home" },
   ...NAV_ITEMS,
+  { href: "/about", label: "About" },
   { href: "/contact", label: "Contact" },
 ] as const;
 

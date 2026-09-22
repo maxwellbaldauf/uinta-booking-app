@@ -12,8 +12,10 @@ import {
   websiteSchema,
 } from "@/lib/schema";
 import { Accordion, AccordionItem } from "@/components/marketing/Accordion";
+import { BeforeAfter } from "@/components/marketing/BeforeAfter";
 import { SocialLinks } from "@/components/marketing/SocialLinks";
 import { JsonLd } from "@/components/marketing/JsonLd";
+import { JOB_PHOTOS } from "@/lib/jobPhotos";
 
 // The price is read from settings.base_price_cents on every request so the site
 // and the amount actually charged can't drift. Everything else on this page is
@@ -355,6 +357,16 @@ export default async function HomePage() {
           </Accordion>
         </section>
 
+        {/* BEFORE AND AFTER */}
+        <section id="before-and-after" className="mkt-section">
+          <h2>Before and After</h2>
+          <p>
+            A couple of machines we’ve actually cleaned, from the condition we
+            found them in to how they left.
+          </p>
+          <BeforeAfter pairs={JOB_PHOTOS} />
+        </section>
+
         {/* SECTION 8 — SOCIAL PROOF */}
         <section id="reviews" className="mkt-section">
           <h2>Why Homeowners Call Us</h2>
@@ -615,6 +627,9 @@ export default async function HomePage() {
             included in both. Call or text{" "}
             <a href={NAP.phoneHref}>{NAP.phoneDisplay}</a>. Email{" "}
             <a href={NAP.emailHref}>{NAP.email}</a>.
+          </p>
+          <p>
+            <Link href="/about">More about Uinta Ice Co.</Link>
           </p>
           <SocialLinks />
         </section>
