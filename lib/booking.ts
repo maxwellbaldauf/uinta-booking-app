@@ -265,8 +265,28 @@ export async function createBookingRecord(
   // uinta-field-app/supabase/customer-grandfathered-price.sql). Residential
   // only: grandfathering exists for the $150 -> $200 residential increase
   // and does not touch commercial pricing.
-  const customPriceCents =
-    input.serviceType === "residential" ? (matched?.grandfathered_price_cents ?? null) : null;
+  //
+  // Requires BOTH email AND phone to independently agree with the matched
+  // row, not the single-factor email-OR-phone match matchCustomerByEmailOrPhone
+  // uses for everything else here (agreement gating, card-reuse eligibility).
+  // Those are low-stakes UX conveniences; this now carries real, permanent
+  // monetary value, so a stranger who only knows one piece of a real
+  // customer's contact info can no longer get matched into their discount —
+  // DetailsStep already requires both fields on every submission, so this
+  // costs a legitimate returning customer nothing. If the stored record is
+  // missing one of the two (an older row created with only an email or only
+  // a phone), this safely falls back to the standard rate rather than
+  // guessing; the owner can apply the discount manually from the field app.
+  const grandfatheringVerified =
+    input.serviceType === "residential" &&
+    matched?.grandfathered_price_cents != null &&
+    matched.email != null &&
+    matched.email.trim().toLowerCase() === details.email.trim().toLowerCase() &&
+    matched.phone != null &&
+    matched.phone === normalizePhone(details.phone);
+  const customPriceCents = grandfatheringVerified
+    ? (matched!.grandfathered_price_cents as number)
+    : null;
 
   // --- property ---
   const { data: property, error: propertyError } = await supabase
