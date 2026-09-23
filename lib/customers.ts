@@ -74,6 +74,16 @@ const MATCH_COLS =
   "default_payment_method_type, payment_display, service_agreement_accepted_at, " +
   "service_agreement_version, grandfathered_price_cents";
 
+// ILIKE treats %, _, and \ as pattern metacharacters — escaping them makes a
+// raw string behave as an exact (case-insensitive) match instead of a
+// wildcard pattern. Without this, submitting e.g. "%" as an email would match
+// an arbitrary customer row with zero knowledge of any real customer's
+// details — a real concern now that a match drives grandfathered_price_cents,
+// a real monetary value, not just UX conveniences like agreement-gating.
+function escapeIlike(value: string): string {
+  return value.replace(/\\/g, "\\\\").replace(/%/g, "\\%").replace(/_/g, "\\_");
+}
+
 // Repeat-customer match (spec §1.4): by email OR phone, no extra verification.
 // Two targeted queries rather than a PostgREST .or() so an email with a "+" in
 // it can't break the filter grammar. Email match wins if both hit.
@@ -88,7 +98,7 @@ export async function matchCustomerByEmailOrPhone(
     const { data, error } = await supabase
       .from("customers")
       .select(MATCH_COLS)
-      .ilike("email", trimmedEmail)
+      .ilike("email", escapeIlike(trimmedEmail))
       .limit(1);
     // A select error here (e.g. a MATCH_COLS column the shared schema doesn't
     // have yet) would otherwise look identical to "no match" and silently treat
