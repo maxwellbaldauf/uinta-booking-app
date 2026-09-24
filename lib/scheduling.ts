@@ -44,17 +44,25 @@ export async function getOfferedSlots(
   lat: number,
   lng: number,
   blocksNeeded = 1,
-  opts?: { excludeJobId?: string; skipRerank?: boolean }
+  opts?: { excludeJobId?: string; skipRerank?: boolean; fromDate?: string; windowDays?: number }
 ): Promise<OfferedSlot[]> {
   const supabase = createAdminClient();
   const settings = await getSettings();
   const today = todayDenverISODate();
+  // Defaults preserve the booking-flow/reschedule-picker's original
+  // behavior exactly. slotStillAvailable overrides both below — checking a
+  // clustering-suggestion's proposed date (which can be months out) against
+  // this function's default today+lookahead_days window would never find
+  // it, since get_available_slots would never even consider a date outside
+  // whatever window it's asked to search.
+  const fromDate = opts?.fromDate ?? today;
+  const windowDays = opts?.windowDays ?? settings.lookahead_days;
 
   const { data, error } = await supabase.rpc("get_available_slots", {
     target_lat: lat,
     target_lng: lng,
-    from_date: today,
-    window_days: settings.lookahead_days,
+    from_date: fromDate,
+    window_days: windowDays,
     p_blocks_needed: blocksNeeded,
     ...(opts?.excludeJobId ? { exclude_job_id: opts.excludeJobId } : {}),
   });
@@ -70,9 +78,9 @@ export async function getOfferedSlots(
   // skipping it can't change that answer, only save the latency/cost of
   // computing an order nobody will look at).
   if (!opts?.skipRerank && !settings.clustering_paused && rows.some((r) => !r.is_fallback)) {
-    const toDate = addDaysToISODate(today, settings.lookahead_days);
+    const toDate = addDaysToISODate(fromDate, windowDays);
     const nearby = await fetchNearbyScheduledJobs({
-      fromDate: today,
+      fromDate,
       toDate,
       excludeJobId: opts?.excludeJobId,
     });
@@ -109,8 +117,13 @@ function toOffered(r: RawSlot, blocksNeeded: number): OfferedSlot {
 }
 
 // Is a specific (date, block) still in the freshly-computed offer set? Used by
-// createBooking and rescheduleVisit to re-validate the customer's choice right
-// before writing, so a slot someone else grabbed mid-flow is caught.
+// createBooking, rescheduleVisit, and acceptClusterSuggestion to re-validate
+// the chosen slot right before writing, so a slot someone else grabbed
+// mid-flow is caught. Searches a window bracketing exactly slotDate itself
+// (not the default today+lookahead_days window) — a clustering suggestion's
+// proposed date can be months out, well outside the normal booking horizon,
+// and get_available_slots can only ever return dates inside whatever window
+// it's asked to search.
 export async function slotStillAvailable(
   lat: number,
   lng: number,
@@ -119,7 +132,12 @@ export async function slotStillAvailable(
   blocksNeeded = 1,
   opts?: { excludeJobId?: string }
 ): Promise<OfferedSlot | null> {
-  const fresh = await getOfferedSlots(lat, lng, blocksNeeded, { ...opts, skipRerank: true });
+  const fresh = await getOfferedSlots(lat, lng, blocksNeeded, {
+    ...opts,
+    skipRerank: true,
+    fromDate: slotDate,
+    windowDays: 0,
+  });
   return (
     fresh.find((s) => s.slotDate === slotDate && s.arrivalBlock === arrivalBlock) ?? null
   );
