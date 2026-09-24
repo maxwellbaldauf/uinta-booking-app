@@ -49,7 +49,13 @@ async function readAgreementPdf(): Promise<Buffer | null> {
   }
 }
 
-export type ConfirmationVariant = "new" | "rescheduled" | "owner_rescheduled";
+// "cluster_matched": sent after the customer explicitly ACCEPTS a
+// geographic-clustering suggestion via /cluster-consent/[token] — unlike
+// "rescheduled" (the customer just picked this themselves) or
+// "owner_rescheduled" (the owner already moved it, notify-only), the
+// customer here made an affirmative choice to move their own visit for a
+// suggestion Uinta Ice proposed, so it gets its own thank-you-voiced copy.
+export type ConfirmationVariant = "new" | "rescheduled" | "owner_rescheduled" | "cluster_matched";
 
 // Assemble the confirmation email (spec §8.1): date, arrival window, address,
 // price, magic link, .ics invite. Split from the send so it can be previewed.
@@ -118,7 +124,9 @@ export async function buildBookingConfirmationEmail(
       ? "Your visit has been rescheduled."
       : variant === "owner_rescheduled"
         ? "We've updated your appointment."
-        : "Your cleaning is booked.";
+        : variant === "cluster_matched"
+          ? "Your visit has been moved — thanks for helping us out."
+          : "Your cleaning is booked.";
 
   const inner = `
     <p style="margin:0 0 12px;">Hi ${escapeHtml(name)},</p>
@@ -139,7 +147,9 @@ export async function buildBookingConfirmationEmail(
       ? "Your Uinta Ice Co visit was rescheduled"
       : variant === "owner_rescheduled"
         ? "Your Uinta Ice Co appointment was updated"
-        : "Your Uinta Ice Co cleaning is booked";
+        : variant === "cluster_matched"
+          ? "Your Uinta Ice Co visit was moved"
+          : "Your Uinta Ice Co cleaning is booked";
 
   const html = renderEmail({
     title,
@@ -154,7 +164,9 @@ export async function buildBookingConfirmationEmail(
       ? `Your Uinta Ice Co visit has been rescheduled.`
       : variant === "owner_rescheduled"
         ? `We've updated your Uinta Ice Co appointment.`
-        : `Your Uinta Ice Co cleaning is booked.`,
+        : variant === "cluster_matched"
+          ? `Your Uinta Ice Co visit has been moved — thanks for helping us out.`
+          : `Your Uinta Ice Co cleaning is booked.`,
     ``,
     `Date:           ${dateLong}`,
     `Arrival window: ${windowLabel}`,
@@ -187,7 +199,9 @@ export async function buildBookingConfirmationEmail(
         ? `Your Uinta Ice Co visit was moved — ${formatVisitDate(job.scheduled_date)}`
         : variant === "owner_rescheduled"
           ? `Your Uinta Ice Co appointment was updated — ${formatVisitDate(job.scheduled_date)}`
-          : `Your Uinta Ice Co cleaning is booked — ${formatVisitDate(job.scheduled_date)}`,
+          : variant === "cluster_matched"
+            ? `Your Uinta Ice Co visit was moved — ${formatVisitDate(job.scheduled_date)}`
+            : `Your Uinta Ice Co cleaning is booked — ${formatVisitDate(job.scheduled_date)}`,
     html,
     text,
     attachments,

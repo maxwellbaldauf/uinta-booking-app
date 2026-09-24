@@ -1,7 +1,9 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getSettings } from "@/lib/settings";
 import { ARRIVAL_BLOCKS, arrivalBlockLabel } from "@/lib/schedule/blocks";
-import { todayDenverISODate, nowDenverMinutes, timeToMinutes } from "@/lib/time/denver";
+import { todayDenverISODate, nowDenverMinutes, timeToMinutes, addDaysToISODate } from "@/lib/time/denver";
+import { fetchNearbyScheduledJobs } from "@/lib/clustering/nearbyJobs";
+import { rerankCandidatesByDrivingTime } from "@/lib/clustering/rerank";
 
 type RawSlot = {
   slot_date: string;
@@ -45,19 +47,35 @@ export async function getOfferedSlots(
   opts?: { excludeJobId?: string }
 ): Promise<OfferedSlot[]> {
   const supabase = createAdminClient();
+  const settings = await getSettings();
+  const today = todayDenverISODate();
+
   const { data, error } = await supabase.rpc("get_available_slots", {
     target_lat: lat,
     target_lng: lng,
+    from_date: today,
+    window_days: settings.lookahead_days,
     p_blocks_needed: blocksNeeded,
     ...(opts?.excludeJobId ? { exclude_job_id: opts.excludeJobId } : {}),
   });
   if (error) throw new Error(`get_available_slots failed: ${error.message}`);
 
-  const rows = (data ?? []) as RawSlot[];
-  const today = todayDenverISODate();
+  let rows = (data ?? []) as RawSlot[];
+
+  // Real-driving-time reranking — skipped entirely (zero added latency,
+  // identical to today's behavior) when paused or when nothing came back
+  // route-matched, since there's no nearby neighbor to rank against.
+  if (!settings.clustering_paused && rows.some((r) => !r.is_fallback)) {
+    const toDate = addDaysToISODate(today, settings.lookahead_days);
+    const nearby = await fetchNearbyScheduledJobs({
+      fromDate: today,
+      toDate,
+      excludeJobId: opts?.excludeJobId,
+    });
+    rows = (await rerankCandidatesByDrivingTime({ lat, lng }, rows, nearby)) as RawSlot[];
+  }
 
   if (rows.some((r) => r.slot_date === today)) {
-    const settings = await getSettings();
     const cutoffMin = timeToMinutes(settings.same_day_cutoff);
     const nowMin = nowDenverMinutes();
 

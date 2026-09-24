@@ -21,13 +21,14 @@ export type Settings = {
   business_name: string;
   business_email: string | null;
   business_phone: string | null;
+  clustering_paused: boolean;
 };
 
 const SETTINGS_COLUMNS =
   "base_price_cents, commercial_price_cents, service_interval_months, service_center_lat, " +
   "service_center_lng, service_area_max_miles, match_radius_miles, " +
   "lookahead_days, max_jobs_per_tech_per_day, weekly_days_off, " +
-  "same_day_cutoff, business_name, business_email, business_phone";
+  "same_day_cutoff, business_name, business_email, business_phone, clustering_paused";
 
 // Cache for the lifetime of a server request / a warm serverless instance.
 // The settings row changes rarely and only from Project A's settings page.
