@@ -124,14 +124,11 @@ export async function sendClusterConsentEmail(clusterSuggestionJobId: string): P
       `Current visit:   ${originalLabel}`,
       `Suggested visit: ${proposedLabel}`,
       ``,
-      deadlineText,
-      deadlineText ? `` : undefined,
+      ...(deadlineText ? [deadlineText, ``] : []),
       `Review: ${consentUrl}`,
       ``,
       `— Uinta Ice Co`,
-    ]
-      .filter((line) => line !== undefined)
-      .join("\n");
+    ].join("\n");
 
     const { error: sendError } = await resend.client.emails.send({
       from: resend.from,

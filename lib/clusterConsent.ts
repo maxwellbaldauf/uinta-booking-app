@@ -11,6 +11,9 @@ export type ClusterConsentStatus =
 export type ClusterConsent = {
   id: string;
   jobId: string;
+  jobStatus: string;
+  latitude: number | null;
+  longitude: number | null;
   address: string;
   customerName: string | null;
   originalDate: string;
@@ -28,7 +31,11 @@ type PropRow = {
   longitude: number | null;
   customer: { full_name: string | null } | { full_name: string | null }[] | null;
 };
-type JobRow = { blocks_needed: number; property: PropRow | PropRow[] | null };
+type JobRow = {
+  status: string;
+  blocks_needed: number;
+  property: PropRow | PropRow[] | null;
+};
 type Row = {
   id: string;
   job_id: string;
@@ -62,7 +69,7 @@ export async function getClusterConsentByToken(token: string): Promise<ClusterCo
     .select(
       "id, job_id, consent_status, consent_deadline, original_scheduled_date, original_arrival_block, " +
         "proposed_scheduled_date, proposed_arrival_block, " +
-        "job:jobs(blocks_needed, property:properties(address, latitude, longitude, customer:customers(full_name)))"
+        "job:jobs(status, blocks_needed, property:properties(address, latitude, longitude, customer:customers(full_name)))"
     )
     .eq("consent_token", token)
     .maybeSingle();
@@ -79,6 +86,9 @@ export async function getClusterConsentByToken(token: string): Promise<ClusterCo
   return {
     id: row.id,
     jobId: row.job_id,
+    jobStatus: job?.status ?? "",
+    latitude: property?.latitude ?? null,
+    longitude: property?.longitude ?? null,
     address: property?.address ?? "",
     customerName: customer?.full_name ?? null,
     originalDate: row.original_scheduled_date,

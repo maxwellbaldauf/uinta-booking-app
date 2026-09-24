@@ -54,19 +54,30 @@ async function computeRerankedOrder(
   const locationKeys = Array.from(byLocation.keys());
   const locations = locationKeys.map((k) => byLocation.get(k)!);
 
-  const driveSecondsByLocation = new Map<string, number>();
+  const chunks: { keys: string[]; locs: LatLng[] }[] = [];
   for (let i = 0; i < locations.length; i += 25) {
-    const chunkKeys = locationKeys.slice(i, i + 25);
-    const chunk = locations.slice(i, i + 25);
-    const durations = await withRetry(
-      () => getDrivingDurations(target, chunk, { signal }),
-      { attempts: RETRY_ATTEMPTS, backoffMs: RETRY_BACKOFF_MS, isRetryable: isRetryableRouteMatrixError }
-    );
-    for (let j = 0; j < chunk.length; j++) {
-      const seconds = durations.get(j);
-      if (seconds != null) driveSecondsByLocation.set(chunkKeys[j], seconds);
-    }
+    chunks.push({ keys: locationKeys.slice(i, i + 25), locs: locations.slice(i, i + 25) });
   }
+
+  // Chunks are independent — run them concurrently rather than one at a
+  // time, since each one eats into the same tight 2s budget.
+  const driveSecondsByLocation = new Map<string, number>();
+  await Promise.all(
+    chunks.map(async ({ keys, locs }) => {
+      const durations = await withRetry(() => getDrivingDurations(target, locs, { signal }), {
+        attempts: RETRY_ATTEMPTS,
+        backoffMs: RETRY_BACKOFF_MS,
+        // Once the overall budget has already fired, a "retryable" error is
+        // pointless to retry — the result will be discarded either way, and
+        // retrying would only burn an extra paid Route Matrix call for it.
+        isRetryable: (err) => !signal.aborted && isRetryableRouteMatrixError(err),
+      });
+      for (let j = 0; j < locs.length; j++) {
+        const seconds = durations.get(j);
+        if (seconds != null) driveSecondsByLocation.set(keys[j], seconds);
+      }
+    })
+  );
 
   const bestByDay = new Map<string, DayBest>();
   for (const job of nearbyJobs) {

@@ -40,11 +40,9 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "clusterSuggestionJobIds required" }, { status: 400 });
   }
 
-  let allSent = true;
-  for (const id of body.clusterSuggestionJobIds) {
-    const sent = await sendClusterConsentEmail(id);
-    if (!sent) allSent = false;
-  }
+  // Independent sends — run concurrently rather than one at a time.
+  const results = await Promise.all(body.clusterSuggestionJobIds.map(sendClusterConsentEmail));
+  const allSent = results.every(Boolean);
 
   if (!allSent) {
     return NextResponse.json(

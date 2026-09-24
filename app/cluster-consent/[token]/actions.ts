@@ -7,14 +7,28 @@ import { addDaysToISODate, denverMidnightUtcISO } from "@/lib/time/denver";
 import { sendBookingConfirmationEmail } from "@/lib/email/bookingConfirmation";
 import { sendClusterDeclineOwnerAlert } from "@/lib/email/clusterDeclineOwnerAlert";
 
-type PropRow = { latitude: number | null; longitude: number | null };
-type JobRow = { property: PropRow | PropRow[] | null };
-
-function flatten<T>(v: T | T[] | null | undefined): T | null {
-  return Array.isArray(v) ? (v[0] ?? null) : (v ?? null);
-}
-
 export type ClusterConsentResponse = { ok: true } | { ok: false; error: string };
+
+// Atomically claims a pending consent row for exactly one caller. A
+// double-tapped button, a retried request, or the same link open in two
+// tabs can otherwise both pass a plain "is this still pending" read-then-
+// check before either write lands; the `.eq("consent_status", "pending")`
+// on the UPDATE itself is what makes only one of them actually win —
+// `claimed` comes back null for every loser.
+async function claimPendingConsent(
+  supabase: ReturnType<typeof createAdminClient>,
+  consentId: string,
+  nextStatus: "accepted" | "declined"
+): Promise<boolean> {
+  const { data: claimed } = await supabase
+    .from("cluster_suggestion_jobs")
+    .update({ consent_status: nextStatus, consent_responded_at: new Date().toISOString() })
+    .eq("id", consentId)
+    .eq("consent_status", "pending")
+    .select("id")
+    .maybeSingle();
+  return !!claimed;
+}
 
 // Accepting is a genuinely new primitive for this codebase: unlike
 // rescheduleVisit (customer picks their own slot and it's applied
@@ -32,19 +46,37 @@ export async function acceptClusterSuggestion(token: string): Promise<ClusterCon
     }
 
     const supabase = createAdminClient();
+
+    const claimed = await claimPendingConsent(supabase, consent.id, "accepted");
+    if (!claimed) {
+      return { ok: false, error: "This suggestion has already been responded to." };
+    }
+
+    // The job must still be exactly as it was when the suggestion was
+    // generated — not cancelled, not already moved by an unrelated owner
+    // edit in the meantime — or this claim is stale and must be unwound
+    // rather than applied.
     const { data: jobRow } = await supabase
       .from("jobs")
-      .select("property:properties(latitude, longitude)")
+      .select("status, scheduled_date, arrival_block")
       .eq("id", consent.jobId)
       .single();
-    const property = flatten((jobRow as JobRow | null)?.property);
-    if (!property || property.latitude == null || property.longitude == null) {
-      return { ok: false, error: "We can't confirm this online right now — please contact us." };
+    const stillMatchesOriginal =
+      jobRow?.status === "scheduled" &&
+      jobRow.scheduled_date === consent.originalDate &&
+      jobRow.arrival_block === consent.originalArrivalBlock;
+
+    if (!stillMatchesOriginal || consent.latitude == null || consent.longitude == null) {
+      await supabase
+        .from("cluster_suggestion_jobs")
+        .update({ consent_status: "unavailable" })
+        .eq("id", consent.id);
+      return { ok: false, error: "That visit can't be updated online right now — please contact us." };
     }
 
     const fresh = await slotStillAvailable(
-      property.latitude,
-      property.longitude,
+      consent.latitude,
+      consent.longitude,
       consent.proposedDate,
       consent.proposedArrivalBlock,
       consent.blocksNeeded,
@@ -75,16 +107,16 @@ export async function acceptClusterSuggestion(token: string): Promise<ClusterCon
 
     if (error) {
       console.error("acceptClusterSuggestion: job update failed", error, { jobId: consent.jobId });
+      // The claim already committed the row to "accepted" — leave it as-is
+      // rather than reopening it to "pending" (which would recreate the
+      // exact race this claim exists to prevent). applied_at staying null
+      // is the durable signal that this accepted row never actually applied.
       return { ok: false, error: "We couldn't save that change. Please try again." };
     }
 
     await supabase
       .from("cluster_suggestion_jobs")
-      .update({
-        consent_status: "accepted",
-        consent_responded_at: new Date().toISOString(),
-        applied_at: new Date().toISOString(),
-      })
+      .update({ applied_at: new Date().toISOString() })
       .eq("id", consent.id);
 
     await sendBookingConfirmationEmail(consent.jobId, { variant: "cluster_matched" });
@@ -105,14 +137,10 @@ export async function declineClusterSuggestion(token: string): Promise<ClusterCo
     }
 
     const supabase = createAdminClient();
-    const { error } = await supabase
-      .from("cluster_suggestion_jobs")
-      .update({ consent_status: "declined", consent_responded_at: new Date().toISOString() })
-      .eq("id", consent.id);
 
-    if (error) {
-      console.error("declineClusterSuggestion: update failed", error);
-      return { ok: false, error: "Something went wrong. Please try again." };
+    const claimed = await claimPendingConsent(supabase, consent.id, "declined");
+    if (!claimed) {
+      return { ok: false, error: "This suggestion has already been responded to." };
     }
 
     const sent = await sendClusterDeclineOwnerAlert(consent.jobId, consent.originalDate, consent.proposedDate);

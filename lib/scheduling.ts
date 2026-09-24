@@ -44,7 +44,7 @@ export async function getOfferedSlots(
   lat: number,
   lng: number,
   blocksNeeded = 1,
-  opts?: { excludeJobId?: string }
+  opts?: { excludeJobId?: string; skipRerank?: boolean }
 ): Promise<OfferedSlot[]> {
   const supabase = createAdminClient();
   const settings = await getSettings();
@@ -63,9 +63,13 @@ export async function getOfferedSlots(
   let rows = (data ?? []) as RawSlot[];
 
   // Real-driving-time reranking — skipped entirely (zero added latency,
-  // identical to today's behavior) when paused or when nothing came back
-  // route-matched, since there's no nearby neighbor to rank against.
-  if (!settings.clustering_paused && rows.some((r) => !r.is_fallback)) {
+  // identical to today's behavior) when paused, when nothing came back
+  // route-matched (no nearby neighbor to rank against), or when the caller
+  // only needs SET membership rather than order (slotStillAvailable below —
+  // reranking is a pure sort, it can never add or remove a candidate, so
+  // skipping it can't change that answer, only save the latency/cost of
+  // computing an order nobody will look at).
+  if (!opts?.skipRerank && !settings.clustering_paused && rows.some((r) => !r.is_fallback)) {
     const toDate = addDaysToISODate(today, settings.lookahead_days);
     const nearby = await fetchNearbyScheduledJobs({
       fromDate: today,
@@ -115,7 +119,7 @@ export async function slotStillAvailable(
   blocksNeeded = 1,
   opts?: { excludeJobId?: string }
 ): Promise<OfferedSlot | null> {
-  const fresh = await getOfferedSlots(lat, lng, blocksNeeded, opts);
+  const fresh = await getOfferedSlots(lat, lng, blocksNeeded, { ...opts, skipRerank: true });
   return (
     fresh.find((s) => s.slotDate === slotDate && s.arrivalBlock === arrivalBlock) ?? null
   );

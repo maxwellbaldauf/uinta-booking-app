@@ -47,7 +47,10 @@ export function isRetryableRouteMatrixError(err: unknown): boolean {
     if (err.status == null) return true; // network-level failure
     return err.status === 429 || err.status >= 500;
   }
-  return true;
+  // Anything else (a thrown validation/programmer error, e.g. the
+  // "chunk to 25" guard, or an unrelated bug) is deterministic — retrying
+  // it can only ever burn the retry budget for no chance of success.
+  return false;
 }
 
 // Single origin, up to 25 destinations. Returns a map keyed by destination

@@ -16,6 +16,7 @@ type JobRow = {
   id: string;
   scheduled_date: string;
   arrival_block: number;
+  blocks_needed: number;
   quoted_price_cents: number | null;
   access_token: string | null;
   property:
@@ -79,7 +80,7 @@ export async function buildBookingConfirmationEmail(
   const { data, error } = await supabase
     .from("jobs")
     .select(
-      "id, scheduled_date, arrival_block, quoted_price_cents, access_token, " +
+      "id, scheduled_date, arrival_block, blocks_needed, quoted_price_cents, access_token, " +
         "property:properties(address, customer:customers(full_name, email))"
     )
     .eq("id", jobId)
@@ -94,7 +95,7 @@ export async function buildBookingConfirmationEmail(
 
   const settings = await getSettings();
   const block = ARRIVAL_BLOCKS.find((b) => b.index === job.arrival_block);
-  const windowLabel = arrivalBlockLabel(job.arrival_block);
+  const windowLabel = arrivalBlockLabel(job.arrival_block, job.blocks_needed);
   const dateLong = formatVisitDate(job.scheduled_date, { withYear: true });
   const priceText = formatUsd(job.quoted_price_cents ?? settings.base_price_cents);
   const address = property?.address ?? "";
