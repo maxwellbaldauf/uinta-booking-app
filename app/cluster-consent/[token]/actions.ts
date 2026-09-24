@@ -55,16 +55,12 @@ export async function acceptClusterSuggestion(token: string): Promise<ClusterCon
     // The job must still be exactly as it was when the suggestion was
     // generated — not cancelled, not already moved by an unrelated owner
     // edit in the meantime — or this claim is stale and must be unwound
-    // rather than applied.
-    const { data: jobRow } = await supabase
-      .from("jobs")
-      .select("status, scheduled_date, arrival_block")
-      .eq("id", consent.jobId)
-      .single();
+    // rather than applied. Reuses the read from getClusterConsentByToken's
+    // own join above rather than a second query.
     const stillMatchesOriginal =
-      jobRow?.status === "scheduled" &&
-      jobRow.scheduled_date === consent.originalDate &&
-      jobRow.arrival_block === consent.originalArrivalBlock;
+      consent.jobStatus === "scheduled" &&
+      consent.jobCurrentScheduledDate === consent.originalDate &&
+      consent.jobCurrentArrivalBlock === consent.originalArrivalBlock;
 
     if (!stillMatchesOriginal || consent.latitude == null || consent.longitude == null) {
       await supabase
