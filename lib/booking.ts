@@ -227,6 +227,10 @@ export async function createBookingRecord(
 
   // --- customer ---
   let customerId: string;
+  // Captured before any unarchive write below — gates grandfatheringVerified
+  // further down, so this booking's own price calculation can't read a
+  // pre-unarchive grandfathered_price_cents value even for a moment.
+  const wasArchived = matched?.archived_at != null;
   if (matched) {
     customerId = matched.id;
     // A matched customer's Stripe id may have just been created by PaymentSetup
@@ -237,6 +241,22 @@ export async function createBookingRecord(
         .update({ stripe_customer_id: stripeCustomerId })
         .eq("id", customerId)
         .is("stripe_customer_id", null);
+    }
+
+    // A real new booking is the strongest possible signal an archived
+    // customer is back — unarchive them so dispatch/calendar/tiles see this
+    // job (lib/activeCustomers.ts filters all of those on archived_at). But
+    // per explicit instruction, cancel-then-archive-then-return does NOT
+    // preserve the old grandfathered price — they come back at whatever the
+    // current rate is. Clearing grandfathered_price_cents here (not just
+    // skipping it below) also closes the same leak in the field app's
+    // createProperty/resolveGrandfatherPriceCents for any property added
+    // after this point.
+    if (wasArchived) {
+      await supabase
+        .from("customers")
+        .update({ archived_at: null, grandfathered_price_cents: null })
+        .eq("id", customerId);
     }
   } else {
     const { data, error } = await supabase
@@ -266,6 +286,13 @@ export async function createBookingRecord(
   // only: grandfathering exists for the $150 -> $200 residential increase
   // and does not touch commercial pricing.
   //
+  // !wasArchived: per explicit instruction, cancelling (and being archived)
+  // then rebooking later does NOT preserve the old locked-in rate — the
+  // lock-in was for a continuous customer, not something that survives a
+  // cancel/return cycle. grandfathered_price_cents is also cleared on the
+  // customer row itself above, so this is really a belt-and-suspenders
+  // check for the same instant this booking's own price gets computed.
+  //
   // Requires BOTH email AND phone to independently agree with the matched
   // row, not the single-factor email-OR-phone match matchCustomerByEmailOrPhone
   // uses for everything else here (agreement gating, card-reuse eligibility).
@@ -279,6 +306,7 @@ export async function createBookingRecord(
   // guessing; the owner can apply the discount manually from the field app.
   const grandfatheringVerified =
     input.serviceType === "residential" &&
+    !wasArchived &&
     matched?.grandfathered_price_cents != null &&
     matched.email != null &&
     matched.email.trim().toLowerCase() === details.email.trim().toLowerCase() &&
