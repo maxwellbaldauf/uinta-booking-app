@@ -48,6 +48,19 @@ Netlify deploy). Activated by `git config core.hooksPath .githooks`, which the
   owns migrations.
 - Plain CSS against the tokens in `app/globals.css`; no framework. Mobile-first.
 
+## Test data cleanup — standing rule
+
+Any test/seed data created to verify a build (test customers, jobs, payments,
+anything else written to the shared database purely to exercise a feature)
+gets deleted as the **last step of that build**, before the task is
+considered done — every time, no exceptions. Verifying a feature works is not
+finished until the data used to verify it is gone again. This applies to a
+single Claude Code session's own testing just as much as a longer
+multi-feature session — don't let this session's verification become next
+session's cleanup problem. Remember this is a shared Supabase project with
+`../uinta-field-app` — test data left here is just as much of a problem as
+test data left there.
+
 <!-- BEGIN:nextjs-agent-rules -->
 
 # This is NOT the Next.js you know
