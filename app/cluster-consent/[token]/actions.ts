@@ -6,6 +6,7 @@ import { slotStillAvailable } from "@/lib/scheduling";
 import { addDaysToISODate, denverMidnightUtcISO } from "@/lib/time/denver";
 import { sendBookingConfirmationEmail } from "@/lib/email/bookingConfirmation";
 import { sendClusterDeclineOwnerAlert } from "@/lib/email/clusterDeclineOwnerAlert";
+import { resolvePendingDaySequenceMoves } from "@/lib/resolveDaySequence";
 
 export type ClusterConsentResponse = { ok: true } | { ok: false; error: string };
 
@@ -68,6 +69,21 @@ export async function acceptClusterSuggestion(token: string): Promise<ClusterCon
         .update({ consent_status: "unavailable" })
         .eq("id", consent.id);
       return { ok: false, error: "That visit can't be updated online right now — please contact us." };
+    }
+
+    // day_sequence's proposed target routinely belongs to ANOTHER mover in
+    // this same group who hasn't vacated it yet (a same-day swap/rotation)
+    // rather than a genuinely-free block, unlike geo_cluster. slotStillAvailable
+    // can only ever exclude THIS one job, so it can't tell "blocked by a
+    // sibling who's also about to move" apart from a real conflict —
+    // resolvePendingDaySequenceMoves handles that distinction (and applies
+    // this and any other now-unblocked sibling in the same pass). The
+    // customer's own consent is recorded either way (see claimPendingConsent
+    // above) — {ok:true} here means "your choice was recorded," not
+    // necessarily "applied this instant."
+    if (consent.kind === "day_sequence") {
+      await resolvePendingDaySequenceMoves(consent.clusterSuggestionId);
+      return { ok: true };
     }
 
     const fresh = await slotStillAvailable(
@@ -145,6 +161,15 @@ export async function declineClusterSuggestion(token: string): Promise<ClusterCo
         .from("cluster_suggestion_jobs")
         .update({ owner_notify_failed: true })
         .eq("id", consent.id);
+    }
+
+    // A decline never frees anything by itself (the decliner stays exactly
+    // where they were) — but it can be the piece of information that
+    // determines a sibling's cycle is now permanently dead (see
+    // resolveDaySequence.ts). Cheap no-op in the common case; harmless to
+    // call unconditionally rather than trying to predict when it matters.
+    if (consent.kind === "day_sequence") {
+      await resolvePendingDaySequenceMoves(consent.clusterSuggestionId);
     }
 
     return { ok: true };

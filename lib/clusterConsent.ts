@@ -10,6 +10,14 @@ export type ClusterConsentStatus =
 
 export type ClusterConsent = {
   id: string;
+  clusterSuggestionId: string;
+  // day_sequence's proposed target routinely belongs to ANOTHER mover in
+  // the same group (a same-day swap/rotation) rather than a genuinely-free
+  // block, unlike geo_cluster — actions.ts branches on this to hand off to
+  // resolvePendingDaySequenceMoves instead of the plain
+  // slotStillAvailable-then-apply path. See that function's header comment
+  // for the full design.
+  kind: "geo_cluster" | "day_sequence";
   jobId: string;
   jobStatus: string;
   jobCurrentScheduledDate: string;
@@ -40,8 +48,10 @@ type JobRow = {
   blocks_needed: number;
   property: PropRow | PropRow[] | null;
 };
+type SuggestionRow = { kind: "geo_cluster" | "day_sequence" };
 type Row = {
   id: string;
+  cluster_suggestion_id: string;
   job_id: string;
   consent_status: ClusterConsentStatus;
   consent_deadline: string | null;
@@ -50,6 +60,7 @@ type Row = {
   proposed_scheduled_date: string;
   proposed_arrival_block: number;
   job: JobRow | JobRow[] | null;
+  cluster_suggestion: SuggestionRow | SuggestionRow[] | null;
 };
 
 function flatten<T>(v: T | T[] | null | undefined): T | null {
@@ -71,9 +82,10 @@ export async function getClusterConsentByToken(token: string): Promise<ClusterCo
   const { data, error } = await supabase
     .from("cluster_suggestion_jobs")
     .select(
-      "id, job_id, consent_status, consent_deadline, original_scheduled_date, original_arrival_block, " +
+      "id, cluster_suggestion_id, job_id, consent_status, consent_deadline, original_scheduled_date, original_arrival_block, " +
         "proposed_scheduled_date, proposed_arrival_block, " +
-        "job:jobs(status, scheduled_date, arrival_block, blocks_needed, property:properties(address, latitude, longitude, customer:customers(full_name)))"
+        "job:jobs(status, scheduled_date, arrival_block, blocks_needed, property:properties(address, latitude, longitude, customer:customers(full_name))), " +
+        "cluster_suggestion:cluster_suggestions(kind)"
     )
     .eq("consent_token", token)
     .maybeSingle();
@@ -86,9 +98,12 @@ export async function getClusterConsentByToken(token: string): Promise<ClusterCo
   const job = flatten(row.job);
   const property = flatten(job?.property);
   const customer = flatten(property?.customer);
+  const suggestion = flatten(row.cluster_suggestion);
 
   return {
     id: row.id,
+    clusterSuggestionId: row.cluster_suggestion_id,
+    kind: suggestion?.kind ?? "geo_cluster",
     jobId: row.job_id,
     jobStatus: job?.status ?? "",
     jobCurrentScheduledDate: job?.scheduled_date ?? "",
