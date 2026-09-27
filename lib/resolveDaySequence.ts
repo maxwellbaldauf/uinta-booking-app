@@ -60,6 +60,33 @@ function rangesOverlap(startA: number, lenA: number, startB: number, lenB: numbe
   return startA <= startB + lenB - 1 && startA + lenA - 1 >= startB;
 }
 
+// isTargetFree only ever sees this suggestion's own frozen job set (jobById,
+// loaded once at the top of resolvePendingDaySequenceMoves) — it's blind to
+// anyone outside the group who has since taken the target block (a self-serve
+// booking, a manual field-app entry, an unrelated suggestion). A group member
+// currently sitting in the target is expected (that's the swap/rotation this
+// function exists to apply); only an outsider should block the move. Checked
+// live, immediately before each write, so the window between "this suggestion
+// was generated" and "the customer actually consented" — which can be
+// unbounded, since a day_sequence proposal's consent_deadline is only set
+// when the target day is within 36 hours — can't leave a stale slot behind.
+async function targetBlockedByThirdParty(
+  supabase: ReturnType<typeof createAdminClient>,
+  proposedDate: string,
+  proposedBlock: number,
+  blocksNeeded: number,
+  groupJobIds: Set<string>
+): Promise<boolean> {
+  const { data: live } = await supabase
+    .from("jobs")
+    .select("id, arrival_block, blocks_needed")
+    .eq("scheduled_date", proposedDate)
+    .eq("status", "scheduled");
+  return (live ?? []).some(
+    (j) => !groupJobIds.has(j.id) && rangesOverlap(j.arrival_block, j.blocks_needed, proposedBlock, blocksNeeded)
+  );
+}
+
 // This can be invoked concurrently for the same clusterSuggestionId — once
 // from acceptClusterSuggestion/declineClusterSuggestion's own best-effort
 // cascade, and possibly again moments later from the nightly-sweep backstop
@@ -202,6 +229,7 @@ export async function resolvePendingDaySequenceMoves(clusterSuggestionId: string
   const pending = movers.filter((r) => accepted.has(r.id));
 
   const jobIds = (rows as Row[]).map((r) => r.job_id);
+  const groupJobIds = new Set(jobIds);
   const { data: jobsNow } = await supabase
     .from("jobs")
     .select("id, status, scheduled_date, arrival_block, blocks_needed")
@@ -228,6 +256,17 @@ export async function resolvePendingDaySequenceMoves(clusterSuggestionId: string
     for (const row of pending) {
       if (row.applied_at) continue;
       if (!isTargetFree(row)) continue;
+      const selfBlocksNeeded = jobById.get(row.job_id)?.blocks_needed ?? 1;
+      if (
+        await targetBlockedByThirdParty(
+          supabase,
+          row.proposed_scheduled_date,
+          row.proposed_arrival_block,
+          selfBlocksNeeded,
+          groupJobIds
+        )
+      )
+        continue;
       const expectedBlock = jobById.get(row.job_id)?.arrival_block;
       if (expectedBlock == null || !(await applyMove(supabase, row, expectedBlock))) continue;
       row.applied_at = new Date().toISOString();
@@ -252,6 +291,19 @@ export async function resolvePendingDaySequenceMoves(clusterSuggestionId: string
       if (group.some((r) => r.consent_status !== "accepted")) continue; // waiting on a pending response, or permanently blocked by a decline/expiry
       let allApplied = true;
       for (const row of group) {
+        const selfBlocksNeeded = jobById.get(row.job_id)?.blocks_needed ?? 1;
+        if (
+          await targetBlockedByThirdParty(
+            supabase,
+            row.proposed_scheduled_date,
+            row.proposed_arrival_block,
+            selfBlocksNeeded,
+            groupJobIds
+          )
+        ) {
+          allApplied = false;
+          continue;
+        }
         const expectedBlock = jobById.get(row.job_id)?.arrival_block;
         if (expectedBlock == null || !(await applyMove(supabase, row, expectedBlock))) {
           allApplied = false;
