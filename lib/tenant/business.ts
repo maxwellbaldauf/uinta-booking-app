@@ -44,21 +44,29 @@ const COLUMNS =
   "from_name, from_email, reply_to, ics_domain";
 
 const TTL_MS = 60_000;
-let cached: { at: number; value: Business } | null = null;
+// The in-flight PROMISE is cached (not just the value), so concurrent callers
+// on a cold instance share one query; a failed lookup isn't cached.
+let cached: { at: number; value: Promise<Business> } | null = null;
 
-export async function getBusiness(): Promise<Business> {
+export function getBusiness(): Promise<Business> {
   if (cached && Date.now() - cached.at < TTL_MS) return cached.value;
   const id = currentBusinessId();
-  const { data, error } = await createAdminClient()
-    .from("businesses")
-    .select(COLUMNS)
-    .eq("id", id)
-    .single();
-  if (error || !data) {
-    throw new Error(`BUSINESS_ID ${id} has no businesses row: ${error?.message ?? "not found"}`);
-  }
-  cached = { at: Date.now(), value: data as unknown as Business };
-  return cached.value;
+  const value = (async () => {
+    const { data, error } = await createAdminClient()
+      .from("businesses")
+      .select(COLUMNS)
+      .eq("id", id)
+      .single();
+    if (error || !data) {
+      throw new Error(`BUSINESS_ID ${id} has no businesses row: ${error?.message ?? "not found"}`);
+    }
+    return data as unknown as Business;
+  })();
+  cached = { at: Date.now(), value };
+  value.catch(() => {
+    if (cached?.value === value) cached = null;
+  });
+  return value;
 }
 
 // This deployment's business timezone — for "today", same-day cutoffs,

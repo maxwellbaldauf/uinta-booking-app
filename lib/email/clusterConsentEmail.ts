@@ -1,11 +1,10 @@
-import { getEmailBrand } from "@/lib/email/brand";
-import { businessDb } from "@/lib/tenant/business";
+import { businessDb, businessTz } from "@/lib/tenant/business";
+import { getEmailBrand, type EmailBrand } from "@/lib/email/brand";
 import { getResend } from "@/lib/email/resend";
 import { renderEmail, detailsTable, buttonRow, escapeHtml } from "@/lib/email/shell";
 import { arrivalBlockLabel } from "@/lib/schedule/blocks";
 import { formatVisitDate } from "@/lib/format";
 import { addDaysToISODate, todayISODate } from "@/lib/time/zone";
-import { businessTz } from "@/lib/tenant/business";
 import { getAppBaseUrl } from "@/lib/url";
 
 type Cust = { full_name: string | null; email: string | null };
@@ -33,7 +32,14 @@ function flatten<T>(v: T | T[] | null | undefined): T | null {
 // the customer, and that declining carries no consequence — per spec, this
 // must never read as if the customer requested or already agreed to it.
 export async function sendClusterConsentEmail(clusterSuggestionJobId: string): Promise<boolean> {
-  const brand = await getEmailBrand();
+  let brand: EmailBrand;
+  try {
+    brand = await getEmailBrand();
+  } catch (err) {
+    // Same log-and-return-false contract as every other failure here.
+    console.error("sendClusterConsentEmail: business lookup failed", err);
+    return false;
+  }
   try {
     const supabase = businessDb();
     const { data, error } = await supabase

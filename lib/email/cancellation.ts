@@ -1,5 +1,5 @@
-import { getEmailBrand } from "@/lib/email/brand";
-import { businessDb } from "@/lib/tenant/business";
+import { businessDb, businessTz } from "@/lib/tenant/business";
+import { getEmailBrand, type EmailBrand } from "@/lib/email/brand";
 import { getSettings } from "@/lib/settings";
 import { getResend } from "@/lib/email/resend";
 import { renderEmail, detailsTable, escapeHtml } from "@/lib/email/shell";
@@ -7,7 +7,6 @@ import { buildBookingIcs } from "@/lib/ics";
 import { arrivalBlockLabel, ARRIVAL_BLOCKS } from "@/lib/schedule/blocks";
 import { formatVisitDate } from "@/lib/format";
 import { localToUtc } from "@/lib/time/zone";
-import { businessTz } from "@/lib/tenant/business";
 import type { BuiltEmail } from "@/lib/email/types";
 
 type JobRow = {
@@ -32,7 +31,12 @@ export async function buildCancellationEmail(
   jobId: string,
   opts: { planCancelled: boolean }
 ): Promise<BuiltEmail | { error: string }> {
-  const brand = await getEmailBrand();
+  let brand: EmailBrand;
+  try {
+    brand = await getEmailBrand();
+  } catch (err) {
+    return { error: `business lookup failed: ${err instanceof Error ? err.message : String(err)}` };
+  }
   const supabase = businessDb();
   const { data, error } = await supabase
     .from("jobs")
@@ -108,7 +112,7 @@ export async function buildCancellationEmail(
 
   return {
     to: customer.email,
-    replyTo: settings.business_email ?? undefined,
+    replyTo: brand.replyTo ?? settings.business_email ?? undefined,
     subject: `Your ${brand.name} visit was cancelled — ${formatVisitDate(job.scheduled_date)}`,
     html,
     text,

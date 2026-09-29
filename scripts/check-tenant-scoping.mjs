@@ -30,7 +30,7 @@ function walk(dir, out) {
 const files = [];
 for (const r of ROOTS) walk(r, files);
 
-const tableRe = new RegExp(`\.from\(\s*"(${TENANT_TABLES.join("|")})"\s*\)`);
+const tableRe = new RegExp(String.raw`\.from\(\s*"(${TENANT_TABLES.join("|")})"\s*\)`);
 const rpcRe = /\.rpc\(\s*"(get_available_slots|next_receipt_number)"/;
 const violations = [];
 for (const f of files) {

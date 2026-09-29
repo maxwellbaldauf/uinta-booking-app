@@ -1,10 +1,31 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { PaymentSetup, type PaymentSetupResult } from "@/components/payment/PaymentSetup";
 import { ErrorBanner, buttonStyle } from "@/components/ui/form";
 import { AgreementStep } from "@/components/booking/AgreementStep";
 import { agreementIsCurrent, SERVICE_AGREEMENT_VERSION } from "@/lib/agreement";
+
+// Survive the 3DS redirect: Stripe's bank-verification step reloads this page
+// (PaymentSetup then finishes from the URL), which would drop the in-memory
+// "accepted" flag and hide the card form. The acceptance is remembered per
+// token + agreement version for this tab only; the server still re-checks and
+// records it on finalize, so this can never stand in for a real acceptance.
+function acceptedStorageKey(token: string) {
+  return `agreement-accepted:${token}`;
+}
+function rememberAcceptance(token: string) {
+  try {
+    sessionStorage.setItem(acceptedStorageKey(token), SERVICE_AGREEMENT_VERSION);
+  } catch {}
+}
+function wasAccepted(token: string): boolean {
+  try {
+    return sessionStorage.getItem(acceptedStorageKey(token)) === SERVICE_AGREEMENT_VERSION;
+  } catch {
+    return false;
+  }
+}
 
 // The client half of /pay/[token] (spec §6). Mounts the shared PaymentSetup
 // with the setup_token context, then finalizes through /api/payment/finalize
@@ -26,6 +47,10 @@ export function ImportPaymentSetup({
   const agreementCurrent = agreementIsCurrent(serviceAgreementVersion);
   const [phase, setPhase] = useState<"form" | "agreement" | "done">("form");
   const [accepted, setAccepted] = useState(agreementCurrent);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- sessionStorage is client-only; reading it post-hydration avoids an SSR mismatch.
+    if (!agreementCurrent && wasAccepted(token)) setAccepted(true);
+  }, [agreementCurrent, token]);
   const [savedCard, setSavedCard] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -81,6 +106,7 @@ export function ImportPaymentSetup({
           setPhase("form");
         }}
         onContinue={() => {
+          rememberAcceptance(token);
           setAccepted(true);
           setError(null);
           setPhase("form");

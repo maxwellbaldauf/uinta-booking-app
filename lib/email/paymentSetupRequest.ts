@@ -1,4 +1,4 @@
-import { getEmailBrand } from "@/lib/email/brand";
+import { getEmailBrand, type EmailBrand } from "@/lib/email/brand";
 import { businessDb } from "@/lib/tenant/business";
 import { getSettings } from "@/lib/settings";
 import { getResend } from "@/lib/email/resend";
@@ -12,7 +12,12 @@ import type { BuiltEmail } from "@/lib/email/types";
 export async function buildPaymentSetupRequestEmail(
   token: string
 ): Promise<BuiltEmail | { error: string }> {
-  const brand = await getEmailBrand();
+  let brand: EmailBrand;
+  try {
+    brand = await getEmailBrand();
+  } catch (err) {
+    return { error: `business lookup failed: ${err instanceof Error ? err.message : String(err)}` };
+  }
   const supabase = businessDb();
   const { data, error } = await supabase
     .from("customers")
@@ -55,7 +60,7 @@ export async function buildPaymentSetupRequestEmail(
 
   return {
     to: data.email,
-    replyTo: settings.business_email ?? undefined,
+    replyTo: brand.replyTo ?? settings.business_email ?? undefined,
     subject: `Add a card for your ${brand.name} service`,
     html,
     text,

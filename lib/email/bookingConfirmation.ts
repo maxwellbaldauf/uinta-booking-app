@@ -1,7 +1,7 @@
-import { getEmailBrand } from "@/lib/email/brand";
+import { businessDb, businessTz } from "@/lib/tenant/business";
+import { getEmailBrand, type EmailBrand } from "@/lib/email/brand";
 import fs from "node:fs/promises";
 import path from "node:path";
-import { businessDb } from "@/lib/tenant/business";
 import { getSettings, formatUsd } from "@/lib/settings";
 import { getResend } from "@/lib/email/resend";
 import { renderEmail, detailsTable, buttonRow, escapeHtml } from "@/lib/email/shell";
@@ -10,7 +10,6 @@ import { SERVICE_AGREEMENT_PDF_FILENAME } from "@/lib/agreement";
 import { arrivalBlockLabel, ARRIVAL_BLOCKS } from "@/lib/schedule/blocks";
 import { formatVisitDate } from "@/lib/format";
 import { localToUtc } from "@/lib/time/zone";
-import { businessTz } from "@/lib/tenant/business";
 import { getAppBaseUrl } from "@/lib/url";
 import type { BuiltEmail } from "@/lib/email/types";
 
@@ -77,7 +76,12 @@ export async function buildBookingConfirmationEmail(
   jobId: string,
   opts?: { variant?: ConfirmationVariant; attachAgreement?: boolean }
 ): Promise<BuiltEmail | { error: string }> {
-  const brand = await getEmailBrand();
+  let brand: EmailBrand;
+  try {
+    brand = await getEmailBrand();
+  } catch (err) {
+    return { error: `business lookup failed: ${err instanceof Error ? err.message : String(err)}` };
+  }
   const variant: ConfirmationVariant = opts?.variant ?? "new";
   const supabase = businessDb();
   const { data, error } = await supabase
@@ -200,7 +204,7 @@ export async function buildBookingConfirmationEmail(
 
   return {
     to: customer.email,
-    replyTo: settings.business_email ?? undefined,
+    replyTo: brand.replyTo ?? settings.business_email ?? undefined,
     subject:
       variant === "rescheduled"
         ? `Your ${brand.name} visit was moved — ${formatVisitDate(job.scheduled_date)}`

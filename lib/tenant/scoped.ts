@@ -4,13 +4,16 @@
 //   db.from(t).select(...)  -> ... .eq("business_id", businessId)
 //   db.from(t).update(...)  -> ... .eq("business_id", businessId)
 //   db.from(t).delete()     -> ... .eq("business_id", businessId)
-//   db.from(t).insert/upsert(rows) -> rows stamped with business_id
+//   db.from(t).insert(rows) -> rows stamped with business_id
+// upsert is deliberately NOT offered: ON CONFLICT DO UPDATE would match a row
+// by its globally unique id regardless of business and could re-tag another
+// business's row. Use insert, or update (which is business-filtered).
 //   db.rpc(fn, args)        -> args + p_business_id
 // Call sites read exactly like plain supabase-js (db.from("jobs").select(...)),
 // and each method keeps supabase-js's own generic signature, so row types are
 // still inferred from the column string at the call site.
 //
-// scripts/check-tenant-scoping.ts (in uinta-field-app; mirrored here) fails the push if a file reaches a tenant
+// scripts/check-tenant-scoping.mjs (mirrors uinta-field-app's .ts guard) fails the push if a file reaches a tenant
 // table through a raw createAdminClient() instead (unless the line carries an
 // explicit `tenant-scope:` justification, e.g. looking a job up by its unique
 // id to discover which business it belongs to).
@@ -58,7 +61,7 @@ function stamp<T>(rows: T, businessId: string): T {
 // A table handle whose methods carry supabase-js's exact types but always
 // apply the business scope. The casts are type-preserving: each wrapper
 // forwards to the real method and only ever adds a filter/stamp.
-type ScopedTable = Pick<QueryBuilder, "select" | "insert" | "upsert" | "update" | "delete">;
+type ScopedTable = Pick<QueryBuilder, "select" | "insert" | "update" | "delete">;
 
 function scopedTable(db: AdminClient, table: TenantTable, businessId: string): ScopedTable {
   const qb = db.from(table);
@@ -66,8 +69,6 @@ function scopedTable(db: AdminClient, table: TenantTable, businessId: string): S
     (qb.select as any)(...args).eq("business_id", businessId)) as QueryBuilder["select"];
   const insert = ((values: any, options?: any) =>
     (qb.insert as any)(stamp(values, businessId), options)) as QueryBuilder["insert"];
-  const upsert = ((values: any, options?: any) =>
-    (qb.upsert as any)(stamp(values, businessId), options)) as QueryBuilder["upsert"];
   const update = ((values: any, options?: any) => {
     if (values && typeof values === "object" && "business_id" in values) {
       throw new Error("scopedAdmin: business_id is immutable");
@@ -76,7 +77,7 @@ function scopedTable(db: AdminClient, table: TenantTable, businessId: string): S
   }) as QueryBuilder["update"];
   const del = ((options?: any) =>
     (qb.delete as any)(options).eq("business_id", businessId)) as QueryBuilder["delete"];
-  return { select, insert, upsert, update, delete: del };
+  return { select, insert, update, delete: del };
 }
 
 export function scopedAdmin(businessId: string) {
@@ -88,12 +89,18 @@ export function scopedAdmin(businessId: string) {
       return scopedTable(db, table, businessId);
     },
     rpc(fn: "get_available_slots" | "next_receipt_number", args: Row = {}) {
-      return db.rpc(fn, { p_business_id: businessId, ...args });
+      // The scope always wins: a p_business_id in the caller's args is a bug
+      // (it would silently run the RPC as another business), so refuse it.
+      if ("p_business_id" in args) throw new Error("scopedAdmin: p_business_id is set by the scope, not the caller");
+      return db.rpc(fn, { ...args, p_business_id: businessId });
     },
     // Stateless helpers that read no tenant rows.
     rpcGlobal(fn: "haversine_miles", args: Row) {
       return db.rpc(fn, args);
     },
+    // Storage isn't business-partitioned by the client; callers only ever
+    // pass object paths read from this business's own (scoped) job_photos
+    // rows. The storage RLS policies enforce the business for session users.
     storage: db.storage,
   };
 }

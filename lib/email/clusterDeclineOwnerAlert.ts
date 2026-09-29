@@ -1,4 +1,4 @@
-import { getEmailBrand } from "@/lib/email/brand";
+import { getEmailBrand, type EmailBrand } from "@/lib/email/brand";
 import { businessDb } from "@/lib/tenant/business";
 import { getSettings } from "@/lib/settings";
 import { getResend } from "@/lib/email/resend";
@@ -27,7 +27,14 @@ export async function sendClusterDeclineOwnerAlert(
   originalDate: string,
   proposedDate: string
 ): Promise<boolean> {
-  const brand = await getEmailBrand();
+  let brand: EmailBrand;
+  try {
+    brand = await getEmailBrand();
+  } catch (err) {
+    // Same log-and-return-false contract as every other failure here.
+    console.error("sendClusterDeclineOwnerAlert: business lookup failed", err);
+    return false;
+  }
   try {
     const { data, error } = await businessDb()
       .from("jobs")

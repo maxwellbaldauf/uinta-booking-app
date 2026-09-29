@@ -20,10 +20,9 @@
 // sweep — different repo, different table columns, different query,
 // different content. One reminds about an upcoming visit; the other chases
 // an unpaid invoice for a past one. They must never share logic or state.
-import { getEmailBrand } from "../email/brand";
-import { businessDb } from "../tenant/business";
+import { businessDb, businessTz } from "../tenant/business";
+import { getEmailBrand, type EmailBrand } from "../email/brand";
 import { todayISODate, addDaysToISODate } from "../time/zone";
-import { businessTz } from "../tenant/business";
 import { getSettings } from "../settings";
 import { getEffectivePriceCents } from "../pricing";
 import { arrivalBlockLabel } from "../schedule/blocks";
@@ -65,7 +64,14 @@ async function sendReminder(params: {
   appBaseUrl: string;
   tiers: { basePriceCents: number; commercialPriceCents: number };
 }): Promise<boolean> {
-  const brand = await getEmailBrand();
+  let brand: EmailBrand;
+  try {
+    brand = await getEmailBrand();
+  } catch (err) {
+    // Same log-and-return-false contract as every other failure here.
+    console.error("pre-visit-reminders sendReminder: business lookup failed", err);
+    return false;
+  }
   const property = flatten(params.job.property);
   const customer = flatten(property?.customer);
   if (!customer?.email || !property) return false;

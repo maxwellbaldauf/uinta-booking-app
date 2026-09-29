@@ -15,10 +15,12 @@ import { runPrevisitReminderSweep } from "../../lib/jobs/runPrevisitReminderSwee
 // function's bundler doesn't resolve this project's "@/" tsconfig alias),
 // making this file just the scheduled entry point.
 //
-// Cron is fixed UTC with no DST awareness, so the Denver wall-clock hour
-// this fires at drifts by an hour across the DST boundary (7am MST / 8am
-// MDT for 14:00 UTC). That's fine: every date comparison inside the sweep
-// is computed fresh via todayDenverISODate() at run time, so "which day is
+// Cron is fixed UTC with no DST awareness, so for a DST-observing business
+// (Uinta, America/Denver) the local hour this fires at drifts by an hour
+// across the DST boundary (7am MST / 8am MDT for 14:00 UTC); Phoenix
+// (Camelback) is 7am year-round. That's fine: every date comparison inside
+// the sweep is computed fresh via todayISODate(<business timezone>) at run
+// time, so "which day is
 // it" is always correct regardless of what UTC hour happened to trigger the
 // run. Offset by 15 minutes from uinta-field-app's unpaid-invoice reminder
 // function purely to keep the two functions' logs from interleaving — they

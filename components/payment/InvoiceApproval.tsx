@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { PaymentSetup, type PaymentSetupResult } from "@/components/payment/PaymentSetup";
 import { ErrorBanner, buttonStyle } from "@/components/ui/form";
 import { formatUsd } from "@/lib/settings";
@@ -11,6 +11,28 @@ import { AgreementStep } from "@/components/booking/AgreementStep";
 import { agreementIsCurrent, SERVICE_AGREEMENT_VERSION } from "@/lib/agreement";
 
 type Step = "review" | "agreement" | "charging" | "failed" | "done";
+
+// Survive the 3DS redirect: Stripe's bank-verification step reloads this page
+// (PaymentSetup then finishes from the URL), which would drop the in-memory
+// "accepted" flag and hide the card form. The acceptance is remembered per
+// token + agreement version for this tab only; the server still re-checks and
+// records it on finalize, so this can never stand in for a real acceptance.
+function acceptedStorageKey(token: string) {
+  return `agreement-accepted:${token}`;
+}
+function rememberAcceptance(token: string) {
+  try {
+    sessionStorage.setItem(acceptedStorageKey(token), SERVICE_AGREEMENT_VERSION);
+  } catch {}
+}
+function wasAccepted(token: string): boolean {
+  try {
+    return sessionStorage.getItem(acceptedStorageKey(token)) === SERVICE_AGREEMENT_VERSION;
+  } catch {
+    return false;
+  }
+}
+
 
 // The customer-approved-invoicing flow's payment page. Unlike
 // BacklogPaymentSetup (built for customers with no card on file yet), most
@@ -35,6 +57,11 @@ export function InvoiceApproval({ token, job }: { token: string; job: InvoiceJob
   // Where to return after the agreement step: the card form (no card / a
   // failed charge) or the approve button.
   const [afterAgreement, setAfterAgreement] = useState<"review" | "failed">("review");
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- sessionStorage is client-only; reading it post-hydration avoids an SSR mismatch.
+    if (!agreementCurrent && wasAccepted(token)) setAccepted(true);
+  }, [agreementCurrent, token]);
 
   const agreementPayload =
     accepted && !agreementCurrent
@@ -166,6 +193,7 @@ export function InvoiceApproval({ token, job }: { token: string; job: InvoiceJob
           setStep(afterAgreement);
         }}
         onContinue={() => {
+          rememberAcceptance(token);
           setAccepted(true);
           setError(null);
           setStep(afterAgreement);

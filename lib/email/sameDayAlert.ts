@@ -1,4 +1,4 @@
-import { getEmailBrand } from "@/lib/email/brand";
+import { getEmailBrand, type EmailBrand } from "@/lib/email/brand";
 import { businessDb } from "@/lib/tenant/business";
 import { getSettings } from "@/lib/settings";
 import { getResend } from "@/lib/email/resend";
@@ -46,7 +46,12 @@ export async function buildSameDayBookingAlert(
   | (Omit<BuiltEmail, "to"> & { to: string | null; propertyId: string | null })
   | { error: string }
 > {
-  const brand = await getEmailBrand();
+  let brand: EmailBrand;
+  try {
+    brand = await getEmailBrand();
+  } catch (err) {
+    return { error: `business lookup failed: ${err instanceof Error ? err.message : String(err)}` };
+  }
   const job = await loadJob(jobId);
   if (!job) return { error: `job not found: ${jobId}` };
 
