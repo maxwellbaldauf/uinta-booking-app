@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { businessDb } from "@/lib/tenant/business";
 import {
   ensureStripeCustomerForRow,
   resolveConfirmedSetupIntent,
@@ -83,7 +83,7 @@ export async function POST(req: Request) {
 
     await setStripeDefaultPaymentMethod(stripeCustomerId, paymentMethodId);
 
-    const supabase = createAdminClient();
+    const supabase = businessDb();
     // Guarded on payment_setup_token still matching, and .select() so we can
     // tell whether a row actually changed — a double-tap or two open tabs
     // can both pass findPendingBacklogJobsForToken before either update

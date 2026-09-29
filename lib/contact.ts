@@ -1,4 +1,4 @@
-import { createAdminClient } from "@/lib/supabase/admin";
+import { businessDb } from "@/lib/tenant/business";
 import { geocodeAddress } from "@/lib/geocode";
 import { matchOrCreateCustomer } from "@/lib/customers";
 
@@ -19,7 +19,7 @@ export type ContactInput = {
 export async function submitContact(
   input: ContactInput
 ): Promise<{ customerId: string; propertyId: string | null }> {
-  const supabase = createAdminClient();
+  const supabase = businessDb();
 
   const { id: customerId } = await matchOrCreateCustomer(
     { fullName: input.fullName, email: input.email, phone: input.phone },

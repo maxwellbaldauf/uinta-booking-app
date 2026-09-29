@@ -7,8 +7,10 @@ import { formatUsd } from "@/lib/settings";
 import { formatVisitDate } from "@/lib/format";
 import { arrivalBlockLabel } from "@/lib/schedule/blocks";
 import type { InvoiceJob } from "@/lib/invoicePayment";
+import { AgreementStep } from "@/components/booking/AgreementStep";
+import { agreementIsCurrent, SERVICE_AGREEMENT_VERSION } from "@/lib/agreement";
 
-type Step = "review" | "charging" | "failed" | "done";
+type Step = "review" | "agreement" | "charging" | "failed" | "done";
 
 // The customer-approved-invoicing flow's payment page. Unlike
 // BacklogPaymentSetup (built for customers with no card on file yet), most
@@ -18,10 +20,32 @@ type Step = "review" | "charging" | "failed" | "done";
 // existing card on file gets charged server-side. Elements only appear if
 // that charge comes back declined/expired (or there's no card on file at
 // all, e.g. a payment method was removed after the visit was scheduled).
+//
+// Service Agreement: a customer who hasn't accepted the current version
+// (e.g. entered manually in the field app, whose first payment page is this
+// one) reads and accepts it — scroll-gated, AgreementStep — before either pay
+// button is offered. The server re-checks and records it (timestamp +
+// version) before charging; the client flag alone is never trusted.
 export function InvoiceApproval({ token, job }: { token: string; job: InvoiceJob }) {
+  const agreementCurrent = agreementIsCurrent(job.serviceAgreementVersion);
   const [step, setStep] = useState<Step>("review");
+  const [accepted, setAccepted] = useState(agreementCurrent);
   const [error, setError] = useState<string | null>(null);
   const [paymentDisplay, setPaymentDisplay] = useState<string | null>(job.paymentDisplay);
+  // Where to return after the agreement step: the card form (no card / a
+  // failed charge) or the approve button.
+  const [afterAgreement, setAfterAgreement] = useState<"review" | "failed">("review");
+
+  const agreementPayload =
+    accepted && !agreementCurrent
+      ? { agreement: { accepted: true, version: SERVICE_AGREEMENT_VERSION } }
+      : {};
+
+  function requireAgreement(message: string) {
+    setAccepted(false);
+    setError(message);
+    setStep("agreement");
+  }
 
   const windowLabel = arrivalBlockLabel(job.arrivalBlock, job.blocksNeeded);
 
@@ -32,10 +56,15 @@ export function InvoiceApproval({ token, job }: { token: string; job: InvoiceJob
       const res = await fetch("/api/payment/approve-invoice", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token }),
+        body: JSON.stringify({ token, ...agreementPayload }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data.ok) {
+        if (data?.agreementRequired) {
+          setAfterAgreement("review");
+          requireAgreement(data.error ?? "Please accept the current Service Agreement.");
+          return;
+        }
         setError(data?.error ?? "We couldn't reach your card. Please try again.");
         setStep("failed");
         return;
@@ -60,10 +89,15 @@ export function InvoiceApproval({ token, job }: { token: string; job: InvoiceJob
     const res = await fetch("/api/payment/finalize-invoice-card", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ token, setupIntentId: result.setupIntentId }),
+      body: JSON.stringify({ token, setupIntentId: result.setupIntentId, ...agreementPayload }),
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok || !data.ok) {
+      if (data?.agreementRequired) {
+        setAfterAgreement("failed");
+        requireAgreement(data.error ?? "Please accept the current Service Agreement.");
+        return;
+      }
       if (data?.paymentDisplay) setPaymentDisplay(data.paymentDisplay);
       throw new Error(data?.error ?? "We couldn't charge that card either. Please contact us.");
     }
@@ -122,6 +156,37 @@ export function InvoiceApproval({ token, job }: { token: string; job: InvoiceJob
     </>
   );
 
+  if (step === "agreement") {
+    return (
+      <AgreementStep
+        staleAcceptance={job.serviceAgreementVersion != null}
+        error={error}
+        onBack={() => {
+          setError(null);
+          setStep(afterAgreement);
+        }}
+        onContinue={() => {
+          setAccepted(true);
+          setError(null);
+          setStep(afterAgreement);
+        }}
+      />
+    );
+  }
+
+  const continueToAgreement = (returnTo: "review" | "failed") => (
+    <button
+      type="button"
+      onClick={() => {
+        setAfterAgreement(returnTo);
+        setStep("agreement");
+      }}
+      style={buttonStyle}
+    >
+      Review service agreement to continue
+    </button>
+  );
+
   if (step === "failed" || (!job.hasDefaultPaymentMethod && step === "review")) {
     return (
       <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
@@ -137,12 +202,16 @@ export function InvoiceApproval({ token, job }: { token: string; job: InvoiceJob
             That didn&apos;t go through on {paymentDisplay}. Add a different card to retry.
           </p>
         )}
-        <PaymentSetup
-          request={{ context: "invoice_token", token }}
-          onComplete={handleCardUpdateComplete}
-          submitLabel="Save card & pay"
-          completingLabel="Charging…"
-        />
+        {accepted ? (
+          <PaymentSetup
+            request={{ context: "invoice_token", token }}
+            onComplete={handleCardUpdateComplete}
+            submitLabel="Save card & pay"
+            completingLabel="Charging…"
+          />
+        ) : (
+          continueToAgreement(step === "failed" ? "failed" : "review")
+        )}
       </div>
     );
   }
@@ -156,14 +225,18 @@ export function InvoiceApproval({ token, job }: { token: string; job: InvoiceJob
         </p>
       )}
       {error && <ErrorBanner>{error}</ErrorBanner>}
-      <button
-        type="button"
-        disabled={step === "charging"}
-        onClick={approveWithCardOnFile}
-        style={buttonStyle}
-      >
-        {step === "charging" ? "Charging…" : `Approve & pay ${formatUsd(job.amountCents)}`}
-      </button>
+      {accepted ? (
+        <button
+          type="button"
+          disabled={step === "charging"}
+          onClick={approveWithCardOnFile}
+          style={buttonStyle}
+        >
+          {step === "charging" ? "Charging…" : `Approve & pay ${formatUsd(job.amountCents)}`}
+        </button>
+      ) : (
+        continueToAgreement("review")
+      )}
     </div>
   );
 }

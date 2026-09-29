@@ -1,4 +1,5 @@
-import { createAdminClient } from "@/lib/supabase/admin";
+import { businessDb } from "@/lib/tenant/business";
+import { agreementIsCurrent, SERVICE_AGREEMENT_VERSION } from "@/lib/agreement";
 
 export type InvoiceJob = {
   id: string;
@@ -12,6 +13,10 @@ export type InvoiceJob = {
   stripeCustomerId: string | null;
   paymentDisplay: string | null;
   hasDefaultPaymentMethod: boolean;
+  // The version of the Service Agreement this customer last accepted (null =
+  // never). Manually-entered customers first reach a payment page here, after
+  // their first visit, so this page is where they accept it.
+  serviceAgreementVersion: string | null;
 };
 
 type JobRow = {
@@ -40,6 +45,7 @@ type CustomerRow = {
   stripe_customer_id: string | null;
   default_payment_method_id: string | null;
   payment_display: string | null;
+  service_agreement_version: string | null;
 };
 
 function flatten<T>(v: T | T[] | null | undefined): T | null {
@@ -57,11 +63,11 @@ function flatten<T>(v: T | T[] | null | undefined): T | null {
 export async function findJobByInvoiceToken(token: string): Promise<InvoiceJob | null> {
   if (!token || token.length < 16) return null;
 
-  const supabase = createAdminClient();
+  const supabase = businessDb();
   const { data, error } = await supabase
     .from("jobs")
     .select(
-      "id, status, scheduled_date, arrival_block, blocks_needed, final_price_cents, property:properties(nickname, address, customer:customers(id, full_name, stripe_customer_id, default_payment_method_id, payment_display))"
+      "id, status, scheduled_date, arrival_block, blocks_needed, final_price_cents, property:properties(nickname, address, customer:customers(id, full_name, stripe_customer_id, default_payment_method_id, payment_display, service_agreement_version))"
     )
     .eq("invoice_token", token)
     .maybeSingle();
@@ -94,6 +100,25 @@ export async function findJobByInvoiceToken(token: string): Promise<InvoiceJob |
     stripeCustomerId: customer.stripe_customer_id,
     paymentDisplay: customer.payment_display,
     hasDefaultPaymentMethod: customer.default_payment_method_id != null,
+    serviceAgreementVersion: customer.service_agreement_version,
+  };
+}
+
+// Server-side agreement gate for the invoice routes — same rule as
+// finalize-backlog and createBookingRecord: required unless the customer's
+// accepted version is already current, and never satisfied by the client's
+// bare flag alone (the version it accepted must be the current one).
+// Returns the customer-row fields to write when acceptance is being recorded
+// now, {} when nothing needs recording, or null when acceptance is missing.
+export function agreementFieldsToRecord(
+  job: InvoiceJob,
+  agreement: { accepted?: boolean; version?: string } | undefined
+): Record<string, string> | null {
+  if (agreementIsCurrent(job.serviceAgreementVersion)) return {};
+  if (!(agreement?.accepted && agreement.version === SERVICE_AGREEMENT_VERSION)) return null;
+  return {
+    service_agreement_accepted_at: new Date().toISOString(),
+    service_agreement_version: SERVICE_AGREEMENT_VERSION,
   };
 }
 

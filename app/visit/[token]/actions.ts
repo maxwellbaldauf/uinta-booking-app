@@ -1,9 +1,10 @@
 "use server";
 
-import { createAdminClient } from "@/lib/supabase/admin";
+import { businessDb } from "@/lib/tenant/business";
 import { getVisitByToken, getRescheduleSlots } from "@/lib/visit";
 import { slotStillAvailable } from "@/lib/scheduling";
-import { addDaysToISODate, denverMidnightUtcISO, todayDenverISODate } from "@/lib/time/denver";
+import { addDaysToISODate, localMidnightUtcISO, todayISODate } from "@/lib/time/zone";
+import { businessTz } from "@/lib/tenant/business";
 import { sendBookingConfirmationEmail } from "@/lib/email/bookingConfirmation";
 import { sendCancellationEmail } from "@/lib/email/cancellation";
 import { sendSameDayBookingAlert } from "@/lib/email/sameDayAlert";
@@ -51,7 +52,7 @@ export async function rescheduleVisit(
       return { ok: false, error: "That time was just taken. Please pick another.", slotTaken: true };
     }
 
-    const supabase = createAdminClient();
+    const supabase = businessDb();
     const { error } = await supabase
       .from("jobs")
       .update({
@@ -59,7 +60,7 @@ export async function rescheduleVisit(
         arrival_block: choice.arrivalBlock,
         booking_match_type: fresh.isFallback ? "fallback" : "route_matched",
         // Token unchanged (spec §3); only the expiry follows the new date.
-        access_token_expires_at: denverMidnightUtcISO(addDaysToISODate(choice.slotDate, 2)),
+        access_token_expires_at: localMidnightUtcISO(await businessTz(), addDaysToISODate(choice.slotDate, 2)),
         // Reset both pre-visit reminder stamps so a rescheduled visit gets
         // its own fresh 7-day/24-hour window off the new date, rather than
         // silently inheriting (or skipping) reminders keyed to the old one.
@@ -75,7 +76,7 @@ export async function rescheduleVisit(
 
     // Updated confirmation + .ics; owner alert if it's now a same-day visit.
     await sendBookingConfirmationEmail(visit.jobId, { variant: "rescheduled" });
-    if (choice.slotDate === todayDenverISODate()) {
+    if (choice.slotDate === todayISODate(await businessTz())) {
       await sendSameDayBookingAlert(visit.jobId);
     }
 
@@ -103,7 +104,7 @@ export async function cancelVisit(token: string, scope: CancelScope): Promise<Ca
       return { ok: false, error: "This visit can no longer be changed online." };
     }
 
-    const supabase = createAdminClient();
+    const supabase = businessDb();
     const { error: jobError } = await supabase
       .from("jobs")
       .update({ status: "cancelled" })

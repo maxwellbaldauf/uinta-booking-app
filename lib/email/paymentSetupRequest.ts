@@ -1,4 +1,5 @@
-import { createAdminClient } from "@/lib/supabase/admin";
+import { getEmailBrand } from "@/lib/email/brand";
+import { businessDb } from "@/lib/tenant/business";
 import { getSettings } from "@/lib/settings";
 import { getResend } from "@/lib/email/resend";
 import { renderEmail, buttonRow, escapeHtml } from "@/lib/email/shell";
@@ -11,7 +12,8 @@ import type { BuiltEmail } from "@/lib/email/types";
 export async function buildPaymentSetupRequestEmail(
   token: string
 ): Promise<BuiltEmail | { error: string }> {
-  const supabase = createAdminClient();
+  const brand = await getEmailBrand();
+  const supabase = businessDb();
   const { data, error } = await supabase
     .from("customers")
     .select("full_name, email, payment_setup_token_expires_at")
@@ -29,12 +31,13 @@ export async function buildPaymentSetupRequestEmail(
     <p style="margin:0 0 12px;">Hi ${escapeHtml(name)},</p>
     <p style="margin:0 0 4px;font-size:16px;font-weight:700;">We&rsquo;re taking over your ice machine cleaning.</p>
     <p style="margin:0 0 12px;color:#5b6470;">To keep things running smoothly, add a card so we can charge you after each visit. Your card isn&rsquo;t charged now, and there&rsquo;s nothing else to do.</p>
-    ${buttonRow(link, "Add my card")}
+    ${buttonRow(link, "Add my card", brand.accent)}
     <p style="margin:12px 0 0;color:#5b6470;font-size:13px;">This link is just for you. If the button doesn&rsquo;t work, copy this address:<br>${escapeHtml(link)}</p>
   `;
 
   const html = renderEmail({
-    title: "Add a card for your Uinta Ice Co service",
+    brand,
+    title: `Add a card for your ${brand.name} service`,
     preheader: "Quick one-time setup — add a card on file.",
     inner,
   });
@@ -47,13 +50,13 @@ export async function buildPaymentSetupRequestEmail(
     ``,
     `Add your card: ${link}`,
     ``,
-    `— Uinta Ice Co`,
+    `— ${brand.name}`,
   ].join("\n");
 
   return {
     to: data.email,
     replyTo: settings.business_email ?? undefined,
-    subject: "Add a card for your Uinta Ice Co service",
+    subject: `Add a card for your ${brand.name} service`,
     html,
     text,
   };
@@ -64,7 +67,7 @@ export async function sendPaymentSetupRequestEmail(
   opts?: { overrideTo?: string }
 ): Promise<boolean> {
   try {
-    const resend = getResend();
+    const resend = await getResend();
     if (!resend) {
       console.error("sendPaymentSetupRequestEmail: Resend not configured", { token: token.slice(0, 8) });
       return false;

@@ -9,7 +9,7 @@ import { LEAD_DEDUP_WINDOW_MS } from "@/lib/chat/config";
 import { allowLeadWrite } from "@/lib/chat/rateLimit";
 import { submitContact } from "@/lib/contact";
 import { matchCustomerByEmailOrPhone } from "@/lib/customers";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { businessDb } from "@/lib/tenant/business";
 
 export type LeadReason = "general_interest" | "handoff_to_human" | "out_of_scope";
 
@@ -159,7 +159,7 @@ async function hasRecentSubmission(
     const matched = await matchCustomerByEmailOrPhone(email, phone);
     if (!matched) return false;
     const since = new Date(Date.now() - LEAD_DEDUP_WINDOW_MS).toISOString();
-    const { data, error } = await createAdminClient()
+    const { data, error } = await businessDb()
       .from("contact_submissions")
       .select("id")
       .eq("customer_id", matched.id)

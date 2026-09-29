@@ -1,4 +1,4 @@
-import { createAdminClient } from "@/lib/supabase/admin";
+import { businessDb } from "@/lib/tenant/business";
 
 export type ImportedCustomer = {
   id: string;
@@ -19,7 +19,7 @@ export async function findCustomerByPaymentSetupToken(
 ): Promise<ImportedCustomer | null> {
   if (!token || token.length < 16) return null;
 
-  const supabase = createAdminClient();
+  const supabase = businessDb();
   const { data, error } = await supabase
     .from("customers")
     .select(
@@ -92,7 +92,7 @@ export async function matchCustomerByEmailOrPhone(
   email: string,
   phone: string | null | undefined
 ): Promise<MatchedCustomer | null> {
-  const supabase = createAdminClient();
+  const supabase = businessDb();
 
   const trimmedEmail = email.trim();
   if (trimmedEmail) {
@@ -133,7 +133,7 @@ export async function matchOrCreateCustomer(
   const matched = await matchCustomerByEmailOrPhone(input.email, input.phone);
   if (matched) return { id: matched.id, matched };
 
-  const supabase = createAdminClient();
+  const supabase = businessDb();
   const { data, error } = await supabase
     .from("customers")
     .insert({

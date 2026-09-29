@@ -1,7 +1,8 @@
-import { createAdminClient } from "@/lib/supabase/admin";
+import { businessDb } from "@/lib/tenant/business";
 import { getSettings } from "@/lib/settings";
 import { ARRIVAL_BLOCKS, arrivalBlockLabel } from "@/lib/schedule/blocks";
-import { todayDenverISODate, nowDenverMinutes, timeToMinutes, addDaysToISODate } from "@/lib/time/denver";
+import { todayISODate, nowMinutesIn, timeToMinutes, addDaysToISODate } from "@/lib/time/zone";
+import { businessTz } from "@/lib/tenant/business";
 import { fetchNearbyScheduledJobs } from "@/lib/clustering/nearbyJobs";
 import { rerankCandidatesByDrivingTime } from "@/lib/clustering/rerank";
 
@@ -24,7 +25,7 @@ export type OfferedSlot = {
 // Project A calls the same function for windows six months out where same-day
 // logic is meaningless.
 //
-// Same-day rule (settings.same_day_cutoff default 15:00, America/Denver):
+// Same-day rule (settings.same_day_cutoff default 15:00, business-local time):
 //   * once "now" is past the cutoff, no same-day blocks at all
 //   * otherwise a today block is offered only with >= 1 hour of notice
 //     (now + 60 min must still be before the block's start)
@@ -46,9 +47,10 @@ export async function getOfferedSlots(
   blocksNeeded = 1,
   opts?: { excludeJobId?: string; skipRerank?: boolean; fromDate?: string; windowDays?: number }
 ): Promise<OfferedSlot[]> {
-  const supabase = createAdminClient();
+  const supabase = businessDb();
   const settings = await getSettings();
-  const today = todayDenverISODate();
+  const tz = await businessTz();
+  const today = todayISODate(tz);
   // Defaults preserve the booking-flow/reschedule-picker's original
   // behavior exactly. slotStillAvailable overrides both below — checking a
   // clustering-suggestion's proposed date (which can be months out) against
@@ -89,7 +91,7 @@ export async function getOfferedSlots(
 
   if (rows.some((r) => r.slot_date === today)) {
     const cutoffMin = timeToMinutes(settings.same_day_cutoff);
-    const nowMin = nowDenverMinutes();
+    const nowMin = nowMinutesIn(tz);
 
     return rows
       .filter((r) => keepSlot(r, today, nowMin, cutoffMin))

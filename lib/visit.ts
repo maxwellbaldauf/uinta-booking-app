@@ -1,4 +1,4 @@
-import { createAdminClient } from "@/lib/supabase/admin";
+import { businessDb } from "@/lib/tenant/business";
 import { arrivalBlockLabel } from "@/lib/schedule/blocks";
 import { getOfferedSlots } from "@/lib/scheduling";
 
@@ -59,7 +59,7 @@ function flatten<T>(v: T | T[] | null | undefined): T | null {
 export async function getVisitByToken(token: string): Promise<Visit | null> {
   if (!token || token.length < 16) return null;
 
-  const supabase = createAdminClient();
+  const supabase = businessDb();
   const res = await supabase
     .from("jobs")
     .select(

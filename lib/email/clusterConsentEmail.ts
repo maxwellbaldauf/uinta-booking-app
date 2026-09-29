@@ -1,23 +1,12 @@
-import { createAdminClient } from "@/lib/supabase/admin";
+import { getEmailBrand } from "@/lib/email/brand";
+import { businessDb } from "@/lib/tenant/business";
 import { getResend } from "@/lib/email/resend";
 import { renderEmail, detailsTable, buttonRow, escapeHtml } from "@/lib/email/shell";
 import { arrivalBlockLabel } from "@/lib/schedule/blocks";
 import { formatVisitDate } from "@/lib/format";
-import { addDaysToISODate } from "@/lib/time/denver";
+import { addDaysToISODate, todayISODate } from "@/lib/time/zone";
+import { businessTz } from "@/lib/tenant/business";
 import { getAppBaseUrl } from "@/lib/url";
-
-// This repo's todayDenverISODate() takes no arguments (unlike
-// uinta-field-app's copy) — a small local helper for the one place here
-// that needs "which Denver calendar date does this arbitrary instant fall
-// on," rather than widening the shared, mirrored file's signature.
-function denverDateOf(instant: Date): string {
-  return new Intl.DateTimeFormat("en-CA", {
-    timeZone: "America/Denver",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).format(instant);
-}
 
 type Cust = { full_name: string | null; email: string | null };
 type Prop = { address: string; customer: Cust | Cust[] | null };
@@ -44,8 +33,9 @@ function flatten<T>(v: T | T[] | null | undefined): T | null {
 // the customer, and that declining carries no consequence — per spec, this
 // must never read as if the customer requested or already agreed to it.
 export async function sendClusterConsentEmail(clusterSuggestionJobId: string): Promise<boolean> {
+  const brand = await getEmailBrand();
   try {
-    const supabase = createAdminClient();
+    const supabase = businessDb();
     const { data, error } = await supabase
       .from("cluster_suggestion_jobs")
       .select(
@@ -73,7 +63,7 @@ export async function sendClusterConsentEmail(clusterSuggestionJobId: string): P
       return false;
     }
 
-    const resend = getResend();
+    const resend = await getResend();
     if (!resend) {
       console.error("sendClusterConsentEmail: Resend not configured", clusterSuggestionJobId);
       return false;
@@ -89,7 +79,7 @@ export async function sendClusterConsentEmail(clusterSuggestionJobId: string): P
 
     let deadlineText = "";
     if (row.consent_deadline) {
-      const deadlineDate = denverDateOf(new Date(row.consent_deadline));
+      const deadlineDate = todayISODate(await businessTz(), new Date(row.consent_deadline));
       const respondByDate = addDaysToISODate(deadlineDate, -1);
       deadlineText = `Please let us know by end of day, ${formatVisitDate(respondByDate)} — after that, we'll keep your original time.`;
     }
@@ -107,11 +97,12 @@ export async function sendClusterConsentEmail(clusterSuggestionJobId: string): P
         { label: "Suggested visit", value: proposedLabel },
       ])}
       ${deadlineText ? `<p style="margin:0 0 12px;color:#5b6470;font-size:13px;">${escapeHtml(deadlineText)}</p>` : ""}
-      ${buttonRow(consentUrl, "Review this suggestion")}
+      ${buttonRow(consentUrl, "Review this suggestion", brand.accent)}
     `;
 
     const html = renderEmail({
-      title: "A scheduling suggestion from Uinta Ice Co",
+    brand,
+      title: `A scheduling suggestion from ${brand.name}`,
       preheader: `We have a suggestion for your ${formatVisitDate(row.original_scheduled_date)} visit`,
       inner,
     });
@@ -127,13 +118,13 @@ export async function sendClusterConsentEmail(clusterSuggestionJobId: string): P
       ...(deadlineText ? [deadlineText, ``] : []),
       `Review: ${consentUrl}`,
       ``,
-      `— Uinta Ice Co`,
+      `— ${brand.name}`,
     ].join("\n");
 
     const { error: sendError } = await resend.client.emails.send({
       from: resend.from,
       to: customer.email,
-      subject: "A scheduling suggestion for your Uinta Ice Co visit",
+      subject: `A scheduling suggestion for your ${brand.name} visit`,
       html,
       text,
     });

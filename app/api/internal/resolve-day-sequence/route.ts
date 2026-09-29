@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { businessDb } from "@/lib/tenant/business";
 import { resolvePendingDaySequenceMoves } from "@/lib/resolveDaySequence";
 
 export const runtime = "nodejs";
@@ -31,7 +31,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const supabase = createAdminClient();
+  const supabase = businessDb();
   const { data: rows, error } = await supabase
     .from("cluster_suggestion_jobs")
     .select("cluster_suggestion_id, cluster_suggestion:cluster_suggestions!inner(kind)")

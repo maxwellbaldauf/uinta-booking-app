@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { randomBytes } from "crypto";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { businessDb } from "@/lib/tenant/business";
 import { isDev } from "@/lib/dev";
 
 export const runtime = "nodejs";
@@ -10,7 +10,7 @@ export const runtime = "nodejs";
 export async function POST() {
   if (!isDev()) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  const supabase = createAdminClient();
+  const supabase = businessDb();
   const token = randomBytes(24).toString("base64url");
   const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
 

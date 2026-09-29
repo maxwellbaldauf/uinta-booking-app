@@ -1,4 +1,5 @@
-import { createAdminClient } from "@/lib/supabase/admin";
+import { getEmailBrand } from "@/lib/email/brand";
+import { businessDb } from "@/lib/tenant/business";
 import { getSettings } from "@/lib/settings";
 import { getResend } from "@/lib/email/resend";
 import { renderEmail, detailsTable } from "@/lib/email/shell";
@@ -26,8 +27,9 @@ export async function sendClusterDeclineOwnerAlert(
   originalDate: string,
   proposedDate: string
 ): Promise<boolean> {
+  const brand = await getEmailBrand();
   try {
-    const { data, error } = await createAdminClient()
+    const { data, error } = await businessDb()
       .from("jobs")
       .select("property:properties(nickname, address, customer:customers(full_name))")
       .eq("id", jobId)
@@ -44,7 +46,7 @@ export async function sendClusterDeclineOwnerAlert(
     const propertyLabel = property?.nickname || property?.address || "a property";
 
     const settings = await getSettings();
-    const resend = getResend();
+    const resend = await getResend();
     if (!settings.business_email || !resend) {
       console.error(
         "sendClusterDeclineOwnerAlert: no recipient (settings.business_email) or Resend not configured",
@@ -61,6 +63,7 @@ export async function sendClusterDeclineOwnerAlert(
     ];
 
     const html = renderEmail({
+    brand,
       title: "Clustering suggestion declined",
       preheader: `${propertyLabel} — customer kept their original visit`,
       inner: `
@@ -77,7 +80,7 @@ export async function sendClusterDeclineOwnerAlert(
       ``,
       `The customer chose to keep their original visit. It won't be suggested again for these same dates.`,
       ``,
-      `— Uinta Ice Co booking site`,
+      `— ${brand.name} booking site`,
     ].join("\n");
 
     const { error: sendError } = await resend.client.emails.send({

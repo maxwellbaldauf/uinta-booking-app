@@ -1,9 +1,10 @@
 "use server";
 
-import { createAdminClient } from "@/lib/supabase/admin";
+import { businessDb } from "@/lib/tenant/business";
 import { getClusterConsentByToken } from "@/lib/clusterConsent";
 import { slotStillAvailable } from "@/lib/scheduling";
-import { addDaysToISODate, denverMidnightUtcISO } from "@/lib/time/denver";
+import { addDaysToISODate, localMidnightUtcISO } from "@/lib/time/zone";
+import { businessTz } from "@/lib/tenant/business";
 import { sendBookingConfirmationEmail } from "@/lib/email/bookingConfirmation";
 import { sendClusterDeclineOwnerAlert } from "@/lib/email/clusterDeclineOwnerAlert";
 import { resolvePendingDaySequenceMoves } from "@/lib/resolveDaySequence";
@@ -17,7 +18,7 @@ export type ClusterConsentResponse = { ok: true } | { ok: false; error: string }
 // on the UPDATE itself is what makes only one of them actually win —
 // `claimed` comes back null for every loser.
 async function claimPendingConsent(
-  supabase: ReturnType<typeof createAdminClient>,
+  supabase: ReturnType<typeof businessDb>,
   consentId: string,
   nextStatus: "accepted" | "declined"
 ): Promise<boolean> {
@@ -46,7 +47,7 @@ export async function acceptClusterSuggestion(token: string): Promise<ClusterCon
       return { ok: false, error: "This suggestion has already been responded to." };
     }
 
-    const supabase = createAdminClient();
+    const supabase = businessDb();
 
     const claimed = await claimPendingConsent(supabase, consent.id, "accepted");
     if (!claimed) {
@@ -111,7 +112,7 @@ export async function acceptClusterSuggestion(token: string): Promise<ClusterCon
         scheduled_date: consent.proposedDate,
         arrival_block: consent.proposedArrivalBlock,
         booking_match_type: fresh.isFallback ? "fallback" : "route_matched",
-        access_token_expires_at: denverMidnightUtcISO(addDaysToISODate(consent.proposedDate, 2)),
+        access_token_expires_at: localMidnightUtcISO(await businessTz(), addDaysToISODate(consent.proposedDate, 2)),
         reminder_7day_sent_at: null,
         reminder_24hr_sent_at: null,
       })
@@ -148,7 +149,7 @@ export async function declineClusterSuggestion(token: string): Promise<ClusterCo
       return { ok: false, error: "This suggestion has already been responded to." };
     }
 
-    const supabase = createAdminClient();
+    const supabase = businessDb();
 
     const claimed = await claimPendingConsent(supabase, consent.id, "declined");
     if (!claimed) {

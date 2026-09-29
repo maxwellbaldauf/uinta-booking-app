@@ -35,7 +35,7 @@
 // POST /api/internal/resolve-day-sequence (called by uinta-field-app's
 // nightly sweep as a safety net, in case an accept/decline's own call
 // above didn't run to completion — e.g. a crash mid-request).
-import { createAdminClient } from "@/lib/supabase/admin";
+import { businessDb } from "@/lib/tenant/business";
 import { sendBookingConfirmationEmail } from "@/lib/email/bookingConfirmation";
 
 type Row = {
@@ -71,7 +71,7 @@ function rangesOverlap(startA: number, lenA: number, startB: number, lenB: numbe
 // unbounded, since a day_sequence proposal's consent_deadline is only set
 // when the target day is within 36 hours — can't leave a stale slot behind.
 async function targetBlockedByThirdParty(
-  supabase: ReturnType<typeof createAdminClient>,
+  supabase: ReturnType<typeof businessDb>,
   proposedDate: string,
   proposedBlock: number,
   blocksNeeded: number,
@@ -99,7 +99,7 @@ async function targetBlockedByThirdParty(
 // skips stamping applied_at and skips sending a second confirmation email,
 // rather than double-applying.
 async function applyMove(
-  supabase: ReturnType<typeof createAdminClient>,
+  supabase: ReturnType<typeof businessDb>,
   row: Row,
   expectedCurrentBlock: number
 ): Promise<boolean> {
@@ -208,7 +208,7 @@ function findCycles(rows: Row[], jobById: Map<string, LiveJob>): Row[][] {
 }
 
 export async function resolvePendingDaySequenceMoves(clusterSuggestionId: string): Promise<void> {
-  const supabase = createAdminClient();
+  const supabase = businessDb();
 
   const { data: rows } = await supabase
     .from("cluster_suggestion_jobs")

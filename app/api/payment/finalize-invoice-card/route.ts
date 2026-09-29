@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { businessDb } from "@/lib/tenant/business";
 import {
   ensureStripeCustomerForRow,
   resolveConfirmedSetupIntent,
   setStripeDefaultPaymentMethod,
 } from "@/lib/stripe/payments";
-import { findJobByInvoiceToken, chargeInvoiceJob } from "@/lib/invoicePayment";
+import { findJobByInvoiceToken, chargeInvoiceJob, agreementFieldsToRecord } from "@/lib/invoicePayment";
 
 export const runtime = "nodejs";
 
@@ -16,7 +16,7 @@ export const runtime = "nodejs";
 // approve-invoice on purpose (this app's single-purpose-per-route
 // convention) since this path needs Stripe Elements / a SetupIntent and the
 // happy path doesn't.
-type Body = { token: string; setupIntentId: string };
+type Body = { token: string; setupIntentId: string; agreement?: { accepted?: boolean; version?: string } };
 
 export async function POST(req: Request) {
   let body: Body;
@@ -40,6 +40,15 @@ export async function POST(req: Request) {
     );
   }
 
+  // Checked before touching Stripe — same gate as approve-invoice.
+  const agreementFields = agreementFieldsToRecord(job, body.agreement);
+  if (!agreementFields) {
+    return NextResponse.json(
+      { error: "Please review and accept the current Service Agreement to continue.", agreementRequired: true },
+      { status: 400 }
+    );
+  }
+
   try {
     const { stripeCustomerId } = await ensureStripeCustomerForRow(job.customerId);
     const { paymentMethodId, displayLabel } = await resolveConfirmedSetupIntent(
@@ -49,7 +58,7 @@ export async function POST(req: Request) {
 
     await setStripeDefaultPaymentMethod(stripeCustomerId, paymentMethodId);
 
-    const supabase = createAdminClient();
+    const supabase = businessDb();
     const { error: updateError } = await supabase
       .from("customers")
       .update({
@@ -57,6 +66,7 @@ export async function POST(req: Request) {
         default_payment_method_type: "card",
         payment_display: displayLabel,
         payment_authorized_at: new Date().toISOString(),
+        ...agreementFields,
       })
       .eq("id", job.customerId);
 

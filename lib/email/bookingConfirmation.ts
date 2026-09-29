@@ -1,6 +1,7 @@
+import { getEmailBrand } from "@/lib/email/brand";
 import fs from "node:fs/promises";
 import path from "node:path";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { businessDb } from "@/lib/tenant/business";
 import { getSettings, formatUsd } from "@/lib/settings";
 import { getResend } from "@/lib/email/resend";
 import { renderEmail, detailsTable, buttonRow, escapeHtml } from "@/lib/email/shell";
@@ -8,7 +9,8 @@ import { buildBookingIcs } from "@/lib/ics";
 import { SERVICE_AGREEMENT_PDF_FILENAME } from "@/lib/agreement";
 import { arrivalBlockLabel, ARRIVAL_BLOCKS } from "@/lib/schedule/blocks";
 import { formatVisitDate } from "@/lib/format";
-import { denverLocalToUtc } from "@/lib/time/denver";
+import { localToUtc } from "@/lib/time/zone";
+import { businessTz } from "@/lib/tenant/business";
 import { getAppBaseUrl } from "@/lib/url";
 import type { BuiltEmail } from "@/lib/email/types";
 
@@ -75,8 +77,9 @@ export async function buildBookingConfirmationEmail(
   jobId: string,
   opts?: { variant?: ConfirmationVariant; attachAgreement?: boolean }
 ): Promise<BuiltEmail | { error: string }> {
+  const brand = await getEmailBrand();
   const variant: ConfirmationVariant = opts?.variant ?? "new";
-  const supabase = createAdminClient();
+  const supabase = businessDb();
   const { data, error } = await supabase
     .from("jobs")
     .select(
@@ -104,13 +107,15 @@ export async function buildBookingConfirmationEmail(
   const baseUrl = await getAppBaseUrl();
   const manageUrl = job.access_token ? `${baseUrl}/visit/${job.access_token}` : baseUrl;
 
-  const start = block ? denverLocalToUtc(job.scheduled_date, block.startsAt) : new Date();
-  const end = block ? denverLocalToUtc(job.scheduled_date, block.endsAt) : new Date();
+  const tz = await businessTz();
+  const start = block ? localToUtc(tz, job.scheduled_date, block.startsAt) : new Date();
+  const end = block ? localToUtc(tz, job.scheduled_date, block.endsAt) : new Date();
   const ics = buildBookingIcs({
-    uid: `job-${job.id}@uintaice.com`,
+    prodId: brand.icsProdId,
+    uid: `job-${job.id}@${brand.icsUidDomain}`,
     start,
     end,
-    summary: "Uinta Ice Co — ice machine cleaning",
+    summary: brand.icsSummary,
     description: `Arrival window ${windowLabel}. Manage this visit: ${manageUrl}`,
     location: address,
     organizerEmail: settings.business_email,
@@ -139,20 +144,21 @@ export async function buildBookingConfirmationEmail(
       { label: "Address", value: address },
       { label: "Price", value: `${priceText} per visit` },
     ])}
-    ${buttonRow(manageUrl, "Reschedule or cancel")}
+    ${buttonRow(manageUrl, "Reschedule or cancel", brand.accent)}
     <p style="margin:12px 0 0;color:#5b6470;font-size:13px;">An updated calendar invite is attached. Your reschedule / cancel link expires the day after the visit.</p>
   `;
 
   const title =
     variant === "rescheduled"
-      ? "Your Uinta Ice Co visit was rescheduled"
+      ? `Your ${brand.name} visit was rescheduled`
       : variant === "owner_rescheduled"
-        ? "Your Uinta Ice Co appointment was updated"
+        ? `Your ${brand.name} appointment was updated`
         : variant === "cluster_matched"
-          ? "Your Uinta Ice Co visit was moved"
-          : "Your Uinta Ice Co cleaning is booked";
+          ? `Your ${brand.name} visit was moved`
+          : `Your ${brand.name} cleaning is booked`;
 
   const html = renderEmail({
+    brand,
     title,
     preheader: `${dateLong}, ${windowLabel} — ${address}`,
     inner,
@@ -162,12 +168,12 @@ export async function buildBookingConfirmationEmail(
     `Hi ${name},`,
     ``,
     variant === "rescheduled"
-      ? `Your Uinta Ice Co visit has been rescheduled.`
+      ? `Your ${brand.name} visit has been rescheduled.`
       : variant === "owner_rescheduled"
-        ? `We've updated your Uinta Ice Co appointment.`
+        ? `We've updated your ${brand.name} appointment.`
         : variant === "cluster_matched"
-          ? `Your Uinta Ice Co visit has been moved — thanks for helping us out.`
-          : `Your Uinta Ice Co cleaning is booked.`,
+          ? `Your ${brand.name} visit has been moved — thanks for helping us out.`
+          : `Your ${brand.name} cleaning is booked.`,
     ``,
     `Date:           ${dateLong}`,
     `Arrival window: ${windowLabel}`,
@@ -179,11 +185,11 @@ export async function buildBookingConfirmationEmail(
     ``,
     `Your card isn't charged until after the visit.`,
     ``,
-    `— Uinta Ice Co`,
+    `— ${brand.name}`,
   ].join("\n");
 
   const attachments: NonNullable<BuiltEmail["attachments"]> = [
-    { filename: "uinta-ice-visit.ics", content: Buffer.from(ics, "utf-8") },
+    { filename: brand.icsFilename, content: Buffer.from(ics, "utf-8") },
   ];
   if (opts?.attachAgreement) {
     const pdf = await readAgreementPdf();
@@ -197,12 +203,12 @@ export async function buildBookingConfirmationEmail(
     replyTo: settings.business_email ?? undefined,
     subject:
       variant === "rescheduled"
-        ? `Your Uinta Ice Co visit was moved — ${formatVisitDate(job.scheduled_date)}`
+        ? `Your ${brand.name} visit was moved — ${formatVisitDate(job.scheduled_date)}`
         : variant === "owner_rescheduled"
-          ? `Your Uinta Ice Co appointment was updated — ${formatVisitDate(job.scheduled_date)}`
+          ? `Your ${brand.name} appointment was updated — ${formatVisitDate(job.scheduled_date)}`
           : variant === "cluster_matched"
-            ? `Your Uinta Ice Co visit was moved — ${formatVisitDate(job.scheduled_date)}`
-            : `Your Uinta Ice Co cleaning is booked — ${formatVisitDate(job.scheduled_date)}`,
+            ? `Your ${brand.name} visit was moved — ${formatVisitDate(job.scheduled_date)}`
+            : `Your ${brand.name} cleaning is booked — ${formatVisitDate(job.scheduled_date)}`,
     html,
     text,
     attachments,
@@ -216,7 +222,7 @@ export async function sendBookingConfirmationEmail(
   opts?: { overrideTo?: string; variant?: ConfirmationVariant; attachAgreement?: boolean }
 ): Promise<boolean> {
   try {
-    const resend = getResend();
+    const resend = await getResend();
     if (!resend) {
       console.error("sendBookingConfirmationEmail: Resend not configured", { jobId });
       return false;

@@ -46,6 +46,7 @@ export default async function PayPage({ params }: { params: Promise<{ token: str
           token={token}
           customerName={customer.full_name}
           existingCard={customer.payment_display}
+          serviceAgreementVersion={customer.service_agreement_version}
         />
       </main>
     );

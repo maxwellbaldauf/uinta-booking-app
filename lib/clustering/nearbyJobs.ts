@@ -3,7 +3,7 @@
 // uinta-field-app's own copy of this file (separate repo, not shared code).
 // Used by lib/scheduling.ts's driving-time reranking of the booking /
 // reschedule slot picker.
-import { createAdminClient } from "@/lib/supabase/admin";
+import { businessDb } from "@/lib/tenant/business";
 
 export type NearbyJob = {
   jobId: string;
@@ -34,7 +34,7 @@ export async function fetchNearbyScheduledJobs(opts: {
   excludeJobId?: string;
   signal?: AbortSignal;
 }): Promise<NearbyJob[]> {
-  const supabase = createAdminClient();
+  const supabase = businessDb();
   let query = supabase
     .from("jobs")
     .select(

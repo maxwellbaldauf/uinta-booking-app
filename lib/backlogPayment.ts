@@ -1,4 +1,4 @@
-import { createAdminClient } from "@/lib/supabase/admin";
+import { businessDb } from "@/lib/tenant/business";
 import { findCustomerByPaymentSetupToken, type ImportedCustomer } from "@/lib/customers";
 
 export type PendingBacklogJob = {
@@ -25,7 +25,7 @@ export async function findPendingBacklogJobsForToken(
   const customer = await findCustomerByPaymentSetupToken(token);
   if (!customer) return null;
 
-  const supabase = createAdminClient();
+  const supabase = businessDb();
 
   const { data: properties } = await supabase
     .from("properties")

@@ -1,4 +1,4 @@
-import { createAdminClient } from "@/lib/supabase/admin";
+import { businessDb } from "@/lib/tenant/business";
 
 export type ClusterConsentStatus =
   | "not_required"
@@ -78,7 +78,7 @@ function flatten<T>(v: T | T[] | null | undefined): T | null {
 export async function getClusterConsentByToken(token: string): Promise<ClusterConsent | null> {
   if (!token) return null;
 
-  const supabase = createAdminClient();
+  const supabase = businessDb();
   const { data, error } = await supabase
     .from("cluster_suggestion_jobs")
     .select(

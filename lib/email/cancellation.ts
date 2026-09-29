@@ -1,11 +1,13 @@
-import { createAdminClient } from "@/lib/supabase/admin";
+import { getEmailBrand } from "@/lib/email/brand";
+import { businessDb } from "@/lib/tenant/business";
 import { getSettings } from "@/lib/settings";
 import { getResend } from "@/lib/email/resend";
 import { renderEmail, detailsTable, escapeHtml } from "@/lib/email/shell";
 import { buildBookingIcs } from "@/lib/ics";
 import { arrivalBlockLabel, ARRIVAL_BLOCKS } from "@/lib/schedule/blocks";
 import { formatVisitDate } from "@/lib/format";
-import { denverLocalToUtc } from "@/lib/time/denver";
+import { localToUtc } from "@/lib/time/zone";
+import { businessTz } from "@/lib/tenant/business";
 import type { BuiltEmail } from "@/lib/email/types";
 
 type JobRow = {
@@ -30,7 +32,8 @@ export async function buildCancellationEmail(
   jobId: string,
   opts: { planCancelled: boolean }
 ): Promise<BuiltEmail | { error: string }> {
-  const supabase = createAdminClient();
+  const brand = await getEmailBrand();
+  const supabase = businessDb();
   const { data, error } = await supabase
     .from("jobs")
     .select("id, scheduled_date, arrival_block, property:properties(address, customer:customers(full_name, email))")
@@ -50,13 +53,15 @@ export async function buildCancellationEmail(
   const address = property?.address ?? "";
   const name = customer.full_name?.trim() || "there";
 
-  const start = block ? denverLocalToUtc(job.scheduled_date, block.startsAt) : new Date();
-  const end = block ? denverLocalToUtc(job.scheduled_date, block.endsAt) : new Date();
+  const tz = await businessTz();
+  const start = block ? localToUtc(tz, job.scheduled_date, block.startsAt) : new Date();
+  const end = block ? localToUtc(tz, job.scheduled_date, block.endsAt) : new Date();
   const ics = buildBookingIcs({
-    uid: `job-${job.id}@uintaice.com`,
+    prodId: brand.icsProdId,
+    uid: `job-${job.id}@${brand.icsUidDomain}`,
     start,
     end,
-    summary: "Uinta Ice Co — ice machine cleaning",
+    summary: brand.icsSummary,
     description: "This visit was cancelled.",
     location: address,
     organizerEmail: settings.business_email,
@@ -80,7 +85,8 @@ export async function buildCancellationEmail(
   `;
 
   const html = renderEmail({
-    title: "Your Uinta Ice Co visit was cancelled",
+    brand,
+    title: `Your ${brand.name} visit was cancelled`,
     preheader: `Cancelled — ${dateLong}, ${windowLabel}`,
     inner,
   });
@@ -88,7 +94,7 @@ export async function buildCancellationEmail(
   const text = [
     `Hi ${name},`,
     ``,
-    `Your Uinta Ice Co visit has been cancelled.`,
+    `Your ${brand.name} visit has been cancelled.`,
     ``,
     `Was:      ${dateLong}, ${windowLabel}`,
     `Address:  ${address}`,
@@ -97,16 +103,16 @@ export async function buildCancellationEmail(
       ? `We've also stopped the semi-annual plan for this property. Your card stays on file — no charge.`
       : `Your plan for this property is still active; the next visit will schedule as normal. Your card stays on file.`,
     ``,
-    `— Uinta Ice Co`,
+    `— ${brand.name}`,
   ].join("\n");
 
   return {
     to: customer.email,
     replyTo: settings.business_email ?? undefined,
-    subject: `Your Uinta Ice Co visit was cancelled — ${formatVisitDate(job.scheduled_date)}`,
+    subject: `Your ${brand.name} visit was cancelled — ${formatVisitDate(job.scheduled_date)}`,
     html,
     text,
-    attachments: [{ filename: "uinta-ice-visit.ics", content: Buffer.from(ics, "utf-8") }],
+    attachments: [{ filename: brand.icsFilename, content: Buffer.from(ics, "utf-8") }],
   };
 }
 
@@ -115,7 +121,7 @@ export async function sendCancellationEmail(
   opts: { planCancelled: boolean; overrideTo?: string }
 ): Promise<boolean> {
   try {
-    const resend = getResend();
+    const resend = await getResend();
     if (!resend) {
       console.error("sendCancellationEmail: Resend not configured", { jobId });
       return false;

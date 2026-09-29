@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { businessDb } from "@/lib/tenant/business";
 import { isDev } from "@/lib/dev";
 
 export const runtime = "nodejs";
@@ -14,7 +14,7 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "customerId required" }, { status: 400 });
   }
 
-  const supabase = createAdminClient();
+  const supabase = businessDb();
   const { data, error } = await supabase
     .from("customers")
     .select(

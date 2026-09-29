@@ -10,7 +10,7 @@ export type ArrivalBlock = 1 | 2 | 3 | 4 | 5 | 6 | 7;
 
 export type ArrivalBlockDef = {
   index: ArrivalBlock;
-  startsAt: string; // "HH:MM", 24-hour, America/Denver wall clock
+  startsAt: string; // "HH:MM", 24-hour, business-local wall clock
   endsAt: string;
   label: string;
 };

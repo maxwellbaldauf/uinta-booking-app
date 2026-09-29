@@ -43,6 +43,8 @@ export type BookingIcsInput = {
   summary: string;
   description: string;
   location: string;
+  // This business's PRODID, e.g. "-//Uinta Ice Co//Booking//EN".
+  prodId: string;
   organizerEmail?: string | null;
   organizerName?: string | null;
   // Bump on each reschedule so calendars update the existing event.
@@ -57,7 +59,7 @@ export function buildBookingIcs(input: BookingIcsInput): string {
   const lines = [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
-    "PRODID:-//Uinta Ice Co//Booking//EN",
+    `PRODID:${input.prodId}`,
     "CALSCALE:GREGORIAN",
     `METHOD:${method}`,
     "BEGIN:VEVENT",

@@ -20,8 +20,10 @@
 // sweep — different repo, different table columns, different query,
 // different content. One reminds about an upcoming visit; the other chases
 // an unpaid invoice for a past one. They must never share logic or state.
-import { createAdminClient } from "../supabase/admin";
-import { todayDenverISODate, addDaysToISODate } from "../time/denver";
+import { getEmailBrand } from "../email/brand";
+import { businessDb } from "../tenant/business";
+import { todayISODate, addDaysToISODate } from "../time/zone";
+import { businessTz } from "../tenant/business";
 import { getSettings } from "../settings";
 import { getEffectivePriceCents } from "../pricing";
 import { arrivalBlockLabel } from "../schedule/blocks";
@@ -63,6 +65,7 @@ async function sendReminder(params: {
   appBaseUrl: string;
   tiers: { basePriceCents: number; commercialPriceCents: number };
 }): Promise<boolean> {
+  const brand = await getEmailBrand();
   const property = flatten(params.job.property);
   const customer = flatten(property?.customer);
   if (!customer?.email || !property) return false;
@@ -97,11 +100,12 @@ async function sendReminder(params: {
       { label: "Address", value: property.address },
       { label: "Price", value: `${priceText} per visit` },
     ])}
-    ${buttonRow(manageUrl, "Reschedule or cancel")}
+    ${buttonRow(manageUrl, "Reschedule or cancel", brand.accent)}
   `;
 
   const html = renderEmail({
-    title: `Uinta Ice Co — ${headline}`,
+    brand,
+    title: `${brand.name} — ${headline}`,
     preheader: `${dateLong}, ${windowLabel} — ${property.address}`,
     inner,
   });
@@ -118,10 +122,10 @@ async function sendReminder(params: {
     ``,
     `Reschedule or cancel: ${manageUrl}`,
     ``,
-    `— Uinta Ice Co`,
+    `— ${brand.name}`,
   ].join("\n");
 
-  const resend = getResend();
+  const resend = await getResend();
   if (!resend) {
     console.error("pre-visit-reminders: Resend not configured");
     return false;
@@ -166,7 +170,7 @@ const REMINDER_COLUMN: Record<ReminderKind, "reminder_7day_sent_at" | "reminder_
 async function processReminderBatch(
   jobs: ReminderJobRow[],
   kind: ReminderKind,
-  supabase: ReturnType<typeof createAdminClient>,
+  supabase: ReturnType<typeof businessDb>,
   appBaseUrl: string,
   tiers: { basePriceCents: number; commercialPriceCents: number }
 ): Promise<{ sent: number; failed: number }> {
@@ -202,8 +206,8 @@ export async function runPrevisitReminderSweep(): Promise<PrevisitReminderSweepR
   const empty = { sevenDaySent: 0, sevenDayFailed: 0, twentyFourHourSent: 0, twentyFourHourFailed: 0 };
 
   try {
-    const supabase = createAdminClient();
-    const today = todayDenverISODate();
+    const supabase = businessDb();
+    const today = todayISODate(await businessTz());
 
     const appBaseUrl = (process.env.APP_BASE_URL ?? "").trim().replace(/\/+$/, "");
     if (!/^https?:\/\//i.test(appBaseUrl)) {

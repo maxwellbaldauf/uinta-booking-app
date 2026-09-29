@@ -1,9 +1,10 @@
 // Relative, not "@/lib/supabase/admin" — this file is reachable from
 // netlify/functions/pre-visit-reminders.mts, whose bundler doesn't resolve
 // this project's tsconfig path alias. Behaves identically either way.
-import { createAdminClient } from "./supabase/admin";
+import { businessDb } from "./tenant/business";
 
-// The single settings row (id = true) shared with Project A. Everything the
+// THIS business's settings row (one row per business, keyed by business_id;
+// businessDb() applies the filter) — shared with Project A. Everything the
 // booking flow needs to stay in sync with the field app: pricing, the service
 // area, the scheduling window, the same-day cutoff, business contact info.
 export type Settings = {
@@ -17,7 +18,7 @@ export type Settings = {
   lookahead_days: number;
   max_jobs_per_tech_per_day: number;
   weekly_days_off: number[];
-  same_day_cutoff: string; // "HH:MM:SS", America/Denver
+  same_day_cutoff: string; // "HH:MM:SS", business-local time
   business_name: string;
   business_email: string | null;
   business_phone: string | null;
@@ -38,11 +39,10 @@ const TTL_MS = 60_000;
 export async function getSettings(): Promise<Settings> {
   if (cached && Date.now() - cached.at < TTL_MS) return cached.value;
 
-  const supabase = createAdminClient();
+  const supabase = businessDb();
   const { data, error } = await supabase
     .from("settings")
     .select(SETTINGS_COLUMNS)
-    .eq("id", true)
     .single();
 
   if (error || !data) {

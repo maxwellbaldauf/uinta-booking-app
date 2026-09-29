@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { businessDb } from "@/lib/tenant/business";
 import { newPaymentSetupToken, expiresInDays } from "@/lib/tokens";
 import { sendPaymentSetupRequestEmail } from "@/lib/email/paymentSetupRequest";
 
@@ -40,7 +40,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "customerId required" }, { status: 400 });
   }
 
-  const supabase = createAdminClient();
+  const supabase = businessDb();
   const { data: customer, error } = await supabase
     .from("customers")
     .select("id, email, default_payment_method_id")

@@ -1,4 +1,5 @@
-import { createAdminClient } from "@/lib/supabase/admin";
+import { getEmailBrand } from "@/lib/email/brand";
+import { businessDb } from "@/lib/tenant/business";
 import { getSettings } from "@/lib/settings";
 import { getResend } from "@/lib/email/resend";
 import { renderEmail, detailsTable, escapeHtml } from "@/lib/email/shell";
@@ -25,7 +26,7 @@ function flatten<T>(v: T | T[] | null | undefined): T | null {
 }
 
 async function loadJob(jobId: string): Promise<JobRow | null> {
-  const { data, error } = await createAdminClient()
+  const { data, error } = await businessDb()
     .from("jobs")
     .select(
       "id, scheduled_date, arrival_block, " +
@@ -45,6 +46,7 @@ export async function buildSameDayBookingAlert(
   | (Omit<BuiltEmail, "to"> & { to: string | null; propertyId: string | null })
   | { error: string }
 > {
+  const brand = await getEmailBrand();
   const job = await loadJob(jobId);
   if (!job) return { error: `job not found: ${jobId}` };
 
@@ -67,6 +69,7 @@ export async function buildSameDayBookingAlert(
   ];
 
   const html = renderEmail({
+    brand,
     title: "Same-day booking",
     preheader: `${windowLabel} today — ${property?.address ?? ""}`,
     inner: `
@@ -81,7 +84,7 @@ export async function buildSameDayBookingAlert(
     ``,
     ...rows.map((r) => `${(r.label + ":").padEnd(16)}${r.value}`),
     ``,
-    `— Uinta Ice Co booking site`,
+    `— ${brand.name} booking site`,
   ].join("\n");
 
   return {
@@ -108,7 +111,7 @@ export async function sendSameDayBookingAlert(
     }
 
     const recipient = opts?.overrideTo ?? built.to;
-    const resend = getResend();
+    const resend = await getResend();
 
     if (!recipient || !resend) {
       console.error(
@@ -139,7 +142,7 @@ export async function sendSameDayBookingAlert(
 async function flagNeedsFollowup(propertyId: string | null): Promise<void> {
   if (!propertyId) return;
   try {
-    await createAdminClient()
+    await businessDb()
       .from("properties")
       .update({ needs_followup: true })
       .eq("id", propertyId);

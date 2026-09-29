@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { businessDb } from "@/lib/tenant/business";
 import {
   ensureStripeCustomerForRow,
   resolveConfirmedSetupIntent,
   setStripeDefaultPaymentMethod,
 } from "@/lib/stripe/payments";
 import { findCustomerByPaymentSetupToken } from "@/lib/customers";
+import { agreementIsCurrent, SERVICE_AGREEMENT_VERSION } from "@/lib/agreement";
 
 export const runtime = "nodejs";
 
@@ -22,6 +23,7 @@ type Body = {
   token: string;
   setupIntentId: string;
   authorized: boolean;
+  agreement?: { accepted?: boolean; version?: string };
 };
 
 export async function POST(req: Request) {
@@ -57,6 +59,19 @@ export async function POST(req: Request) {
       );
     }
 
+    // Same Service Agreement gate as finalize-backlog: required unless the
+    // customer's accepted version is already current; checked before Stripe.
+    const agreementNeeded = !agreementIsCurrent(customer.service_agreement_version);
+    if (
+      agreementNeeded &&
+      !(body.agreement?.accepted && body.agreement.version === SERVICE_AGREEMENT_VERSION)
+    ) {
+      return NextResponse.json(
+        { error: "Please review and accept the current Service Agreement to continue.", agreementRequired: true },
+        { status: 400 }
+      );
+    }
+
     const { stripeCustomerId } = await ensureStripeCustomerForRow(customer.id);
     const { paymentMethodId, displayLabel } = await resolveConfirmedSetupIntent(
       body.setupIntentId,
@@ -65,7 +80,7 @@ export async function POST(req: Request) {
 
     await setStripeDefaultPaymentMethod(stripeCustomerId, paymentMethodId);
 
-    const supabase = createAdminClient();
+    const supabase = businessDb();
     const { error: updateError } = await supabase
       .from("customers")
       .update({
@@ -76,6 +91,12 @@ export async function POST(req: Request) {
         // Single-use link: consume the token once a card is on file.
         payment_setup_token: null,
         payment_setup_token_expires_at: null,
+        ...(agreementNeeded
+          ? {
+              service_agreement_accepted_at: new Date().toISOString(),
+              service_agreement_version: SERVICE_AGREEMENT_VERSION,
+            }
+          : {}),
       })
       .eq("id", customer.id);
 

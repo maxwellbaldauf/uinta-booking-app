@@ -1,6 +1,6 @@
 import type Stripe from "stripe";
 import { getStripe } from "./client";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { businessDb } from "@/lib/tenant/business";
 
 // ---------------------------------------------------------------------------
 // Stripe Customer + SetupIntent + payment-method persistence.
@@ -40,7 +40,7 @@ export async function ensureStripeCustomerForRow(customerId: string): Promise<{
   stripeCustomerId: string;
   email: string | null;
 }> {
-  const supabase = createAdminClient();
+  const supabase = businessDb();
   const { data: row, error } = await supabase
     .from("customers")
     .select("id, full_name, email, phone, stripe_customer_id")

@@ -11,4 +11,7 @@ npx --no-install tsc --noEmit
 echo "pre-push > next lint"
 npm run --silent lint
 
+echo "pre-push > tenant scoping (service-role paths)"
+node scripts/check-tenant-scoping.mjs
+
 echo "pre-push > passed"

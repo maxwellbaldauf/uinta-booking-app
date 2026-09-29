@@ -1,4 +1,4 @@
-import { createAdminClient } from "@/lib/supabase/admin";
+import { businessDb } from "@/lib/tenant/business";
 import { matchOrCreateCustomer } from "@/lib/customers";
 
 export type LeadDetails = {
@@ -24,7 +24,7 @@ export async function saveFlaggedLead(
   coords: { lat: number; lng: number } | null,
   flags: LeadFlags
 ): Promise<{ customerId: string; propertyId: string }> {
-  const supabase = createAdminClient();
+  const supabase = businessDb();
 
   const { id: customerId } = await matchOrCreateCustomer(
     { fullName: details.fullName, email: details.email, phone: details.phone },

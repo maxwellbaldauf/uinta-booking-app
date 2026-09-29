@@ -1,4 +1,4 @@
-import { createAdminClient } from "@/lib/supabase/admin";
+import { businessDb } from "@/lib/tenant/business";
 import { getSettings } from "@/lib/settings";
 
 // Explicit distance check against the service-center, the same gate
@@ -11,9 +11,9 @@ export async function distanceFromServiceCenterMiles(
   lng: number
 ): Promise<number> {
   const settings = await getSettings();
-  const supabase = createAdminClient();
+  const supabase = businessDb();
 
-  const { data, error } = await supabase.rpc("haversine_miles", {
+  const { data, error } = await supabase.rpcGlobal("haversine_miles", {
     lat1: lat,
     lon1: lng,
     lat2: settings.service_center_lat,

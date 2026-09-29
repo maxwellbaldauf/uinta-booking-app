@@ -1,4 +1,4 @@
-import { createAdminClient } from "@/lib/supabase/admin";
+import { businessDb } from "@/lib/tenant/business";
 import { geocodeAddress } from "@/lib/geocode";
 import { getSettings } from "@/lib/settings";
 import { isInServiceArea } from "@/lib/serviceArea";
@@ -11,7 +11,8 @@ import {
   resolveConfirmedSetupIntent,
   setStripeDefaultPaymentMethod,
 } from "@/lib/stripe/payments";
-import { addDaysToISODate, denverMidnightUtcISO, todayDenverISODate } from "@/lib/time/denver";
+import { addDaysToISODate, localMidnightUtcISO, todayISODate } from "@/lib/time/zone";
+import { businessTz } from "@/lib/tenant/business";
 import { sendBookingConfirmationEmail } from "@/lib/email/bookingConfirmation";
 import { sendSameDayBookingAlert } from "@/lib/email/sameDayAlert";
 import { subscribeToQuotesList } from "@/lib/kit";
@@ -139,7 +140,7 @@ export async function createBookingRecord(
   input: CreateBookingInput
 ): Promise<CreateBookingResult> {
   const { details, chosenSlot } = input;
-  const supabase = createAdminClient();
+  const supabase = businessDb();
 
   // Re-validate everything server-side — never trust what the client carried.
   // createBooking (a Server Action) is a real POST-able endpoint independent
@@ -397,7 +398,8 @@ export async function createBookingRecord(
       access_token: token,
       // "expires the day after the appointment" — valid through all of the
       // following day, dead at the start of the day after that.
-      access_token_expires_at: denverMidnightUtcISO(
+      access_token_expires_at: localMidnightUtcISO(
+        await businessTz(),
         addDaysToISODate(chosenSlot.slotDate, 2)
       ),
     })
@@ -430,7 +432,7 @@ export async function createBookingRecord(
   }
 
   // Same-day owner alert — a booking for today can land with an hour's notice.
-  if (chosenSlot.slotDate === todayDenverISODate()) {
+  if (chosenSlot.slotDate === todayISODate(await businessTz())) {
     await sendSameDayBookingAlert(jobId);
   }
 
