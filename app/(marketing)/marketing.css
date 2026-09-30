@@ -844,6 +844,152 @@
   margin-top: var(--space-lg);
 }
 
+/* ---- Google reviews (pricing section) ------------------------------- */
+/* Live 5-star Google reviews between the pricing copy and the booking CTA
+   (components/marketing/GoogleReviews.tsx). Same card language as the
+   pricing cards. Column count follows the review count (data-count, capped
+   at 3) so one or two reviews never stretch into a lopsided grid. */
+
+.mkt-reviews {
+  margin: var(--space-xl) 0 0;
+}
+.mkt-reviews__title {
+  margin: 0 0 var(--space-md);
+}
+.mkt-reviews .mkt-reviews__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-width: none;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-md);
+}
+/* Selectors below are prefixed with .mkt-reviews where they set margins, to
+   beat the page-level .mkt-prose p / li spacing. */
+.mkt-reviews .mkt-review {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: var(--space-md);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--paper-raised);
+}
+.mkt-review__stars {
+  display: inline-flex;
+  gap: 2px;
+  color: var(--ink);
+  margin-bottom: var(--space-xs);
+}
+.mkt-review__text {
+  margin: 0 0 var(--space-sm);
+  padding: 0;
+  border: 0;
+}
+.mkt-reviews .mkt-review__text p {
+  margin: 0;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+.mkt-reviews .mkt-review__note {
+  margin: 0 0 var(--space-sm);
+  font-size: var(--text-xs);
+  color: var(--ink-faint);
+}
+.mkt-review__author {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  /* Pinned to the card bottom so authors line up across a row. */
+  margin-top: auto;
+}
+.mkt-review__avatar {
+  flex: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: var(--paper-sunk);
+}
+.mkt-review__avatar--initial {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--text-sm);
+  color: var(--ink-soft);
+  border: 1px solid var(--line);
+}
+.mkt-review__who {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: var(--leading-tight);
+  font-size: var(--text-sm);
+}
+.mkt-review__who a,
+.mkt-review__who span:first-child {
+  font-weight: 600;
+  color: var(--ink);
+}
+.mkt-review__when {
+  margin-top: 2px;
+  font-size: var(--text-xs);
+  color: var(--ink-faint);
+}
+.mkt-reviews .mkt-review__links {
+  margin: var(--space-sm) 0 0;
+  font-size: var(--text-xs);
+  color: var(--ink-faint);
+}
+.mkt-review__links a {
+  color: var(--ink-soft);
+}
+.mkt-reviews__attrib {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2xs) var(--space-md);
+  margin-top: var(--space-md);
+}
+/* Google's clear-space rule: >=10px left/right/top, >=5px bottom. */
+.mkt-reviews__logo {
+  display: block;
+  padding: 10px 10px 5px;
+  margin-left: -10px;
+  line-height: 0;
+}
+.mkt-reviews__logo img {
+  height: 18px;
+  width: auto;
+}
+.mkt-reviews .mkt-reviews__notice {
+  margin: 0;
+  flex: 1 1 16rem;
+  font-size: var(--text-xs);
+  color: var(--ink-faint);
+}
+
+@media (min-width: 48rem) {
+  .mkt-reviews[data-count="2"] .mkt-reviews__list {
+    grid-template-columns: 1fr 1fr;
+  }
+  /* Three columns need more than the prose measure — break the whole block
+     (title, cards, attribution) out to the wide container exactly like
+     .mkt-pricing-cards does, so they stay aligned with each other. */
+  .mkt-reviews[data-count="3"] .mkt-reviews__list {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .mkt-reviews[data-count="3"] {
+    width: 100vw;
+    max-width: var(--width-wide);
+    margin-left: 50%;
+    transform: translateX(-50%);
+    padding-inline: var(--space-xl);
+    box-sizing: border-box;
+  }
+}
+
 /* ---- Jump index (content pages) ------------------------------------- */
 
 .mkt-jump {

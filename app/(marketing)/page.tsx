@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { Suspense } from "react";
 import { getSettings, formatUsdWhole } from "@/lib/settings";
 import { NAP, PAGE_UPDATED } from "@/lib/site";
 import { pageMetadata } from "@/lib/seo";
@@ -19,6 +20,9 @@ import { Sources } from "@/components/marketing/Sources";
 import { JsonLd } from "@/components/marketing/JsonLd";
 import { JOB_PHOTOS } from "@/lib/jobPhotos";
 import { SOURCE_LINKS } from "@/lib/sources";
+import { GoogleReviews } from "@/components/marketing/GoogleReviews";
+import { previewReviews } from "@/lib/googleReviews.preview";
+import { isDev } from "@/lib/dev";
 
 // The price is read from settings.base_price_cents on every request so the site
 // and the amount actually charged can't drift. Everything else on this page is
@@ -41,7 +45,17 @@ const TRUST_BAR = [
   "Utah County and Salt Lake County",
 ];
 
-export default async function HomePage() {
+export default async function HomePage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  // DEV ONLY: ?reviewsPreview=N renders N placeholder reviews (0–5) instead of
+  // the live Google fetch, to check the layout before the key exists.
+  const previewParam = isDev() ? (await searchParams).reviewsPreview : undefined;
+  const reviewsPreview =
+    typeof previewParam === "string" ? previewReviews(Number(previewParam) || 0) : undefined;
+
   let price: string | null = null;
   let commercialPrice: string | null = null;
   let priceCents: number | null = null;
@@ -584,6 +598,11 @@ export default async function HomePage() {
               </span>
             </p>
           )}
+          {/* Live Google reviews — right before the booking CTA, where a
+              prospect is deciding. Streams in; renders nothing on failure. */}
+          <Suspense fallback={null}>
+            <GoogleReviews preview={reviewsPreview} />
+          </Suspense>
           <div className="mkt-cta-row mkt-anchor-cta">
             <Link href="/book" className="mkt-btn mkt-btn--primary">
               Book a cleaning
