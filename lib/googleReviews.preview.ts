@@ -24,6 +24,7 @@ export function previewReviews(count: number): GoogleReview[] {
     text,
     translated: i === 2,
     relativeTime: `${i + 1} month${i ? "s" : ""} ago`,
+    publishedAt: Date.now() - (i + 1) * 30 * 86_400_000,
     googleMapsUri: "https://www.google.com/maps",
   }));
 }

@@ -1,12 +1,17 @@
 // Live Google reviews for the home page, via Place Details (Places API New).
 //
-// This module only does the raw fetch. What the home page shows is a
-// two-week snapshot of it — lib/googleReviewsSnapshot.ts — which knowingly
-// goes beyond what Google's terms allow (§14.3 / Places policies allow
-// caching only the place ID and lat/lng); read the note there. Every fetch
-// here is `cache: "no-store"` so Next's own data cache never adds a second,
-// unmanaged copy. Fetch health (lib/googleReviewsHealth.ts) holds no Google
-// content.
+// NOT cached, on purpose. Google's Maps Platform Service Specific Terms
+// (§14.3, Places API) allow caching only lat/lng (30 days) and the place ID;
+// the Places policies page: "You must not pre-fetch, cache, or store Places
+// API content beyond the allowed exceptions." So there is no reviews table, no
+// "last known-good" copy, and no Next fetch cache (`cache: "no-store"`) —
+// every home-page render asks Google directly, server-side, and if Google
+// doesn't answer in time the reviews block simply doesn't render. The only
+// thing persisted is fetch health (lib/googleReviewsHealth.ts), which holds
+// no Google content.
+//
+// (A two-week snapshot version existed briefly — 7b96b2a — and was reverted
+// at Max's request.)
 //
 // Key: GOOGLE_PLACES_REVIEWS_API_KEY — a server-only key, API-restricted to
 // Places API (New). NEXT_PUBLIC_GOOGLE_PLACES_API_KEY can't be used: it's
@@ -16,10 +21,13 @@
 // indefinitely per the terms above).
 //
 // Cost note: the `reviews` field puts every call in a higher Place Details
-// pricing tier; with the snapshot that's about two calls a month.
+// pricing tier, and this runs once per home-page render (bots included).
 
 const PLACES_BASE = "https://places.googleapis.com/v1/places/";
 const TIMEOUT_MS = 3_500;
+// Display cap. Google returns at most 5 reviews per request, so this is
+// headroom for the layout, not a target.
+export const MAX_REVIEWS = 7;
 
 export type GoogleReview = {
   authorName: string;
@@ -29,6 +37,7 @@ export type GoogleReview = {
   text: string;
   translated: boolean;
   relativeTime: string | null;
+  publishedAt: number; // ms since epoch, 0 if Google omitted it
   googleMapsUri: string | null;
 };
 
@@ -60,14 +69,16 @@ type RawReview = {
   text?: { text?: unknown; languageCode?: unknown };
   originalText?: { text?: unknown; languageCode?: unknown };
   relativePublishTimeDescription?: unknown;
+  publishTime?: unknown;
   googleMapsUri?: unknown;
   authorAttribution?: { displayName?: unknown; uri?: unknown; photoUri?: unknown };
 };
 
-// Pure: raw Place Details `reviews` → the 5-star reviews we display, in the
-// order Google returned them (Google's "most relevant" order — the on-page
-// notice says so). A review without an author name or any text is dropped:
-// attribution is mandatory and an empty card says nothing.
+// Pure: raw Place Details `reviews` → the 5-star reviews we display, newest
+// first (the on-page notice says so). Google decides WHICH reviews come back
+// (at most 5, chosen by relevance); we only order and filter that set. A
+// review without an author name or any text is dropped: attribution is
+// mandatory and an empty card says nothing.
 export function toFiveStarReviews(raw: unknown): GoogleReview[] {
   if (!Array.isArray(raw)) return [];
   const out: GoogleReview[] = [];
@@ -86,10 +97,11 @@ export function toFiveStarReviews(raw: unknown): GoogleReview[] {
       text,
       translated: !!lang && !!origLang && lang !== origLang,
       relativeTime: str(r.relativePublishTimeDescription) || null,
+      publishedAt: Date.parse(str(r.publishTime)) || 0,
       googleMapsUri: httpsUrl(r.googleMapsUri),
     });
   }
-  return out;
+  return out.sort((a, b) => b.publishedAt - a.publishedAt).slice(0, MAX_REVIEWS);
 }
 
 export async function fetchFiveStarReviews(): Promise<ReviewsResult> {

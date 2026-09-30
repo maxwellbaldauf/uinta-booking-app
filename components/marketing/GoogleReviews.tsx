@@ -1,6 +1,5 @@
 import { after } from "next/server";
-import type { GoogleReview } from "@/lib/googleReviews";
-import { getReviews } from "@/lib/googleReviewsSnapshot";
+import { fetchFiveStarReviews, type GoogleReview } from "@/lib/googleReviews";
 import { recordReviewsFetch } from "@/lib/googleReviewsHealth";
 
 // Live 5-star Google reviews, rendered inside the home page's pricing section.
@@ -28,12 +27,15 @@ export async function GoogleReviews({ preview }: { preview?: GoogleReview[] }) {
   if (preview) {
     reviews = preview;
   } else {
-    const view = await getReviews();
-    if (view.unconfigured) return null;
-    const fetched = view.fetched;
-    // Health tracking only when this render actually asked Google.
-    if (fetched) after(() => recordReviewsFetch(fetched));
-    reviews = view.reviews;
+    const result = await fetchFiveStarReviews();
+    if (result.status === "unconfigured") return null;
+    after(() =>
+      recordReviewsFetch(
+        result.status === "ok" ? { ok: true } : { ok: false, detail: result.detail }
+      )
+    );
+    if (result.status !== "ok") return null;
+    reviews = result.reviews;
   }
   if (reviews.length === 0) return null;
 
@@ -89,8 +91,8 @@ export async function GoogleReviews({ preview }: { preview?: GoogleReview[] }) {
           <img src="/images/google-maps-logo-dark-gray.svg" alt="Google Maps" width={98} height={18} />
         </picture>
         <p className="mkt-reviews__notice">
-          5-star reviews only, in the order Google ranks them by relevance.
-          Google shares up to five of a business’s reviews at a time.
+          5-star reviews only, newest first. Google shares up to five of a
+          business’s reviews at a time.
         </p>
       </div>
     </div>
