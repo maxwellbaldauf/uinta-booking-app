@@ -18,8 +18,11 @@ import { recordReviewsFetch } from "@/lib/googleReviewsHealth";
 //    still available on the review's Google Maps page.
 //  - the Google Maps logo (official asset, unmodified, 18px tall — inside the
 //    16–19px range — with the required clear space, translate="no")
-//  - a notice saying how the reviews are filtered and ordered (required when
-//    filtering; we show 5-star only)
+//  - NO on-page notice about the 5-star filter / newest-first ordering, by
+//    Max's call. The Places policies list "describe how reviews are ordered
+//    and filtered" as a display requirement, so this is a known deviation;
+//    restore a one-line <p className="mkt-reviews__notice"> beside the logo
+//    to comply.
 // Author photos are plain <img>, not next/image: the image optimizer would
 // cache Google content, which the terms don't allow.
 export async function GoogleReviews({ preview }: { preview?: GoogleReview[] }) {
@@ -90,10 +93,6 @@ export async function GoogleReviews({ preview }: { preview?: GoogleReview[] }) {
           {/* Official attribution asset — rendered unmodified. */}
           <img src="/images/google-maps-logo-dark-gray.svg" alt="Google Maps" width={98} height={18} />
         </picture>
-        <p className="mkt-reviews__notice">
-          5-star reviews only, newest first. Google shares up to five of a
-          business’s reviews at a time.
-        </p>
       </div>
     </div>
   );
