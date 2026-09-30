@@ -148,8 +148,8 @@ export async function buildBookingConfirmationEmail(
       { label: "Address", value: address },
       { label: "Price", value: `${priceText} per visit` },
     ])}
-    ${buttonRow(manageUrl, "Reschedule or cancel", brand.accent)}
-    <p style="margin:12px 0 0;color:#5b6470;font-size:13px;">An updated calendar invite is attached. Your reschedule / cancel link expires the day after the visit.</p>
+    ${buttonRow(manageUrl, "Reschedule", brand.accent)}
+    <p style="margin:12px 0 0;color:#5b6470;font-size:13px;">An updated calendar invite is attached. Your reschedule link expires the day after the visit.</p>
   `;
 
   const title =
@@ -184,7 +184,7 @@ export async function buildBookingConfirmationEmail(
     `Address:        ${address}`,
     `Price:          ${priceText} per visit`,
     ``,
-    `Reschedule or cancel: ${manageUrl}`,
+    `Reschedule: ${manageUrl}`,
     `(This link expires the day after your visit.)`,
     ``,
     `Your card isn't charged until after the visit.`,

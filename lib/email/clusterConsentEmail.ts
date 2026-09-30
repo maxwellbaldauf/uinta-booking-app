@@ -1,6 +1,7 @@
 import { businessDb, businessTz } from "@/lib/tenant/business";
 import { getEmailBrand, type EmailBrand } from "@/lib/email/brand";
 import { getResend } from "@/lib/email/resend";
+import { getSettings } from "@/lib/settings";
 import { renderEmail, detailsTable, buttonRow, escapeHtml } from "@/lib/email/shell";
 import { arrivalBlockLabel } from "@/lib/schedule/blocks";
 import { formatVisitDate } from "@/lib/format";
@@ -127,8 +128,13 @@ export async function sendClusterConsentEmail(clusterSuggestionJobId: string): P
       `— ${brand.name}`,
     ].join("\n");
 
+    // The business's reply-to (Uinta falls back to its settings' business_email,
+    // like every other customer email); best-effort.
+    const replyTo = brand.replyTo ?? (await getSettings().catch(() => null))?.business_email ?? null;
+
     const { error: sendError } = await resend.client.emails.send({
       from: resend.from,
+      ...(replyTo ? { replyTo } : {}),
       to: customer.email,
       subject: `A scheduling suggestion for your ${brand.name} visit`,
       html,

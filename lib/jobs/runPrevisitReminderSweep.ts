@@ -106,7 +106,7 @@ async function sendReminder(params: {
       { label: "Address", value: property.address },
       { label: "Price", value: `${priceText} per visit` },
     ])}
-    ${buttonRow(manageUrl, "Reschedule or cancel", brand.accent)}
+    ${buttonRow(manageUrl, "Reschedule", brand.accent)}
   `;
 
   const html = renderEmail({
@@ -126,7 +126,7 @@ async function sendReminder(params: {
     `Address:        ${property.address}`,
     `Price:          ${priceText} per visit`,
     ``,
-    `Reschedule or cancel: ${manageUrl}`,
+    `Reschedule: ${manageUrl}`,
     ``,
     `— ${brand.name}`,
   ].join("\n");
@@ -137,8 +137,14 @@ async function sendReminder(params: {
     return false;
   }
 
+  // The business's reply-to (its own address; Uinta falls back to its settings'
+  // business_email, like every other customer email). Best-effort: a settings
+  // hiccup must not stop the reminder.
+  const replyTo = brand.replyTo ?? (await getSettings().catch(() => null))?.business_email ?? null;
+
   const { error } = await resend.client.emails.send({
     from: resend.from,
+    ...(replyTo ? { replyTo } : {}),
     to: customer.email,
     subject:
       params.kind === "7day"
