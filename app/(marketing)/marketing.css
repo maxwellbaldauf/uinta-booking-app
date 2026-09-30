@@ -847,8 +847,8 @@
 /* ---- Google reviews (pricing section) ------------------------------- */
 /* Live 5-star Google reviews between the pricing copy and the booking CTA
    (components/marketing/GoogleReviews.tsx). Same card language as the
-   pricing cards. Column count follows the review count (data-count, capped
-   at 3) so one or two reviews never stretch into a lopsided grid. */
+   pricing cards. Column count follows the review count (data-cols, chosen by
+   columnsFor() in the component) so one or two reviews never stretch into a lopsided grid. */
 
 .mkt-reviews {
   margin: var(--space-xl) 0 0;
@@ -971,16 +971,16 @@
 }
 
 @media (min-width: 48rem) {
-  .mkt-reviews[data-count="2"] .mkt-reviews__list {
+  .mkt-reviews[data-cols="2"] .mkt-reviews__list {
     grid-template-columns: 1fr 1fr;
   }
   /* Three columns need more than the prose measure — break the whole block
      (title, cards, attribution) out to the wide container exactly like
      .mkt-pricing-cards does, so they stay aligned with each other. */
-  .mkt-reviews[data-count="3"] .mkt-reviews__list {
+  .mkt-reviews[data-cols="3"] .mkt-reviews__list {
     grid-template-columns: repeat(3, 1fr);
   }
-  .mkt-reviews[data-count="3"] {
+  .mkt-reviews[data-cols="3"] {
     width: 100vw;
     max-width: var(--width-wide);
     margin-left: 50%;

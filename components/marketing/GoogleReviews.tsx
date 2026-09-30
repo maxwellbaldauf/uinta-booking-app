@@ -1,5 +1,6 @@
 import { after } from "next/server";
-import { fetchFiveStarReviews, type GoogleReview } from "@/lib/googleReviews";
+import type { GoogleReview } from "@/lib/googleReviews";
+import { getReviews } from "@/lib/googleReviewsSnapshot";
 import { recordReviewsFetch } from "@/lib/googleReviewsHealth";
 
 // Live 5-star Google reviews, rendered inside the home page's pricing section.
@@ -27,20 +28,17 @@ export async function GoogleReviews({ preview }: { preview?: GoogleReview[] }) {
   if (preview) {
     reviews = preview;
   } else {
-    const result = await fetchFiveStarReviews();
-    if (result.status === "unconfigured") return null;
-    after(() =>
-      recordReviewsFetch(
-        result.status === "ok" ? { ok: true } : { ok: false, detail: result.detail }
-      )
-    );
-    if (result.status !== "ok") return null;
-    reviews = result.reviews;
+    const view = await getReviews();
+    if (view.unconfigured) return null;
+    const fetched = view.fetched;
+    // Health tracking only when this render actually asked Google.
+    if (fetched) after(() => recordReviewsFetch(fetched));
+    reviews = view.reviews;
   }
   if (reviews.length === 0) return null;
 
   return (
-    <div className="mkt-reviews" data-count={Math.min(reviews.length, 3)}>
+    <div className="mkt-reviews" data-cols={columnsFor(reviews.length)}>
       <h3 className="mkt-reviews__title">What Customers Say</h3>
       <ul className="mkt-reviews__list">
         {reviews.map((r, i) => (
@@ -97,6 +95,14 @@ export async function GoogleReviews({ preview }: { preview?: GoogleReview[] }) {
       </div>
     </div>
   );
+}
+
+// Column count by review count, so a short list never leaves a lopsided gap:
+// 1 → one card, 2 and 4 → two columns (2×2 rather than 3+1), otherwise three
+// (3, 5 → 3+2, 6, 7 → 3+3+1). Up to MAX_REVIEWS (7) wraps cleanly.
+function columnsFor(n: number): 1 | 2 | 3 {
+  if (n <= 1) return 1;
+  return n === 2 || n === 4 ? 2 : 3;
 }
 
 function Stars() {
