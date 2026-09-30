@@ -1,5 +1,6 @@
 import { ContactForm, type ContactPrefill } from "@/components/contact/ContactForm";
 import { BrandBar } from "@/components/BrandBar";
+import { LegalLinks } from "@/components/LegalLinks";
 
 export const dynamic = "force-dynamic";
 
@@ -32,6 +33,7 @@ export default async function ContactPage({
       <main className="page">
         <ContactForm prefill={prefill} />
       </main>
+      <LegalLinks />
     </>
   );
 }

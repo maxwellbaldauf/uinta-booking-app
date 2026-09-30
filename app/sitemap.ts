@@ -16,6 +16,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { path: "/about", priority: 0.6, dateKey: "about" },
     { path: "/book", priority: 0.7 },
     { path: "/contact", priority: 0.5 },
+    { path: "/terms", priority: 0.2, dateKey: "terms" },
+    { path: "/privacy", priority: 0.2, dateKey: "privacy" },
   ];
 
   return pages.map(({ path, priority, dateKey }) => ({

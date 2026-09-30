@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { FOOTER_LINKS, NAP, SINCE_LINE } from "@/lib/site";
+import { FOOTER_LINKS, LEGAL_LINKS, NAP, SINCE_LINE } from "@/lib/site";
 import { SocialLinks } from "./SocialLinks";
 import { CurrentYear } from "./CurrentYear";
 
@@ -40,6 +40,12 @@ export function SiteFooter() {
 
         <p className="mkt-footer__legal">
           &copy; <CurrentYear /> {NAP.legalName}
+          {LEGAL_LINKS.map((link) => (
+            <span key={link.href}>
+              <span aria-hidden="true"> · </span>
+              <Link href={link.href}>{link.label}</Link>
+            </span>
+          ))}
         </p>
       </div>
     </footer>

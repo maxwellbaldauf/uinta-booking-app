@@ -75,7 +75,16 @@ export const PAGE_UPDATED = {
   brands: { display: "September 2026", iso: "2026-09-01" },
   serviceAreas: { display: "September 2026", iso: "2026-09-01" },
   about: { display: "September 2026", iso: "2026-09-01" },
+  terms: { display: "September 30, 2026", iso: "2026-09-30" },
+  privacy: { display: "September 30, 2026", iso: "2026-09-30" },
 } as const;
+
+// Legal pages, linked from the footer's bottom line rather than the main
+// footer link list.
+export const LEGAL_LINKS = [
+  { href: "/terms", label: "Terms of Use" },
+  { href: "/privacy", label: "Privacy Policy" },
+] as const;
 
 // Social profiles. Rendered as icon links in the home page About section and
 // the footer; also feed JSON-LD `sameAs` in Phase 6. `key` maps to the icon in

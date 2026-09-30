@@ -1,5 +1,6 @@
 import { BookingFlow } from "@/components/booking/BookingFlow";
 import { BrandBar } from "@/components/BrandBar";
+import { LegalLinks } from "@/components/LegalLinks";
 import { getSettings } from "@/lib/settings";
 
 export const dynamic = "force-dynamic";
@@ -26,6 +27,7 @@ export default async function BookPage() {
       <main className="page">
         <BookingFlow basePriceCents={basePriceCents} commercialPriceCents={commercialPriceCents} />
       </main>
+      <LegalLinks />
     </>
   );
 }
