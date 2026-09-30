@@ -25,9 +25,9 @@
 
 const PLACES_BASE = "https://places.googleapis.com/v1/places/";
 const TIMEOUT_MS = 3_500;
-// Display cap. Google returns at most 5 reviews per request, so this is
-// headroom for the layout, not a target.
-export const MAX_REVIEWS = 7;
+// Display cap. Google returns at most 5 reviews per request, so this is also
+// the most that can ever come back.
+export const MAX_REVIEWS = 5;
 
 export type GoogleReview = {
   authorName: string;

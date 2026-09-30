@@ -101,7 +101,7 @@ export async function GoogleReviews({ preview }: { preview?: GoogleReview[] }) {
 
 // Column count by review count, so a short list never leaves a lopsided gap:
 // 1 → one card, 2 and 4 → two columns (2×2 rather than 3+1), otherwise three
-// (3, 5 → 3+2, 6, 7 → 3+3+1). Up to MAX_REVIEWS (7) wraps cleanly.
+// (3, or 5 → 3+2). Up to MAX_REVIEWS (5) wraps cleanly.
 function columnsFor(n: number): 1 | 2 | 3 {
   if (n <= 1) return 1;
   return n === 2 || n === 4 ? 2 : 3;

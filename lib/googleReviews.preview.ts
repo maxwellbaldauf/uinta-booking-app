@@ -1,7 +1,7 @@
 import type { GoogleReview } from "@/lib/googleReviews";
 
 // DEV ONLY — placeholder reviews for previewing the reviews block layout
-// (/?reviewsPreview=0..7) before the server key exists, and for checking the
+// (/?reviewsPreview=0..5) before the server key exists, and for checking the
 // small/zero-count cases. Never rendered in production: the home page only
 // reads ?reviewsPreview when isDev(). Obviously-fake names and text on
 // purpose — these must never be mistaken for real customer reviews.
@@ -16,7 +16,7 @@ const SAMPLE_TEXTS = [
 ];
 
 export function previewReviews(count: number): GoogleReview[] {
-  return SAMPLE_TEXTS.slice(0, Math.max(0, Math.min(7, count))).map((text, i) => ({
+  return SAMPLE_TEXTS.slice(0, Math.max(0, Math.min(5, count))).map((text, i) => ({
     authorName: `Sample Reviewer ${String.fromCharCode(65 + i)}`,
     authorUri: "https://www.google.com/maps",
     authorPhotoUri: null,
