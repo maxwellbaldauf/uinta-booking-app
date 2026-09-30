@@ -932,18 +932,18 @@
   font-weight: 600;
   color: var(--ink);
 }
-.mkt-review__when {
+/* The date is also the link to the review on Google Maps — kept quiet: same
+   faint text as a plain date, underline only on hover/focus. */
+.mkt-reviews .mkt-review__who .mkt-review__when {
   margin-top: 2px;
   font-size: var(--text-xs);
+  font-weight: 400;
   color: var(--ink-faint);
+  text-decoration: none;
 }
-.mkt-reviews .mkt-review__links {
-  margin: var(--space-sm) 0 0;
-  font-size: var(--text-xs);
-  color: var(--ink-faint);
-}
-.mkt-review__links a {
-  color: var(--ink-soft);
+.mkt-reviews .mkt-review__who a.mkt-review__when:hover,
+.mkt-reviews .mkt-review__who a.mkt-review__when:focus-visible {
+  text-decoration: underline;
 }
 .mkt-reviews__attrib {
   display: flex;

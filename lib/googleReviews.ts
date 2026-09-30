@@ -32,7 +32,6 @@ export type GoogleReview = {
   translated: boolean;
   relativeTime: string | null;
   googleMapsUri: string | null;
-  flagContentUri: string | null;
 };
 
 export type ReviewsResult =
@@ -64,7 +63,6 @@ type RawReview = {
   originalText?: { text?: unknown; languageCode?: unknown };
   relativePublishTimeDescription?: unknown;
   googleMapsUri?: unknown;
-  flagContentUri?: unknown;
   authorAttribution?: { displayName?: unknown; uri?: unknown; photoUri?: unknown };
 };
 
@@ -91,7 +89,6 @@ export function toFiveStarReviews(raw: unknown): GoogleReview[] {
       translated: !!lang && !!origLang && lang !== origLang,
       relativeTime: str(r.relativePublishTimeDescription) || null,
       googleMapsUri: httpsUrl(r.googleMapsUri),
-      flagContentUri: httpsUrl(r.flagContentUri),
     });
   }
   return out;

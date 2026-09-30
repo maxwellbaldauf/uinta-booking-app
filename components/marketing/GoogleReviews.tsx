@@ -10,9 +10,12 @@ import { recordReviewsFetch } from "@/lib/googleReviewsHealth";
 //
 // Attribution, per the Places API policies
 // (developers.google.com/maps/documentation/places/web-service/policies):
-//  - each review: author avatar, name, and profile link; a link to the review
-//    on Google Maps (googleMapsUri); the relative publish date; a report link
-//    (flagContentUri); a "translated" note when Google translated it
+//  - each review: author avatar, name, and profile link; the relative publish
+//    date, which is also the link to the review on Google Maps (googleMapsUri
+//    access is a "must"); a "translated" note when Google translated it.
+//    No visible "View on Google Maps" / "Report" row, by Max's call — the
+//    report link (flagContentUri) is only "recommended", and reporting is
+//    still available on the review's Google Maps page.
 //  - the Google Maps logo (official asset, unmodified, 18px tall — inside the
 //    16–19px range — with the required clear space, translate="no")
 //  - a notice saying how the reviews are filtered and ordered (required when
@@ -57,24 +60,24 @@ export async function GoogleReviews({ preview }: { preview?: GoogleReview[] }) {
                 ) : (
                   <span>{r.authorName}</span>
                 )}
-                {r.relativeTime && <span className="mkt-review__when">{r.relativeTime}</span>}
+                {r.relativeTime &&
+                  (r.googleMapsUri ? (
+                    // The date doubles as the required link to the review on
+                    // Google Maps — no separate visible "View on Google Maps".
+                    <a
+                      className="mkt-review__when"
+                      href={r.googleMapsUri}
+                      rel="noopener noreferrer nofollow"
+                      target="_blank"
+                      aria-label={`${r.relativeTime} — view this review on Google Maps`}
+                    >
+                      {r.relativeTime}
+                    </a>
+                  ) : (
+                    <span className="mkt-review__when">{r.relativeTime}</span>
+                  ))}
               </div>
             </div>
-            {(r.googleMapsUri || r.flagContentUri) && (
-              <p className="mkt-review__links">
-                {r.googleMapsUri && (
-                  <a href={r.googleMapsUri} rel="noopener noreferrer nofollow" target="_blank">
-                    View on <span translate="no">Google Maps</span>
-                  </a>
-                )}
-                {r.googleMapsUri && r.flagContentUri && <span aria-hidden="true"> · </span>}
-                {r.flagContentUri && (
-                  <a href={r.flagContentUri} rel="noopener noreferrer nofollow" target="_blank">
-                    Report
-                  </a>
-                )}
-              </p>
-            )}
           </li>
         ))}
       </ul>

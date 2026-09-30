@@ -23,6 +23,5 @@ export function previewReviews(count: number): GoogleReview[] {
     translated: i === 2,
     relativeTime: `${i + 1} month${i ? "s" : ""} ago`,
     googleMapsUri: "https://www.google.com/maps",
-    flagContentUri: "https://www.google.com/maps",
   }));
 }
