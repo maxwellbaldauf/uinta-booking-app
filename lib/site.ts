@@ -76,7 +76,7 @@ export const PAGE_UPDATED = {
   serviceAreas: { display: "September 2026", iso: "2026-09-01" },
   about: { display: "September 2026", iso: "2026-09-01" },
   terms: { display: "September 30, 2026", iso: "2026-09-30" },
-  privacy: { display: "September 30, 2026", iso: "2026-09-30" },
+  privacy: { display: "October 1, 2026", iso: "2026-10-01" },
 } as const;
 
 // Legal pages, linked from the footer's bottom line rather than the main

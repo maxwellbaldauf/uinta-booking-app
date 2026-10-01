@@ -1,13 +1,26 @@
+// Google Ads tag hosts, per Google's CSP guide for the Google tag
+// (developers.google.com/tag-platform/security/guides/csp, "Google Ads"
+// conversion/remarketing set). CSP can't wildcard a TLD, so the google.<TLD>
+// entries are .com only; add the country domain here if reports show one.
+const GOOGLE_ADS_SCRIPT =
+  "https://www.googletagmanager.com https://www.googleadservices.com https://www.google.com";
+const GOOGLE_ADS_CONNECT =
+  "https://www.googletagmanager.com https://www.googleadservices.com https://googleads.g.doubleclick.net https://pagead2.googlesyndication.com https://www.google.com https://ad.doubleclick.net";
+// (img-src already allows any https: source, so these are documentation of what
+// the tag uses rather than a restriction; they matter if `https:` is tightened.)
+const GOOGLE_ADS_IMG =
+  "https://www.googletagmanager.com https://www.googleadservices.com https://googleads.g.doubleclick.net https://pagead2.googlesyndication.com https://www.google.com";
+
 // CSP allowlist, report-only for now (switches to enforcing once Max verifies
 // a deploy preview with DevTools console open). Domain-allowlist only, no
 // nonces — a nonce forces every page dynamic, which would take the four
 // currently-static marketing pages down with it.
 const CSP_REPORT_ONLY = [
   "default-src 'self'",
-  "script-src 'self' https://js.stripe.com https://maps.googleapis.com https://plausible.io",
-  "connect-src 'self' https://api.stripe.com https://maps.googleapis.com https://plausible.io",
+  `script-src 'self' https://js.stripe.com https://maps.googleapis.com https://plausible.io ${GOOGLE_ADS_SCRIPT}`,
+  `connect-src 'self' https://api.stripe.com https://maps.googleapis.com https://plausible.io ${GOOGLE_ADS_CONNECT}`,
   "frame-src https://js.stripe.com",
-  "img-src 'self' data: https:",
+  `img-src 'self' data: https: ${GOOGLE_ADS_IMG}`,
   "style-src 'self'",
   "font-src 'self'",
   "frame-ancestors 'none'",

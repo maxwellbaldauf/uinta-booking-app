@@ -4,10 +4,12 @@ import { pageMetadata } from "@/lib/seo";
 import { breadcrumbSchema } from "@/lib/schema";
 import { JsonLd } from "@/components/marketing/JsonLd";
 
-// Written against what the site actually does (audited 2026-09-30): booking,
-// contact form, chat widget (Anthropic), Stripe saved card, Resend email, Kit
-// opt-in, Plausible, Google address autocomplete + geocoding, Supabase,
-// Netlify. If a new data flow is added, this page has to change with it —
+// Written against what the site actually does (audited 2026-10-01): booking
+// (incl. out-of-area / no-availability leads saved via saveFlaggedLead and the
+// sessionStorage handoff to /contact in lib/contactHandoff.ts), contact form,
+// chat widget (Anthropic), Stripe saved card, Resend email, Kit opt-in,
+// Plausible, Google Ads base tag (marketing pages + /book only), Google
+// address autocomplete + geocoding, Supabase, Netlify. If a new data flow is added, this page has to change with it —
 // bump PAGE_UPDATED.privacy when it does.
 export const metadata = pageMetadata({
   title: "Privacy Policy | Uinta Ice Co.",
@@ -49,6 +51,19 @@ export default function PrivacyPage() {
             of our Service Agreement.
           </li>
           <li>
+            <strong>If we can’t book you:</strong> when you enter your
+            details in the booking form and we find that your address is
+            outside our service area, or that we have no open appointment, we
+            save your name, email address, phone number, address (and its map
+            location), and your ice machine’s brand and model in our records
+            as a lead (matched to an existing record if you are already a
+            customer), so we can contact you if that changes.
+            {/* TODO: update the next sentence when partial-lead capture
+                (saving details from abandoned bookings) ships. */}{" "}
+            If you leave the booking form before it checks your address, we
+            do not save what you typed.
+          </li>
+          <li>
             <strong>When you pay or save a card:</strong> your card details
             go directly to our payment processor, Stripe. We never see or
             store your full card number. We keep a reference to the saved
@@ -78,15 +93,43 @@ export default function PrivacyPage() {
         <ul>
           <li>
             <strong>Analytics:</strong> we use Plausible Analytics to count
-            page visits. Plausible does not use cookies and does not collect
-            personal information or track you across other websites.
+            page visits. Plausible does not use cookies and does not track
+            you across other websites.
+          </li>
+          <li>
+            <strong>Advertising (Google Ads):</strong> our public pages and
+            the booking page use the Google Ads tag to measure how well our
+            Google ads work. When you visit those pages, Google receives
+            page-visit and device information, such as the page address,
+            your IP address, and your browser and device type. If you came
+            from a Google ad, it also receives the ad click identifier in
+            the page address. The tag may set cookies on this site and on
+            Google’s own domains for this purpose. It does not send Google
+            what you type into the booking form. We do not add it to the
+            personal links we email to customers (payment, invoice, visit,
+            and consent pages) or to the contact form page. If you reach the
+            contact form by clicking through from another page on our site,
+            the tag may already be loaded in your browser from that earlier
+            page, but we do not send it any new information about the
+            contact form. Google’s address
+            suggestions (see below) are a separate Google service that does
+            receive the address text you type.
           </li>
           <li>
             <strong>Browser storage:</strong> the chat assistant and payment
             pages keep a small amount of information in your browser’s
             session storage (for example, the current chat conversation) so
             it survives a page reload. It is cleared when you close the tab.
-            We do not use advertising or tracking cookies.
+          </li>
+          <li>
+            <strong>Contact form hand-off:</strong> if you click “Send us a
+            message” from the booking screen telling you we are out of your
+            area or have no openings, your name, contact details, address,
+            and machine details are held temporarily in your browser’s
+            session storage so we can fill in the contact form for you. They
+            are deleted as soon as the contact form loads, or after 10
+            minutes if it never does. Nothing is sent to us until you submit
+            the form.
           </li>
           <li>
             <strong>IP address:</strong> our hosting provider receives your
@@ -112,8 +155,9 @@ export default function PrivacyPage() {
           <li>To keep business, tax, and accounting records.</li>
         </ul>
         <p>
-          We do not sell your personal information, and we do not share it
-          with anyone for their own advertising.
+          We do not sell your personal information. The data the Google Ads
+          tag collects is described under Information Collected
+          Automatically.
         </p>
       </section>
 
@@ -135,16 +179,16 @@ export default function PrivacyPage() {
             replies.
           </li>
           <li>
-            <strong>Google</strong> — address suggestions while you type
-            your address, converting addresses to map coordinates for
-            scheduling and routing, and the Google reviews shown on this
-            site. Google’s use of information is governed by the{" "}
+            <strong>Google</strong> — advertising measurement (the Google Ads
+            tag), address suggestions while you type your address, converting
+            addresses to map coordinates for scheduling and routing, and the
+            Google reviews shown on this site. Google’s use of information is governed by the{" "}
             <a href="https://policies.google.com/privacy" rel="noopener noreferrer">
               Google Privacy Policy
             </a>
             .
           </li>
-          <li><strong>Plausible</strong> — cookie-free visit counts.</li>
+          <li><strong>Plausible</strong> — visit counts, without cookies.</li>
         </ul>
         <p>
           We may also disclose information if required by law, or to protect
@@ -170,10 +214,14 @@ export default function PrivacyPage() {
         <p>
           We keep customer and appointment records for as long as you are a
           customer and afterward as long as we reasonably need them for
-          business, tax, and legal records. Contact-form and chat leads that
-          never become customers are kept only as long as they are useful for
-          following up. You can ask us to delete your information at any
-          time (see below).
+          business, tax, and legal records. We do not delete these
+          automatically. Leads (people who contact us, chat with us, or are
+          saved when we can’t book them, and who never become customers) are
+          kept until the person asks us to delete them. To ask, email{" "}
+          <a href={NAP.emailHref}>{NAP.email}</a> or call{" "}
+          <a href={NAP.phoneHref}>{NAP.phoneDisplay}</a>. Copies of our
+          database exported to our own computers for backup may also contain
+          your records; those files are deleted on request too.
         </p>
       </section>
 
@@ -185,6 +233,15 @@ export default function PrivacyPage() {
             <a href={NAP.emailHref}>{NAP.email}</a> and we will tell you what
             we have, fix it, or delete it. We may need to keep some records
             we are legally required to keep, such as payment records.
+          </li>
+          <li>
+            <strong>Advertising:</strong> you can control how Google uses
+            your data for ads in{" "}
+            <a href="https://adssettings.google.com" rel="noopener noreferrer">
+              Google Ads Settings
+            </a>
+            , and you can block or delete cookies, or turn on your browser’s
+            privacy controls, in your browser’s settings.
           </li>
           <li>
             <strong>Quotes email list:</strong> every email has an

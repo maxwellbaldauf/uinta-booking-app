@@ -5,6 +5,7 @@ import { SiteHeader } from "@/components/marketing/SiteHeader";
 import { SiteFooter } from "@/components/marketing/SiteFooter";
 import { MobileCtaBar } from "@/components/marketing/MobileCtaBar";
 import { MarketingScripts } from "@/components/marketing/MarketingScripts";
+import { GoogleAdsTag } from "@/components/GoogleAdsTag";
 import { ChatWidget } from "@/components/chat/ChatWidget";
 
 // Shared chrome for the public marketing pages: home + /ice-machine-cleaning,
@@ -25,6 +26,7 @@ export default function MarketingLayout({
       <MobileCtaBar />
       <MarketingScripts />
       <ChatWidget />
+      <GoogleAdsTag />
     </div>
   );
 }

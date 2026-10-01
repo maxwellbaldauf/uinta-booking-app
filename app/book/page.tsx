@@ -1,5 +1,6 @@
 import { BookingFlow } from "@/components/booking/BookingFlow";
 import { BrandBar } from "@/components/BrandBar";
+import { GoogleAdsTag } from "@/components/GoogleAdsTag";
 import { LegalLinks } from "@/components/LegalLinks";
 import { getSettings } from "@/lib/settings";
 
@@ -28,6 +29,7 @@ export default async function BookPage() {
         <BookingFlow basePriceCents={basePriceCents} commercialPriceCents={commercialPriceCents} />
       </main>
       <LegalLinks />
+      <GoogleAdsTag />
     </>
   );
 }
