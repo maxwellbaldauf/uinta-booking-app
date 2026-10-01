@@ -846,7 +846,7 @@
 
 /* ---- Google reviews (pricing section) ------------------------------- */
 /* Live 5-star Google reviews between the pricing copy and the booking CTA
-   (components/marketing/GoogleReviews.tsx). Same card language as the
+   (components/marketing/ReviewsView.tsx, loaded by LazyGoogleReviews.tsx). Same card language as the
    pricing cards. Column count follows the review count (data-cols, chosen by
    columnsFor() in the component) so one or two reviews never stretch into a lopsided grid. */
 
@@ -895,7 +895,7 @@
 .mkt-reviews .mkt-review__note {
   margin: 0 0 var(--space-sm);
   font-size: var(--text-xs);
-  color: var(--ink-faint);
+  color: var(--ink-soft);
 }
 .mkt-review__author {
   display: flex;
@@ -938,7 +938,7 @@
   margin-top: 2px;
   font-size: var(--text-xs);
   font-weight: 400;
-  color: var(--ink-faint);
+  color: var(--ink-soft);
   text-decoration: none;
 }
 .mkt-reviews .mkt-review__who a.mkt-review__when:hover,
@@ -966,7 +966,7 @@
 .mkt-reviews .mkt-reviews__notice {
   margin: 0;
   font-size: var(--text-xs);
-  color: var(--ink-faint);
+  color: var(--ink-soft);
 }
 @media (min-width: 48rem) {
   .mkt-reviews[data-cols="2"] .mkt-reviews__list {

@@ -11,8 +11,6 @@ const SAMPLE_TEXTS = [
   "Short sample review. Placeholder only.",
   "Sample review text. Placeholder only — checks that a fourth card wraps onto a second row cleanly.",
   "Sample review text. Placeholder only — the fifth card, the most Google returns in one request.",
-  "Sample review text. Placeholder only — a sixth card, to check the layout at the display cap.",
-  "Sample review text of a longer length, placeholder only — the seventh and final card, which should wrap onto a third row alone without leaving an ugly gap.",
 ];
 
 export function previewReviews(count: number): GoogleReview[] {

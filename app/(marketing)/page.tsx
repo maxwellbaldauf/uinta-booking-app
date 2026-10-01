@@ -53,8 +53,9 @@ export default async function HomePage({
   // DEV ONLY: ?reviewsPreview=N renders N placeholder reviews (0–5) instead of
   // the live Google fetch, to check the layout before the key exists.
   const previewParam = isDev() ? (await searchParams).reviewsPreview : undefined;
-  const reviewsPreview =
-    typeof previewParam === "string" ? previewReviews(Number(previewParam) || 0) : undefined;
+  const previewCount =
+    typeof previewParam === "string" && /^\d+$/.test(previewParam) ? Number(previewParam) : null;
+  const reviewsPreview = previewCount === null ? undefined : previewReviews(previewCount);
 
   let price: string | null = null;
   let commercialPrice: string | null = null;

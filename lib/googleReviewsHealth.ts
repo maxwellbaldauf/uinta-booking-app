@@ -73,29 +73,19 @@ export function nextHealth(
   return { state, send: null };
 }
 
-// Per warm instance: once a success has confirmed the stored state is clean,
-// further successes skip the Blobs read entirely (the common case costs
-// nothing). Any failure clears it.
-let knownClean = false;
-
 export async function recordReviewsFetch(
   outcome: { ok: true } | { ok: false; detail: string }
 ): Promise<void> {
-  if (outcome.ok && knownClean) return;
-  if (!outcome.ok) {
-    knownClean = false;
-    console.error("google-reviews: fetch failed —", outcome.detail);
-  }
+  if (!outcome.ok) console.error("google-reviews: fetch failed —", outcome.detail);
   try {
     const store = getStore({ name: STORE, consistency: "strong" });
     const prev = ((await store.get(KEY, { type: "json" })) as HealthState | null) ?? CLEAN;
     const { state, send } = nextHealth(prev, outcome, new Date());
-    if (outcome.ok && prev.consecutiveFailures === 0) {
-      knownClean = true;
-      return;
-    }
+    // Healthy and already clean in the shared store: nothing to write. (No
+    // per-instance shortcut — the state is shared across instances, and
+    // reviews are fetched rarely enough that one read per success is cheap.)
+    if (outcome.ok && prev.consecutiveFailures === 0) return;
     await store.setJSON(KEY, state);
-    if (outcome.ok) knownClean = true;
     if (send) await sendHealthEmail(send, send === "alert" ? state : prev);
   } catch (err) {
     console.error("google-reviews: health tracking unavailable", err);

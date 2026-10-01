@@ -27,7 +27,7 @@ const empty = (status = 200) =>
 // Self-identifying crawlers and preview fetchers. Bots that run scripts and
 // lie about their user agent still get through — the rate limit covers them.
 const BOT_UA =
-  /bot|crawl|spider|slurp|facebookexternalhit|embedly|preview|headless|lighthouse|pingdom|uptime|monitor|curl|wget|python-requests/i;
+  /googlebot|bingbot|duckduckbot|baiduspider|yandex|applebot|facebookexternalhit|slackbot|twitterbot|linkedinbot|embedly|headlesschrome|lighthouse|pingdom|uptimerobot|curl\/|wget\/|python-requests|\b(bot|crawler|spider)\b/i;
 
 const PER_IP = { limit: 10, windowMs: 60 * 60_000 };
 const PER_INSTANCE = { limit: 300, windowMs: 60 * 60_000 };
@@ -53,6 +53,12 @@ function allow(ip: string, now: number): boolean {
       else state.byIp.set(k, kept);
     }
     if (state.byIp.size > MAX_TRACKED_IPS * 2) state.byIp.clear();
+  }
+  // No usable client IP (neither Netlify header present): don't pool every
+  // visitor into one shared bucket — the instance cap alone applies.
+  if (ip === "unknown") {
+    state.all.push(now);
+    return true;
   }
   const mine = recent(state.byIp.get(ip) ?? [], PER_IP.windowMs);
   if (mine.length >= PER_IP.limit) {
