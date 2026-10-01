@@ -5,7 +5,7 @@
 // the Places policies page: "You must not pre-fetch, cache, or store Places
 // API content beyond the allowed exceptions." So there is no reviews table, no
 // "last known-good" copy, and no Next fetch cache (`cache: "no-store"`) —
-// every home-page render asks Google directly, server-side, and if Google
+// every request to /api/reviews asks Google directly, server-side, and if Google
 // doesn't answer in time the reviews block simply doesn't render. The only
 // thing persisted is fetch health (lib/googleReviewsHealth.ts), which holds
 // no Google content.
@@ -21,7 +21,8 @@
 // indefinitely per the terms above).
 //
 // Cost note: the `reviews` field puts every call in a higher Place Details
-// pricing tier, and this runs once per home-page render (bots included).
+// pricing tier. It's only called from app/api/reviews, which the home page hits
+// when a visitor scrolls near the pricing section (not on page load).
 
 const PLACES_BASE = "https://places.googleapis.com/v1/places/";
 const TIMEOUT_MS = 3_500;

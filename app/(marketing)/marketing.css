@@ -963,6 +963,11 @@
   height: 18px;
   width: auto;
 }
+.mkt-reviews .mkt-reviews__notice {
+  margin: 0;
+  font-size: var(--text-xs);
+  color: var(--ink-faint);
+}
 @media (min-width: 48rem) {
   .mkt-reviews[data-cols="2"] .mkt-reviews__list {
     grid-template-columns: 1fr 1fr;

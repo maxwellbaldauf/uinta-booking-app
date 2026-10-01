@@ -1,6 +1,5 @@
 import Image from "next/image";
 import Link from "next/link";
-import { Suspense } from "react";
 import { getSettings, formatUsdWhole } from "@/lib/settings";
 import { NAP, PAGE_UPDATED } from "@/lib/site";
 import { pageMetadata } from "@/lib/seo";
@@ -20,7 +19,8 @@ import { Sources } from "@/components/marketing/Sources";
 import { JsonLd } from "@/components/marketing/JsonLd";
 import { JOB_PHOTOS } from "@/lib/jobPhotos";
 import { SOURCE_LINKS } from "@/lib/sources";
-import { GoogleReviews } from "@/components/marketing/GoogleReviews";
+import { LazyGoogleReviews } from "@/components/marketing/LazyGoogleReviews";
+import { ReviewsView } from "@/components/marketing/ReviewsView";
 import { previewReviews } from "@/lib/googleReviews.preview";
 import { isDev } from "@/lib/dev";
 
@@ -598,11 +598,16 @@ export default async function HomePage({
               </span>
             </p>
           )}
-          {/* Live Google reviews — right before the booking CTA, where a
-              prospect is deciding. Streams in; renders nothing on failure. */}
-          <Suspense fallback={null}>
-            <GoogleReviews preview={reviewsPreview} />
-          </Suspense>
+          {/* Live Google reviews - right before the booking CTA, where a
+              prospect is deciding. Not fetched at page load: LazyGoogleReviews
+              asks /api/reviews only once the visitor scrolls near here, so
+              bots and bounces don't cost a billed Google call. Renders
+              nothing on failure or when there are no 5-star reviews. */}
+          {reviewsPreview ? (
+            <ReviewsView reviews={reviewsPreview} />
+          ) : (
+            <LazyGoogleReviews />
+          )}
           <div className="mkt-cta-row mkt-anchor-cta">
             <Link href="/book" className="mkt-btn mkt-btn--primary">
               Book a cleaning

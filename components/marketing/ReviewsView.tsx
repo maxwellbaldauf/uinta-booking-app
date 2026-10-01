@@ -1,45 +1,28 @@
-import { after } from "next/server";
-import { fetchFiveStarReviews, type GoogleReview } from "@/lib/googleReviews";
-import { recordReviewsFetch } from "@/lib/googleReviewsHealth";
+import type { GoogleReview } from "@/lib/googleReviews";
 
-// Live 5-star Google reviews, rendered inside the home page's pricing section.
-// Async server component — the home page wraps it in <Suspense fallback={null}>
-// so a slow Google response streams in late instead of holding up the page.
-// Renders NOTHING when there are no 5-star reviews, the fetch fails, or the
-// feature isn't configured: an absent block is always better than a broken one.
+// The Google reviews block shown inside the home page's pricing section.
+// Purely presentational: it renders whatever reviews it is handed and nothing
+// else. The data arrives via LazyGoogleReviews (client; fetches /api/reviews
+// when the visitor scrolls near the section) or, in dev, the ?reviewsPreview
+// placeholders. Renders NOTHING for an empty list: an absent block is always
+// better than a broken one.
 //
 // Attribution, per the Places API policies
 // (developers.google.com/maps/documentation/places/web-service/policies):
 //  - each review: author avatar, name, and profile link; the relative publish
 //    date, which is also the link to the review on Google Maps (googleMapsUri
 //    access is a "must"); a "translated" note when Google translated it.
-//    No visible "View on Google Maps" / "Report" row, by Max's call — the
+//    No visible "View on Google Maps" / "Report" row, by Max's call - the
 //    report link (flagContentUri) is only "recommended", and reporting is
 //    still available on the review's Google Maps page.
-//  - the Google Maps logo (official asset, unmodified, 18px tall — inside the
-//    16–19px range — with the required clear space, translate="no")
-//  - NO on-page notice about the 5-star filter / newest-first ordering, by
-//    Max's call. The Places policies list "describe how reviews are ordered
-//    and filtered" as a display requirement, so this is a known deviation;
-//    restore a one-line <p className="mkt-reviews__notice"> beside the logo
-//    to comply.
+//  - the Google Maps logo (official asset, unmodified, 18px tall - inside the
+//    16-19px range - with the required clear space, translate="no")
+//  - a one-line, deliberately quiet caption beside the logo saying the
+//    reviews are 5-star and newest first - the policy's required "how reviews
+//    are ordered and filtered" notice, kept to a few faint words.
 // Author photos are plain <img>, not next/image: the image optimizer would
 // cache Google content, which the terms don't allow.
-export async function GoogleReviews({ preview }: { preview?: GoogleReview[] }) {
-  let reviews: GoogleReview[];
-  if (preview) {
-    reviews = preview;
-  } else {
-    const result = await fetchFiveStarReviews();
-    if (result.status === "unconfigured") return null;
-    after(() =>
-      recordReviewsFetch(
-        result.status === "ok" ? { ok: true } : { ok: false, detail: result.detail }
-      )
-    );
-    if (result.status !== "ok") return null;
-    reviews = result.reviews;
-  }
+export function ReviewsView({ reviews }: { reviews: GoogleReview[] }) {
   if (reviews.length === 0) return null;
 
   return (
@@ -93,6 +76,7 @@ export async function GoogleReviews({ preview }: { preview?: GoogleReview[] }) {
           {/* Official attribution asset — rendered unmodified. */}
           <img src="/images/google-maps-logo-dark-gray.svg" alt="Google Maps" width={98} height={18} />
         </picture>
+        <p className="mkt-reviews__notice">5-star reviews, newest first.</p>
       </div>
     </div>
   );
