@@ -1,4 +1,4 @@
-import { ContactForm, type ContactPrefill } from "@/components/contact/ContactForm";
+import { ContactForm } from "@/components/contact/ContactForm";
 import { BrandBar } from "@/components/BrandBar";
 import { LegalLinks } from "@/components/LegalLinks";
 
@@ -8,30 +8,15 @@ export const metadata = {
   title: "Contact Us — Uinta Ice Co",
 };
 
-export default async function ContactPage({
-  searchParams,
-}: {
-  // Next 16: searchParams is a Promise and must be awaited (matches
-  // /visit/[token] and /pay/[token]).
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
-}) {
-  const sp = await searchParams;
-  const str = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v ?? "");
-  const prefill: ContactPrefill = {
-    name: str(sp.name),
-    email: str(sp.email),
-    phone: str(sp.phone),
-    address: str(sp.address),
-    brand: str(sp.brand),
-    model: str(sp.model),
-    from: str(sp.from),
-  };
-
+// No query-string prefill: personal data never goes in this URL. The booking
+// dead end hands its details over through sessionStorage instead (see
+// lib/contactHandoff.ts and ContactForm).
+export default function ContactPage() {
   return (
     <>
       <BrandBar />
       <main className="page">
-        <ContactForm prefill={prefill} />
+        <ContactForm />
       </main>
       <LegalLinks />
     </>

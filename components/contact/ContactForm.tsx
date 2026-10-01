@@ -1,20 +1,11 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { submitContactForm } from "@/app/contact/actions";
+import { takeContactPrefill } from "@/lib/contactHandoff";
 import { Field, inputStyle, buttonStyle, ErrorBanner } from "@/components/ui/form";
 import { AddressAutocompleteField } from "@/components/booking/AddressAutocompleteField";
-
-export type ContactPrefill = Partial<{
-  name: string;
-  email: string;
-  phone: string;
-  address: string;
-  brand: string;
-  model: string;
-  from: string;
-}>;
 
 const FROM_INTRO: Record<string, { title: string; body: string }> = {
   out_of_area: {
@@ -31,17 +22,40 @@ const FROM_INTRO: Record<string, { title: string; body: string }> = {
   },
 };
 
-export function ContactForm({ prefill }: { prefill: ContactPrefill }) {
-  const intro = prefill.from ? FROM_INTRO[prefill.from] : undefined;
+export function ContactForm() {
+  const [from, setFrom] = useState<string | null>(null);
+  const intro = from && Object.hasOwn(FROM_INTRO, from) ? FROM_INTRO[from] : undefined;
   const [f, setF] = useState({
-    fullName: prefill.name ?? "",
-    email: prefill.email ?? "",
-    phone: prefill.phone ?? "",
-    address: prefill.address ?? "",
-    iceMakerBrand: prefill.brand ?? "",
-    iceMakerModel: prefill.model ?? "",
+    fullName: "",
+    email: "",
+    phone: "",
+    address: "",
+    iceMakerBrand: "",
+    iceMakerModel: "",
     message: "",
   });
+
+  // One-time handoff from the booking dead end (lib/contactHandoff.ts): read
+  // and delete the stashed details, then prefill. Done in an effect rather than
+  // a state initializer because sessionStorage doesn't exist during SSR, and a
+  // client-only initial value would mismatch the server HTML on hydration. In
+  // dev strict mode this runs twice; the first run deletes the key, so the
+  // second finds nothing and (returning early) leaves the prefilled state alone.
+  useEffect(() => {
+    const p = takeContactPrefill();
+    if (!p) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- sanctioned: reads an external store (sessionStorage) once on mount; can't be an initializer without a hydration mismatch.
+    setF((prev) => ({
+      ...prev,
+      fullName: prev.fullName || p.name || "",
+      email: prev.email || p.email || "",
+      phone: prev.phone || p.phone || "",
+      address: prev.address || p.address || "",
+      iceMakerBrand: prev.iceMakerBrand || p.brand || "",
+      iceMakerModel: prev.iceMakerModel || p.model || "",
+    }));
+    if (p.from) setFrom(p.from);
+  }, []);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sent, setSent] = useState(false);

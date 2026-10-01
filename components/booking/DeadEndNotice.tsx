@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { secondaryButtonStyle } from "@/components/ui/form";
+import { clearContactPrefill, stashContactPrefill } from "@/lib/contactHandoff";
 
 export type DeadEndKind = "out_of_area" | "no_availability" | "geocode_failed";
 
@@ -42,9 +43,10 @@ export function DeadEndNotice({
   onBack: () => void;
 }) {
   const copy = COPY[kind];
-  const contactHref = {
-    pathname: "/contact",
-    query: {
+  // The details travel to /contact through sessionStorage (written on click,
+  // read-and-deleted by the form), never the URL — see lib/contactHandoff.ts.
+  function handleContactClick() {
+    stashContactPrefill({
       name: details.name,
       email: details.email,
       phone: details.phone,
@@ -52,8 +54,8 @@ export function DeadEndNotice({
       brand: details.brand,
       model: details.model,
       from: kind,
-    },
-  };
+    });
+  }
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
@@ -63,14 +65,18 @@ export function DeadEndNotice({
       </p>
 
       <Link
-        href={contactHref}
+        href="/contact"
+        onClick={handleContactClick}
         style={{ ...secondaryButtonStyle, textAlign: "center", textDecoration: "none" }}
       >
         Send us a message
       </Link>
       <button
         type="button"
-        onClick={onBack}
+        onClick={() => {
+          clearContactPrefill();
+          onBack();
+        }}
         style={{
           background: "none",
           border: "none",
