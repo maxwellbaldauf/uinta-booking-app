@@ -9,7 +9,9 @@ export const runtime = "nodejs";
 // POST { fullName, email, phone, address, iceMakerBrand, iceMakerModel, serviceType }
 // -> geocode + explicit service-area check + open-slot lookup (spec §1–2).
 // On the out_of_area / no_availability dead ends it also persists a flagged
-// lead for Project A's dashboard (the response's `saved` says so).
+// lead for Project A's dashboard, and when times ARE found it saves an in-area
+// "saw times, didn't book" lead (best effort, per-IP capped; see lib/leads.ts).
+// The response's `saved` is true when this request saved a lead.
 function isNonEmpty(v: unknown): v is string {
   return typeof v === "string" && v.trim().length > 0;
 }

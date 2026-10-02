@@ -378,8 +378,9 @@ export async function createBookingRecord(
   // A "saw times, didn't book" lead at this address becomes THE property
   // (converted in place) instead of leaving a stale pending duplicate behind.
   // Only a matched customer can have one, and only an unconverted lead with no
-  // jobs qualifies (see findConvertibleLeadProperty). Guarded again on the
-  // update itself so a concurrent change can't convert the wrong row.
+  // jobs qualifies (see findConvertibleLeadProperty). The update re-checks the
+  // customer, pending status and the marker; it can't re-check "no jobs" in the
+  // same statement, so a job attached in the instant between the two is not caught.
   // A read error here must never fail a paid booking: log it and insert as usual.
   let leadProperty: { id: string; notes: string | null } | null = null;
   if (matched) {

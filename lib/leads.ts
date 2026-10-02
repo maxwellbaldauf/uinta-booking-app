@@ -236,6 +236,9 @@ export async function captureInAreaLeadBestEffort(
 ): Promise<boolean> {
   const key = `${details.email.trim().toLowerCase()}|${details.address}`;
   let work = inflight.get(key);
+  // Only the call that started the work may report that it saved the lead; a
+  // call that joins one already in flight wrote nothing itself.
+  const joined = !!work;
   if (!work) {
     work = captureInAreaLead(details, coords, serviceType, matched, allowWrite)
       .catch((err) => {
@@ -247,12 +250,13 @@ export async function captureInAreaLeadBestEffort(
   }
   let timer: ReturnType<typeof setTimeout> | undefined;
   try {
-    return await Promise.race([
+    const saved = await Promise.race([
       work,
       new Promise<boolean>((resolve) => {
         timer = setTimeout(() => resolve(false), LEAD_CAPTURE_TIMEOUT_MS);
       }),
     ]);
+    return saved && !joined;
   } finally {
     if (timer) clearTimeout(timer);
   }
