@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { checkAvailability, isServiceType } from "@/lib/booking";
+import { firstContactError } from "@/lib/contactValidation";
 import type { LeadDetails } from "@/lib/leads";
 
 export const runtime = "nodejs";
@@ -20,9 +21,12 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
   }
 
-  if (!isNonEmpty(body.email) || !isNonEmpty(body.address)) {
+  // Same rules DetailsStep enforces, checked before any geocoding or lead save
+  // so a bad contact never reaches the DB.
+  const contactError = firstContactError(body);
+  if (contactError || !isNonEmpty(body.email) || !isNonEmpty(body.address)) {
     return NextResponse.json(
-      { error: "Email and address are required." },
+      { error: `${contactError ?? "Please check your details"}.` },
       { status: 400 }
     );
   }

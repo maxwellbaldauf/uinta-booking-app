@@ -31,23 +31,57 @@ export const secondaryButtonStyle: React.CSSProperties = {
   color: "var(--color-fg)",
 };
 
+// Invalid state is marked by shape and weight, not color: a solid near-black
+// border plus an extra bottom rule on the input, and a "!" marker on the message.
+// Only the `border` shorthand and boxShadow change, so clearing the error
+// restores inputStyle's border exactly (no longhand/shorthand mixing).
+export const invalidInputStyle: React.CSSProperties = {
+  border: "1px solid var(--color-fg)",
+  boxShadow: "0 1px 0 0 var(--color-fg)",
+};
+
 export function Field({
   label,
   children,
   hint,
+  error,
+  errorId,
 }: {
   label: string;
   children: React.ReactNode;
   hint?: string;
+  // When set, rendered outside the <label> (so it isn't part of the input's
+  // accessible name); the input points at it via aria-describedby={errorId}.
+  error?: string | null;
+  errorId?: string;
 }) {
   return (
-    <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-      <span style={{ fontSize: 13, color: "var(--color-fg-muted)" }}>{label}</span>
-      {children}
-      {hint && (
-        <span style={{ fontSize: 12, color: "var(--color-fg-muted)" }}>{hint}</span>
+    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+      <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+        <span style={{ fontSize: 13, color: "var(--color-fg-muted)" }}>{label}</span>
+        {children}
+        {hint && (
+          <span style={{ fontSize: 12, color: "var(--color-fg-muted)" }}>{hint}</span>
+        )}
+      </label>
+      {error && (
+        <span
+          id={errorId}
+          role="alert"
+          style={{
+            display: "flex",
+            gap: 6,
+            alignItems: "baseline",
+            fontSize: 13,
+            fontWeight: 600,
+            color: "var(--color-fg)",
+          }}
+        >
+          <span aria-hidden="true">!</span>
+          {error}
+        </span>
       )}
-    </label>
+    </div>
   );
 }
 

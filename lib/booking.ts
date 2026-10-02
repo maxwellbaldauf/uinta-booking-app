@@ -6,6 +6,7 @@ import { getOfferedSlots, slotStillAvailable, type OfferedSlot } from "@/lib/sch
 import { matchCustomerByEmailOrPhone, normalizePhone } from "@/lib/customers";
 import { getEffectivePriceCents } from "@/lib/pricing";
 import { agreementIsCurrent, SERVICE_AGREEMENT_VERSION } from "@/lib/agreement";
+import { firstContactError } from "@/lib/contactValidation";
 import { saveFlaggedLead, type LeadDetails } from "@/lib/leads";
 import {
   resolveConfirmedSetupIntent,
@@ -139,6 +140,12 @@ export async function createBookingRecord(
   input: CreateBookingInput
 ): Promise<CreateBookingResult> {
   const { details, chosenSlot } = input;
+
+  // Contact fields: same rules as the details step, so a raw POST with a blank
+  // name / bad email / short phone gets a clear message, not a DB failure.
+  const contactError = firstContactError(details ?? {});
+  if (contactError) throw new Error(`${contactError}.`);
+
   const supabase = businessDb();
 
   // Re-validate everything server-side — never trust what the client carried.

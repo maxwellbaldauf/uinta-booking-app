@@ -1,7 +1,15 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import { Field, inputStyle, buttonStyle, secondaryButtonStyle, ErrorBanner } from "@/components/ui/form";
+import {
+  Field,
+  inputStyle,
+  invalidInputStyle,
+  buttonStyle,
+  secondaryButtonStyle,
+  ErrorBanner,
+} from "@/components/ui/form";
+import { validateContact, type ContactFields } from "@/lib/contactValidation";
 import { AddressAutocompleteField } from "./AddressAutocompleteField";
 
 export type BookingDetails = {
@@ -42,9 +50,36 @@ export function DetailsStep({
   const set = (k: keyof BookingDetails) => (e: { target: { value: string } }) =>
     setD((prev) => ({ ...prev, [k]: e.target.value }));
 
-  const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(d.email.trim());
-  const canSubmit =
-    d.fullName.trim() && emailOk && d.phone.trim() && d.address.trim() && !busy;
+  // A field's message shows after its first blur — never while they're still
+  // typing the first time. It then clears live as the value becomes valid.
+  // (Continue is disabled while invalid, so there is no "tried to continue" path.)
+  const [touched, setTouched] = useState<Partial<Record<keyof ContactFields, boolean>>>({});
+  const touch = (k: keyof ContactFields) => () => setTouched((t) => ({ ...t, [k]: true }));
+
+  const errors = validateContact(d);
+  const valid = Object.keys(errors).length === 0;
+  const canSubmit = valid && !busy;
+  const shown = (k: keyof ContactFields) => (touched[k] ? errors[k] ?? null : null);
+  const fieldProps = (k: keyof ContactFields) => {
+    const msg = shown(k);
+    return {
+      id: `details-${k}`,
+      onBlur: touch(k),
+      "aria-invalid": msg ? true : undefined,
+      "aria-describedby": msg ? `details-${k}-error` : undefined,
+      style: msg ? { ...inputStyle, ...invalidInputStyle } : inputStyle,
+    };
+  };
+
+  const missing: string[] = [];
+  if (errors.fullName) missing.push("your name");
+  if (errors.email) missing.push("a valid email");
+  if (errors.phone) missing.push("a valid phone number");
+  if (errors.address) missing.push("your street address");
+  const missingLine =
+    missing.length === 0
+      ? null
+      : `Add ${missing.length > 1 ? `${missing.slice(0, -1).join(", ")} and ${missing[missing.length - 1]}` : missing[0]} to continue`;
 
   function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -62,17 +97,18 @@ export function DetailsStep({
 
   return (
     <form
+      noValidate
       onSubmit={handleSubmit}
       style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}
     >
       <h1 style={{ fontSize: 22, margin: 0 }}>Book a cleaning</h1>
 
-      <Field label="Your name">
-        <input style={inputStyle} value={d.fullName} onChange={set("fullName")} autoComplete="name" />
+      <Field label="Your name" error={shown("fullName")} errorId="details-fullName-error">
+        <input {...fieldProps("fullName")} value={d.fullName} onChange={set("fullName")} autoComplete="name" />
       </Field>
-      <Field label="Email">
+      <Field label="Email" error={shown("email")} errorId="details-email-error">
         <input
-          style={inputStyle}
+          {...fieldProps("email")}
           type="email"
           inputMode="email"
           value={d.email}
@@ -80,9 +116,9 @@ export function DetailsStep({
           autoComplete="email"
         />
       </Field>
-      <Field label="Phone">
+      <Field label="Phone" error={shown("phone")} errorId="details-phone-error">
         <input
-          style={inputStyle}
+          {...fieldProps("phone")}
           type="tel"
           inputMode="tel"
           value={d.phone}
@@ -90,10 +126,18 @@ export function DetailsStep({
           autoComplete="tel"
         />
       </Field>
-      <Field label="Property address" hint="Start typing and pick your address from the list">
+      <Field
+        label="Property address"
+        hint="Start typing and pick your address from the list"
+        error={shown("address")}
+        errorId="details-address-error"
+      >
         <AddressAutocompleteField
           value={d.address}
           onChange={(address) => setD((prev) => ({ ...prev, address }))}
+          onBlur={touch("address")}
+          invalid={!!shown("address")}
+          describedBy={shown("address") ? "details-address-error" : undefined}
         />
       </Field>
       <Field label="Ice maker brand" hint="Optional">
@@ -155,6 +199,12 @@ export function DetailsStep({
       </div>
 
       {error && <ErrorBanner>{error}</ErrorBanner>}
+
+      {missingLine && (
+        <p style={{ margin: 0, fontSize: 13, color: "var(--color-fg-muted)" }}>
+          {missingLine}
+        </p>
+      )}
 
       <div style={{ display: "flex", gap: "var(--space-2)" }}>
         <button

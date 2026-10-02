@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type KeyboardEvent } from "react";
-import { inputStyle } from "@/components/ui/form";
+import { inputStyle, invalidInputStyle } from "@/components/ui/form";
 import {
   loadPlacesLibrary,
   type AutocompleteSessionToken,
@@ -24,9 +24,15 @@ const DEBOUNCE_MS = 400;
 export function AddressAutocompleteField({
   value,
   onChange,
+  onBlur,
+  invalid,
+  describedBy,
 }: {
   value: string;
   onChange: (value: string) => void;
+  onBlur?: () => void;
+  invalid?: boolean;
+  describedBy?: string;
 }) {
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [open, setOpen] = useState(false);
@@ -134,9 +140,12 @@ export function AddressAutocompleteField({
   return (
     <div ref={containerRef} style={{ position: "relative" }}>
       <input
-        style={inputStyle}
+        style={invalid ? { ...inputStyle, ...invalidInputStyle } : inputStyle}
         value={value}
         onChange={(e) => handleInputChange(e.target.value)}
+        onBlur={onBlur}
+        aria-invalid={invalid || undefined}
+        aria-describedby={describedBy}
         onKeyDown={handleKeyDown}
         onFocus={() => suggestions.length > 0 && setOpen(true)}
         autoComplete="street-address"

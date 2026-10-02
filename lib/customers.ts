@@ -1,4 +1,5 @@
 import { businessDb } from "@/lib/tenant/business";
+import { normalizePhone } from "@/lib/contactValidation";
 
 export type ImportedCustomer = {
   id: string;
@@ -45,15 +46,8 @@ export async function findCustomerByPaymentSetupToken(
   };
 }
 
-// Normalize a phone number to its digits for match-by-phone (spec: repeat
-// customers matched by email OR phone). "+1 (801) 555-0100" -> "18015550100".
-// Also drops a leading US country code so "18015550100" and "8015550100" match.
-export function normalizePhone(phone: string | null | undefined): string | null {
-  if (!phone) return null;
-  let digits = phone.replace(/\D/g, "");
-  if (digits.length === 11 && digits.startsWith("1")) digits = digits.slice(1);
-  return digits.length >= 10 ? digits : null;
-}
+// normalizePhone lives in lib/contactValidation.ts (shared with the booking form).
+export { normalizePhone };
 
 export type MatchedCustomer = {
   id: string;
