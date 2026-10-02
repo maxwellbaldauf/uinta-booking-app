@@ -75,6 +75,7 @@ export const PAGE_UPDATED = {
   brands: { display: "September 2026", iso: "2026-09-01" },
   serviceAreas: { display: "September 2026", iso: "2026-09-01" },
   about: { display: "September 2026", iso: "2026-09-01" },
+  reviews: { display: "October 1, 2026", iso: "2026-10-01" },
   terms: { display: "September 30, 2026", iso: "2026-09-30" },
   privacy: { display: "October 1, 2026", iso: "2026-10-01" },
 } as const;
@@ -134,6 +135,7 @@ export const FOOTER_LINKS = [
   { href: "/", label: "Home" },
   ...NAV_ITEMS,
   { href: "/about", label: "About" },
+  { href: "/reviews", label: "Reviews" },
   { href: "/contact", label: "Contact" },
 ] as const;
 

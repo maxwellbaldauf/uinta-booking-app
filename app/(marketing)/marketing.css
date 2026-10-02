@@ -1384,3 +1384,46 @@
     display: none;
   }
 }
+
+/* ---- Testimonials (/reviews) ------------------------------------- */
+/* First-party customer quotes: display face, near-black on the warm paper, a
+   hairline rule instead of any accent color or star glyphs. */
+
+.mkt-prose .mkt-testimonials {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-width: var(--measure);
+}
+.mkt-prose .mkt-testimonials li {
+  margin: 0;
+  padding: var(--space-lg) 0;
+  border-top: 1px solid var(--line);
+}
+.mkt-testimonials li:last-child {
+  border-bottom: 1px solid var(--line);
+}
+.mkt-testimonial {
+  margin: 0;
+}
+.mkt-testimonial blockquote {
+  margin: 0 0 var(--space-sm);
+  padding: 0;
+  border: 0;
+}
+.mkt-testimonial blockquote p {
+  margin: 0;
+  font-family: var(--font-display), "Trebuchet MS", sans-serif;
+  font-size: var(--text-lg);
+  line-height: var(--leading-body);
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+.mkt-testimonial figcaption {
+  font-size: var(--text-sm);
+  letter-spacing: 0.06em;
+  color: var(--ink-soft);
+}
+.mkt-testimonials__more {
+  margin: var(--space-lg) 0 0;
+}

@@ -14,6 +14,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { path: "/brands", priority: 0.8, dateKey: "brands" },
     { path: "/service-areas", priority: 0.8, dateKey: "serviceAreas" },
     { path: "/about", priority: 0.6, dateKey: "about" },
+    { path: "/reviews", priority: 0.6, dateKey: "reviews" },
     { path: "/book", priority: 0.7 },
     { path: "/contact", priority: 0.5 },
     { path: "/terms", priority: 0.2, dateKey: "terms" },
