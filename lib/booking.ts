@@ -53,8 +53,8 @@ export type AvailabilityResult =
       // true = matched customer accepted an OLDER version and must re-accept
       // (drives the "we've updated the agreement" notice, not the gate itself).
       agreementStale: boolean;
-      // true = an in-area lead row for this visitor is known to exist (saved now
-      // or already there). The UI ignores it; the route reports it as `saved`.
+      // true = THIS request saved a new in-area lead row. The UI ignores it; the
+      // route turns it into `saved` and strips it from the response.
       leadCaptured?: boolean;
     };
 

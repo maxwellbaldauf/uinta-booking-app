@@ -53,11 +53,9 @@ export async function saveFlaggedLead(
     const { id: propertyId, notes } = existing[0] as { id: string; notes: string | null };
     // A dead end now describes this property, so drop a stale "saw open times"
     // marker (keeping any text the owner added after it).
-    const notesPatch =
-      notes && notes.startsWith(SAW_TIMES_NOTE) ? { notes: stripSawTimesNote(notes) } : {};
     const { error } = await supabase
       .from("properties")
-      .update({ ...propertyPatch, ...notesPatch })
+      .update({ ...propertyPatch, notes: stripSawTimesNote(notes) })
       .eq("id", propertyId);
     if (error) throw new Error(`lead: update property failed: ${error.message}`);
     return { customerId, propertyId };
@@ -109,6 +107,7 @@ const MAX_LEAD_PROPERTIES_PER_CUSTOMER = 3;
 
 type LeadProperty = {
   address: string;
+  notes: string | null;
   needs_followup: boolean;
   out_of_service_area: boolean;
   jobs: { id: string }[] | null;
@@ -130,7 +129,7 @@ async function readLeadState(
   }
   const { data, error } = await businessDb()
     .from("customers")
-    .select("source, properties(address, needs_followup, out_of_service_area, jobs(id))")
+    .select("source, properties(address, notes, needs_followup, out_of_service_area, jobs(id))")
     .eq("id", matched.id)
     .maybeSingle();
   if (error) throw new Error(`lead: read customer failed: ${error.message}`);
@@ -140,14 +139,17 @@ async function readLeadState(
   // leads; anything the owner created or imported is a real record.
   if (row.source !== "booking" && row.source !== "contact_form") return { real: true };
   const props = row.properties ?? [];
-  // A property that isn't flagged as a lead is a real one, and so is any job.
-  if (props.some((p) => !p.needs_followup && !p.out_of_service_area)) return { real: true };
+  // A property that is neither flagged nor carrying our marker (the owner may
+  // have cleared the follow-up flag on a lead) is a real one, and so is any job.
+  const isLead = (p: LeadProperty) =>
+    p.needs_followup || p.out_of_service_area || (p.notes ?? "").startsWith(SAW_TIMES_NOTE);
+  if (props.some((p) => !isLead(p))) return { real: true };
   if (props.some((p) => (p.jobs ?? []).length > 0)) return { real: true };
   return { real: false, addresses: props.map((p) => p.address) };
 }
 
-// Returns true when a lead row exists for this visitor afterwards (inserted now
-// or already there), false when nothing was saved.
+// Returns true only when THIS call saved a new lead row, false when nothing was
+// saved (already there, real customer, capped, or over budget).
 async function captureInAreaLead(
   details: LeadDetails,
   coords: { lat: number; lng: number },
@@ -165,7 +167,7 @@ async function captureInAreaLead(
     if (state.real) return false;
     // Insert-only: a second submit (or any property already at this address)
     // leaves the record exactly as it is.
-    if (state.addresses.includes(details.address)) return true;
+    if (state.addresses.includes(details.address)) return false;
     if (state.addresses.length >= MAX_LEAD_PROPERTIES_PER_CUSTOMER) return false;
     customerId = matched.id;
   }
@@ -224,7 +226,7 @@ const inflight = new Map<string, Promise<boolean>>();
 // Best effort, capped: a failed or slow save must never block or slow the
 // visitor's booking. Errors are logged and swallowed; after the cap we stop
 // waiting (the write may still finish on a warm instance). Resolves to whether
-// a lead row is known to exist.
+// this call saved a new lead.
 export async function captureInAreaLeadBestEffort(
   details: LeadDetails,
   coords: { lat: number; lng: number },
@@ -258,8 +260,8 @@ export async function captureInAreaLeadBestEffort(
 
 // This customer's still-unconverted "saw times, didn't book" lead at this exact
 // address (id + its notes, so the owner's own text can be kept), or null.
-// Strict on purpose: notes starting with the marker, still pending and flagged,
-// and not one job on it. Anything else is left alone and the caller inserts a
+// Strict on purpose: notes starting with the marker, still pending, and not one
+// job on it (the follow-up flag may have been cleared by the owner). Anything else is left alone and the caller inserts a
 // fresh property as before.
 export async function findConvertibleLeadProperty(
   customerId: string,
@@ -268,21 +270,14 @@ export async function findConvertibleLeadProperty(
   const supabase = businessDb();
   const { data, error } = await supabase
     .from("properties")
-    .select("id, notes")
+    .select("id, notes, jobs(id)")
     .eq("customer_id", customerId)
     .eq("address", address)
     .eq("plan_status", "pending")
-    .eq("needs_followup", true)
     .like("notes", `${SAW_TIMES_NOTE}%`)
     .limit(1);
   if (error) throw new Error(`lead: find convertible property failed: ${error.message}`);
-  const row = data?.[0] as { id: string; notes: string | null } | undefined;
-  if (!row) return null;
-
-  const { count, error: jobsError } = await supabase
-    .from("jobs")
-    .select("id", { count: "exact", head: true })
-    .eq("property_id", row.id);
-  if (jobsError) throw new Error(`lead: read jobs failed: ${jobsError.message}`);
-  return (count ?? 0) === 0 ? row : null;
+  const row = data?.[0] as { id: string; notes: string | null; jobs: { id: string }[] | null } | undefined;
+  if (!row || (row.jobs ?? []).length > 0) return null;
+  return { id: row.id, notes: row.notes };
 }

@@ -57,7 +57,10 @@ export async function POST(req: Request) {
       result.status === "out_of_area" || result.status === "no_availability"
         ? true
         : result.status === "ok" && !!result.leadCaptured;
-    return NextResponse.json({ ...result, saved });
+    // leadCaptured is internal; the client only gets `saved`.
+    const payload: Record<string, unknown> = { ...result, saved };
+    delete payload.leadCaptured;
+    return NextResponse.json(payload);
   } catch (err) {
     console.error("availability route error", err);
     return NextResponse.json(
