@@ -190,3 +190,33 @@ export async function captureInAreaLeadBestEffort(
     if (timer) clearTimeout(timer);
   }
 }
+
+// The id of this customer's still-unconverted "saw times, didn't book" lead at
+// this exact address, or null. Strict on purpose: the exact marker note, still
+// pending and flagged, and not one job on it. Anything else is left alone and
+// the caller inserts a fresh property as before.
+export async function findConvertibleLeadProperty(
+  customerId: string,
+  address: string
+): Promise<string | null> {
+  const supabase = businessDb();
+  const { data, error } = await supabase
+    .from("properties")
+    .select("id")
+    .eq("customer_id", customerId)
+    .eq("address", address)
+    .eq("plan_status", "pending")
+    .eq("needs_followup", true)
+    .eq("notes", SAW_TIMES_NOTE)
+    .limit(1);
+  if (error) throw new Error(`lead: find convertible property failed: ${error.message}`);
+  const id = (data?.[0] as { id: string } | undefined)?.id;
+  if (!id) return null;
+
+  const { count, error: jobsError } = await supabase
+    .from("jobs")
+    .select("id", { count: "exact", head: true })
+    .eq("property_id", id);
+  if (jobsError) throw new Error(`lead: read jobs failed: ${jobsError.message}`);
+  return (count ?? 0) === 0 ? id : null;
+}

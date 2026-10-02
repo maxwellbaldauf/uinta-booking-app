@@ -7,7 +7,13 @@ import { matchCustomerByEmailOrPhone, normalizePhone } from "@/lib/customers";
 import { getEffectivePriceCents } from "@/lib/pricing";
 import { agreementIsCurrent, SERVICE_AGREEMENT_VERSION } from "@/lib/agreement";
 import { firstContactError } from "@/lib/contactValidation";
-import { captureInAreaLeadBestEffort, saveFlaggedLead, type LeadDetails } from "@/lib/leads";
+import {
+  captureInAreaLeadBestEffort,
+  findConvertibleLeadProperty,
+  SAW_TIMES_NOTE,
+  saveFlaggedLead,
+  type LeadDetails,
+} from "@/lib/leads";
 import {
   resolveConfirmedSetupIntent,
   setStripeDefaultPaymentMethod,
@@ -338,31 +344,53 @@ export async function createBookingRecord(
     : null;
 
   // --- property ---
-  const { data: property, error: propertyError } = await supabase
-    .from("properties")
-    .insert({
-      customer_id: customerId,
-      address: details.address,
-      latitude: geo.lat,
-      longitude: geo.lng,
-      geocoded_at: new Date().toISOString(),
-      geocode_failed: false,
-      ice_maker_brand: details.iceMakerBrand || null,
-      ice_maker_model: details.iceMakerModel || null,
-      service_type: input.serviceType,
-      plan_status: "active",
-      source: "booking",
-      custom_price_cents: customPriceCents,
-      ...(asPropertyOverride && resolvedCard
-        ? {
-            payment_method_id: resolvedCard.paymentMethodId,
-            payment_method_type: "card",
-            payment_display: resolvedCard.displayLabel,
-          }
-        : {}),
-    })
-    .select("id")
-    .single();
+  const propertyFields = {
+    address: details.address,
+    latitude: geo.lat,
+    longitude: geo.lng,
+    geocoded_at: new Date().toISOString(),
+    geocode_failed: false,
+    ice_maker_brand: details.iceMakerBrand || null,
+    ice_maker_model: details.iceMakerModel || null,
+    service_type: input.serviceType,
+    plan_status: "active" as const,
+    custom_price_cents: customPriceCents,
+    ...(asPropertyOverride && resolvedCard
+      ? {
+          payment_method_id: resolvedCard.paymentMethodId,
+          payment_method_type: "card" as const,
+          payment_display: resolvedCard.displayLabel,
+        }
+      : {}),
+  };
+  // A "saw times, didn't book" lead at this address becomes THE property
+  // (converted in place) instead of leaving a stale pending duplicate behind.
+  // Only a matched customer can have one, and only an unconverted lead with no
+  // jobs qualifies (see findConvertibleLeadProperty). Guarded again on the
+  // update itself so a concurrent change can't convert the wrong row.
+  const leadPropertyId = matched ? await findConvertibleLeadProperty(customerId, details.address) : null;
+  // If the conversion matches nothing (the row changed since we looked), fall
+  // back to the normal insert rather than failing a paid booking.
+  const converted = leadPropertyId
+    ? (
+        await supabase
+          .from("properties")
+          .update({ ...propertyFields, needs_followup: false, notes: null })
+          .eq("id", leadPropertyId)
+          .eq("customer_id", customerId)
+          .eq("plan_status", "pending")
+          .eq("notes", SAW_TIMES_NOTE)
+          .select("id")
+          .maybeSingle()
+      ).data
+    : null;
+  const { data: property, error: propertyError } = converted
+    ? { data: converted, error: null }
+    : await supabase
+        .from("properties")
+        .insert({ customer_id: customerId, source: "booking", ...propertyFields })
+        .select("id")
+        .single();
   if (propertyError || !property) {
     throw new Error(`Could not save the property: ${propertyError?.message}`);
   }
