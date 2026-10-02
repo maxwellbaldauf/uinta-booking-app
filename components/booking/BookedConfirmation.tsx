@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { buttonStyle } from "@/components/ui/form";
 import { formatSlotDate } from "@/components/booking/SlotGrid";
 
@@ -39,12 +38,15 @@ export function BookedConfirmation({
         below any time to reschedule or cancel.
       </p>
 
-      <Link
+      {/* Plain <a>, not next/link: a full page load, so the analytics tags
+          (Clarity, Google Ads) that /book loaded are gone on the token page,
+          whose URL is a bearer credential. */}
+      <a
         href={`/visit/${token}`}
         style={{ ...buttonStyle, textAlign: "center", textDecoration: "none" }}
       >
         Manage this visit
-      </Link>
+      </a>
     </div>
   );
 }

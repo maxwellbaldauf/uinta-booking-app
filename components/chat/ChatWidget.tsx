@@ -339,7 +339,7 @@ function renderInline(segment: string): ReactNode[] {
       out.push(
         !href ? (
           <span key={`l${key}`}>{linkText}</span>
-        ) : href.startsWith("/") ? (
+        ) : href.startsWith("/") && !TOKEN_ROUTE_RE.test(href) ? (
           <Link key={`l${key}`} href={href} className="uic-inline-link">
             {linkText}
           </Link>
@@ -383,6 +383,10 @@ function withBreaks(text: string, keyBase: number): ReactNode[] {
 // else renders as plain text: the bot should never emit other links, and this
 // makes sure it can't. The internal-path check rejects a leading "//" or "/\"
 // (both normalize to a protocol-relative URL in browsers).
+// Token routes (the URL is a bearer credential) get a plain <a>, i.e. a full
+// page load, so the analytics tags from this page aren't resident there.
+const TOKEN_ROUTE_RE = /^\/(visit|pay|invoice|cluster-consent)(\/|$|\?|#)/i;
+
 function safeHref(raw: string): string | null {
   const h = raw.trim();
   if (/^\/(?![/\\])/.test(h)) return h;
