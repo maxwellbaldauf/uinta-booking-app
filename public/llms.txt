@@ -12,6 +12,7 @@ We service Scotsman, Sub-Zero, U-Line, KitchenAid, GE Profile, and GE Monogram m
 - [The brands we service](https://uintaice.com/brands): Scotsman, Sub-Zero, U-Line, KitchenAid, GE Profile and GE Monogram for homes; Scotsman, Manitowoc, and Hoshizaki for light commercial; brand-specific quirks, clean-indicator behavior, and common failure points for each.
 - [Service areas](https://uintaice.com/service-areas): the cities we serve across Utah County, Salt Lake County, and the Park City and Heber corridor, with local water-hardness figures where a water provider publishes them.
 - [About Uinta Ice Co.](https://uintaice.com/about): who we are, what we do and don't do (cleaning only, no repairs), and who owns and runs the business.
+- [Customer reviews](https://uintaice.com/reviews): first-party testimonials from customers who agreed to let us share them, with a link to our reviews on Google.
 
 ## Contact and booking
 

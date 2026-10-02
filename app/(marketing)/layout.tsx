@@ -10,7 +10,7 @@ import { GoogleAdsTag } from "@/components/GoogleAdsTag";
 import { ChatWidget } from "@/components/chat/ChatWidget";
 
 // Shared chrome for the public marketing pages: home + /ice-machine-cleaning,
-// /troubleshooting, /brands, /service-areas. The booking flow, contact form,
+// /troubleshooting, /brands, /service-areas, /about, /reviews, /terms, /privacy. The booking flow, contact form,
 // and token pages are outside this route group and keep their bare layout.
 // The next/font variables (--font-body, --font-display) are set on <body> in
 // the root layout; .mkt-root just carries the marketing type/color base.

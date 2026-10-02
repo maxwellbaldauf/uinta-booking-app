@@ -1424,6 +1424,6 @@
   letter-spacing: 0.06em;
   color: var(--ink-soft);
 }
-.mkt-testimonials__more {
+.mkt-prose .mkt-testimonials__more {
   margin: var(--space-lg) 0 0;
 }

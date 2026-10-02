@@ -36,8 +36,8 @@ export default function ReviewsPage() {
 
       <section className="mkt-section">
         <ul className="mkt-testimonials">
-          {TESTIMONIALS.map((t) => (
-            <li key={t.displayName}>
+          {TESTIMONIALS.map((t, i) => (
+            <li key={`${t.displayName}-${i}`}>
               <figure className="mkt-testimonial">
                 <blockquote>
                   <p>{t.quote}</p>
