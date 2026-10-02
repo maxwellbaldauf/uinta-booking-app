@@ -14,7 +14,7 @@ export function GoogleBadge() {
         href={GOOGLE_PROFILE_URL}
         target="_blank"
         rel="noopener noreferrer"
-        aria-label="Uinta Ice Company reviews on Google (opens in a new tab)"
+        aria-label="Reviewed on Google: Uinta Ice Company (opens in a new tab)"
       >
         <span className="mkt-gbadge__stars" aria-hidden="true">
           {[0, 1, 2, 3, 4].map((i) => (

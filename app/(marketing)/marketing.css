@@ -524,14 +524,16 @@
 }
 
 /* ---- Google badge (home, under the hero) -------------------------
-   Static link-only badge. The block height is fixed (not min-height) so the
-   page can't shift whatever the font does; one line fits down to 320px. */
+   Static link-only badge. At normal text size it is exactly one 64px line
+   (no shift); min-height lets it wrap instead of overflowing at large text
+   or high zoom. */
 
 .mkt-gbadge {
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 64px;
+  min-height: 64px;
+  padding: 0 var(--space-md);
   background: var(--paper);
 }
 .mkt-gbadge__link {
@@ -539,8 +541,13 @@
   align-items: center;
   gap: var(--space-xs);
   color: var(--ink);
+  flex-wrap: wrap;
+  justify-content: center;
   text-decoration: none;
-  white-space: nowrap;
+}
+.mkt-gbadge__link:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 4px;
 }
 .mkt-gbadge__stars {
   display: inline-flex;
