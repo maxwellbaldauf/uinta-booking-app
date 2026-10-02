@@ -139,10 +139,6 @@ export default async function HomePage({
             Sub-Zero, U-Line, and most other undercounter ice machines. We just
             need an hour of your ice time.
           </p>
-          <p className="mkt-hero__subhead mkt-hero__subhead--muted">
-            Homes across Utah County and Salt Lake County, plus light
-            commercial machines in offices, showrooms, and breakrooms.
-          </p>
           <div className="mkt-cta-row">
             <Link href="/book" className="mkt-btn mkt-btn--primary">
               Book a cleaning
