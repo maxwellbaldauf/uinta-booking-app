@@ -5,7 +5,8 @@ import { breadcrumbSchema } from "@/lib/schema";
 import { JsonLd } from "@/components/marketing/JsonLd";
 
 // Written against what the site actually does (audited 2026-10-01): booking
-// (incl. out-of-area / no-availability leads saved via saveFlaggedLead and the
+// (incl. out-of-area / no-availability leads saved via saveFlaggedLead, in-area
+// visitors who see times and leave saved via captureInAreaLead, and the
 // sessionStorage handoff to /contact in lib/contactHandoff.ts), contact form,
 // chat widget (Anthropic), Stripe saved card, Resend email, Kit opt-in,
 // Microsoft Clarity + Google Ads base tag (both marketing pages + /book only), Google
@@ -51,17 +52,23 @@ export default function PrivacyPage() {
             of our Service Agreement.
           </li>
           <li>
-            <strong>If we can’t book you:</strong> when you enter your
-            details in the booking form and we find that your address is
-            outside our service area, or that we have no open appointment, we
-            save your name, email address, phone number, address (and its map
-            location), and your ice machine’s brand and model in our records
-            as a lead (matched to an existing record if you are already a
-            customer), so we can contact you if that changes.
-            {/* TODO: update the next sentence when partial-lead capture
-                (saving details from abandoned bookings) ships. */}{" "}
-            If you leave the booking form before it checks your address, we
-            do not save what you typed.
+            <strong>If you check availability but don’t book:</strong> when
+            you enter your details in the booking form, we check your
+            address. If your address is outside our service area, if we have
+            no open appointment, or if we show you open appointment times and
+            you leave without booking, we save your name, email address,
+            phone number, address (and its map location), and your ice
+            machine’s brand and model in our records as a lead (matched to an
+            existing record if you are already a customer). We do not send
+            you automatic emails or texts because of this, and we may follow
+            up with you personally about your request. If you leave the
+            booking form before it checks your address, we do not save what
+            you typed.
+          </li>
+          <li>
+            <strong>Testimonials:</strong> we publish customer testimonials
+            on our reviews page only with the customer’s permission, and we
+            remove one on request.
           </li>
           <li>
             <strong>When you pay or save a card:</strong> your card details
@@ -231,8 +238,9 @@ export default function PrivacyPage() {
           customer and afterward as long as we reasonably need them for
           business, tax, and legal records. We do not delete these
           automatically. Leads (people who contact us, chat with us, or are
-          saved when we can’t book them, and who never become customers) are
-          kept until the person asks us to delete them. To ask, email{" "}
+          saved when we can’t book them or when they see appointment times
+          and don’t book, and who never become customers) are kept until the
+          person asks us to delete them. To ask, email{" "}
           <a href={NAP.emailHref}>{NAP.email}</a> or call{" "}
           <a href={NAP.phoneHref}>{NAP.phoneDisplay}</a>. Copies of our
           database exported to our own computers for backup may also contain
