@@ -398,7 +398,7 @@
   font-family: var(--font-display), "Trebuchet MS", sans-serif;
   text-transform: uppercase;
   color: var(--hero-ink);
-  font-size: clamp(1.9rem, 9.5vw, 2.75rem);
+  font-size: clamp(1.5rem, 7vw, 2rem);
   letter-spacing: 0.2em;
   line-height: 1.08;
   margin: 0 0 var(--space-xs);
@@ -456,30 +456,41 @@
 .mkt-hero .mkt-cta-row {
   margin: 0;
 }
-/* Desktop: centered composition — block centered in the photo both ways, every
-   line center-aligned, copy width capped so centered lines stay readable.
-   Starts at 48rem, the same point the mobile bottom bar hands over to the
-   in-page CTAs; below it the left-aligned layout is untouched. */
-@media (min-width: 48rem) {
-  .mkt-hero {
-    align-items: center;
-  }
+/* Centered composition (mobile-first, desktop widens it): the block sits in the
+   middle of the photo both ways, every line center-aligned, copy width capped
+   so centered lines stay readable. The hero's height is unchanged. */
+.mkt-hero {
+  align-items: center;
+}
+.mkt-hero__inner {
+  text-align: center;
+}
+.mkt-hero h1,
+.mkt-hero__subhead {
+  margin-inline: auto;
+}
+.mkt-hero .mkt-cta-row {
+  justify-content: center;
+}
+/* Phone: the added Book button must not grow the hero, so trim its vertical
+   padding; the 48rem block below restores the roomy desktop padding. */
+@media (max-width: 47.999rem) {
   .mkt-hero__inner {
-    text-align: center;
-    max-width: 56rem;
+    padding-block: var(--space-xl);
   }
-  .mkt-hero h1,
-  .mkt-hero__subhead {
-    margin-inline: auto;
+  .mkt-hero .mkt-cta-row {
+    gap: var(--space-xs);
+  }
+}
+@media (min-width: 48rem) {
+  .mkt-hero__inner {
+    max-width: 56rem;
   }
   .mkt-hero h1 {
     max-width: 18ch;
   }
   .mkt-hero__subhead {
     max-width: 46ch;
-  }
-  .mkt-hero .mkt-cta-row {
-    justify-content: center;
   }
 }
 .mkt-hero .mkt-btn--secondary {
@@ -1396,9 +1407,8 @@
     --botbar-h: calc(55px + max(var(--space-2xs), env(safe-area-inset-bottom)));
   }
   /* The fixed bottom bar is the Book action on a phone. Suppress the duplicate
-     primary Book in the hero and footer — the mid-page CTAs (pricing,
+     primary Book in the footer — the hero and mid-page CTAs (pricing,
      guarantee) keep theirs, since those sit at a decision point. */
-  .mkt-hero .mkt-cta-row .mkt-btn--primary,
   .mkt-footer__cta {
     display: none;
   }
