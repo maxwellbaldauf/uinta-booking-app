@@ -432,13 +432,6 @@
   max-width: 42ch;
   margin: 0 0 var(--space-lg);
 }
-.mkt-hero__subhead--muted {
-  font-size: var(--text-sm);
-  opacity: 0.85;
-}
-.mkt-hero__subhead + .mkt-hero__subhead--muted {
-  margin-top: calc(var(--space-lg) * -1);
-}
 @media (min-width: 40rem) {
   .mkt-hero__wordmark {
     font-size: var(--text-lg);
@@ -462,6 +455,32 @@
 }
 .mkt-hero .mkt-cta-row {
   margin: 0;
+}
+/* Desktop: centered composition — block centered in the photo both ways, every
+   line center-aligned, copy width capped so centered lines stay readable.
+   Starts at 48rem, the same point the mobile bottom bar hands over to the
+   in-page CTAs; below it the left-aligned layout is untouched. */
+@media (min-width: 48rem) {
+  .mkt-hero {
+    align-items: center;
+  }
+  .mkt-hero__inner {
+    text-align: center;
+    max-width: 56rem;
+  }
+  .mkt-hero h1,
+  .mkt-hero__subhead {
+    margin-inline: auto;
+  }
+  .mkt-hero h1 {
+    max-width: 18ch;
+  }
+  .mkt-hero__subhead {
+    max-width: 46ch;
+  }
+  .mkt-hero .mkt-cta-row {
+    justify-content: center;
+  }
 }
 .mkt-hero .mkt-btn--secondary {
   color: var(--hero-ink);
