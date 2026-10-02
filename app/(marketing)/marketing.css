@@ -508,7 +508,9 @@
    row (flex-grow), carries its leading "·" in its own left padding, and is
    pulled left by that padding. The first item on every row therefore sits
    with its dot outside the list box, where overflow: hidden clips it; the
-   dots that remain are always between two items on the same row. Horizontal
+   dots that remain are always between two items on the same row. Equal
+   right padding reserves room so a dot never lands on the previous item's
+   text. Horizontal
    padding is 0 on the list (the width calc gives the same gutters) because
    overflow clips at the padding box. */
 @media (min-width: 48rem) {
@@ -529,11 +531,12 @@
     align-items: center;
     justify-content: center;
     margin-left: calc(-1 * var(--sep));
-    padding-left: var(--sep);
+    padding: 0 var(--sep);
     text-align: center;
   }
   .mkt-trustbar li::before {
     content: "·";
+    content: "·" / ""; /* decorative: no alt text where supported */
     position: absolute;
     left: 0;
     width: var(--sep);
@@ -550,6 +553,8 @@
   display: inline-flex;
   align-items: center;
   gap: var(--space-2xs);
+  /* room for the focus ring, drawn inside the box so the strip's overflow: hidden can't clip it */
+  padding: 2px 4px;
   color: inherit;
   text-decoration: none;
 }
@@ -568,7 +573,7 @@
 }
 .mkt-gbadge:focus-visible {
   outline: 2px solid var(--ink);
-  outline-offset: 2px;
+  outline-offset: -2px; /* inside the link's own padding, never clipped */
 }
 
 /* ---- Page head (content pages) ---------------------------------- */
