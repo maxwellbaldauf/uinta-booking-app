@@ -45,9 +45,12 @@ declare global {
   }
 }
 
-// The (marketing) layout persists across client-side navigations, so the
-// config call is keyed on the pathname (as MarketingScripts is) to report each
-// page; gtag("js") is sent once per page load.
+// The (marketing) layout persists across client-side navigations, and gtag.js
+// does not re-report a repeated config call for an already-configured ID. So
+// the first call per page load is "js" + "config" (which sends the initial
+// page_view); every later call (client-side navigation, or crossing between
+// the marketing layout and /book) sends an explicit page_view event. That is
+// a page view, not a conversion event.
 let initialised = false;
 
 export function GoogleAdsTag() {
@@ -63,8 +66,14 @@ export function GoogleAdsTag() {
     if (!initialised) {
       initialised = true;
       gtag("js", new Date());
+      gtag("config", ADS_ID, { page_location: sanitizedLocation() });
+    } else {
+      gtag("event", "page_view", {
+        send_to: ADS_ID,
+        page_location: sanitizedLocation(),
+        page_title: document.title,
+      });
     }
-    gtag("config", ADS_ID, { page_location: sanitizedLocation() });
   }, [pathname]);
 
   if (!ADS_ID) return null;
