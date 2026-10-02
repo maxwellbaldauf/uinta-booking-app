@@ -7,7 +7,7 @@ import { matchCustomerByEmailOrPhone, normalizePhone } from "@/lib/customers";
 import { getEffectivePriceCents } from "@/lib/pricing";
 import { agreementIsCurrent, SERVICE_AGREEMENT_VERSION } from "@/lib/agreement";
 import { firstContactError } from "@/lib/contactValidation";
-import { saveFlaggedLead, type LeadDetails } from "@/lib/leads";
+import { captureInAreaLeadBestEffort, saveFlaggedLead, type LeadDetails } from "@/lib/leads";
 import {
   resolveConfirmedSetupIntent,
   setStripeDefaultPaymentMethod,
@@ -50,7 +50,10 @@ export type AvailabilityResult =
 
 export async function checkAvailability(
   details: LeadDetails,
-  serviceType: "residential" | "commercial"
+  serviceType: "residential" | "commercial",
+  // Called only at the "times found" point; false (e.g. the per-IP cap) skips
+  // the lead save and nothing else — availability is never blocked.
+  opts?: { allowLeadCapture?: () => boolean }
 ): Promise<AvailabilityResult> {
   const geo = await geocodeAddress(details.address);
 
@@ -76,6 +79,12 @@ export async function checkAvailability(
   }
 
   const matched = await matchCustomerByEmailOrPhone(details.email, details.phone);
+
+  // In-area visitor who sees times: keep them as a lead in case they leave.
+  // Best effort and time-capped — never blocks or fails the availability check.
+  if (opts?.allowLeadCapture?.()) {
+    await captureInAreaLeadBestEffort(details, geo, serviceType, matched);
+  }
 
   // Once-per-customer agreement: required for a brand-new customer, or a matched
   // one whose stored version isn't the current text. Compared by version string,
