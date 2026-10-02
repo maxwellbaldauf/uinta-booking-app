@@ -46,11 +46,12 @@ export async function POST(req: Request) {
   };
 
   try {
-    // Per-IP cap on lead CAPTURE only (shares the chat-lead budget: 5/hour).
-    // Over the cap just skips the save; availability itself is never limited.
+    // Per-IP cap on lead CAPTURE only (its own 5/hour budget, spent only when a
+    // lead row is actually about to be written). Over the cap just skips the
+    // save; availability itself is never limited.
     const ip = clientIpFromHeaders(req.headers);
     const result = await checkAvailability(details, body.serviceType, {
-      allowLeadCapture: () => allowLeadWrite(ip),
+      allowLeadCapture: () => allowLeadWrite(ip, "inarea"),
     });
     const saved = result.status === "out_of_area" || result.status === "no_availability";
     return NextResponse.json({ ...result, saved });

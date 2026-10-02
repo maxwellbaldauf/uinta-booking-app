@@ -57,8 +57,8 @@ export type AvailabilityResult =
 export async function checkAvailability(
   details: LeadDetails,
   serviceType: "residential" | "commercial",
-  // Called only at the "times found" point; false (e.g. the per-IP cap) skips
-  // the lead save and nothing else — availability is never blocked.
+  // Asked right before a lead row would actually be written; false (e.g. the
+  // per-IP cap) skips the lead save and nothing else — availability is never blocked.
   opts?: { allowLeadCapture?: () => boolean }
 ): Promise<AvailabilityResult> {
   const geo = await geocodeAddress(details.address);
@@ -88,8 +88,8 @@ export async function checkAvailability(
 
   // In-area visitor who sees times: keep them as a lead in case they leave.
   // Best effort and time-capped — never blocks or fails the availability check.
-  if (opts?.allowLeadCapture?.()) {
-    await captureInAreaLeadBestEffort(details, geo, serviceType, matched);
+  if (opts?.allowLeadCapture) {
+    await captureInAreaLeadBestEffort(details, geo, serviceType, matched, opts.allowLeadCapture);
   }
 
   // Once-per-customer agreement: required for a brand-new customer, or a matched
@@ -368,22 +368,31 @@ export async function createBookingRecord(
   // Only a matched customer can have one, and only an unconverted lead with no
   // jobs qualifies (see findConvertibleLeadProperty). Guarded again on the
   // update itself so a concurrent change can't convert the wrong row.
-  const leadPropertyId = matched ? await findConvertibleLeadProperty(customerId, details.address) : null;
+  // A read error here must never fail a paid booking: log it and insert as usual.
+  let leadPropertyId: string | null = null;
+  if (matched) {
+    try {
+      leadPropertyId = await findConvertibleLeadProperty(customerId, details.address);
+    } catch (err) {
+      console.error("lead conversion lookup failed; inserting a new property", err);
+    }
+  }
   // If the conversion matches nothing (the row changed since we looked), fall
   // back to the normal insert rather than failing a paid booking.
-  const converted = leadPropertyId
-    ? (
-        await supabase
-          .from("properties")
-          .update({ ...propertyFields, needs_followup: false, notes: null })
-          .eq("id", leadPropertyId)
-          .eq("customer_id", customerId)
-          .eq("plan_status", "pending")
-          .eq("notes", SAW_TIMES_NOTE)
-          .select("id")
-          .maybeSingle()
-      ).data
-    : null;
+  let converted: { id: string } | null = null;
+  if (leadPropertyId) {
+    const res = await supabase
+      .from("properties")
+      .update({ ...propertyFields, needs_followup: false, notes: null })
+      .eq("id", leadPropertyId)
+      .eq("customer_id", customerId)
+      .eq("plan_status", "pending")
+      .eq("notes", SAW_TIMES_NOTE)
+      .select("id")
+      .maybeSingle();
+    if (res.error) console.error("lead conversion update failed; inserting a new property", res.error);
+    converted = (res.data as { id: string } | null) ?? null;
+  }
   const { data: property, error: propertyError } = converted
     ? { data: converted, error: null }
     : await supabase

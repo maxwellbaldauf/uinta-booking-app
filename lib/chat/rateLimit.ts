@@ -97,7 +97,10 @@ const gl = globalThis as typeof globalThis & {
 };
 const leadStore: Map<string, number[]> = (gl[LEAD_STORE] ??= new Map());
 
-export function allowLeadWrite(ip: string): boolean {
+// `scope` keeps independent budgets per feature (chat leads vs. in-area booking
+// leads) so one can't starve the other.
+export function allowLeadWrite(ip: string, scope = "chat"): boolean {
+  const key = `${scope}|${ip}`;
   const now = Date.now();
   const cutoff = now - LEAD_WRITE_LIMIT.windowMs;
 
@@ -110,13 +113,13 @@ export function allowLeadWrite(ip: string): boolean {
     if (leadStore.size > MAX_TRACKED_IPS * 2) leadStore.clear();
   }
 
-  const hits = (leadStore.get(ip) ?? []).filter((t) => t > cutoff);
+  const hits = (leadStore.get(key) ?? []).filter((t) => t > cutoff);
   if (hits.length >= LEAD_WRITE_LIMIT.limit) {
-    leadStore.set(ip, hits);
+    leadStore.set(key, hits);
     return false;
   }
   hits.push(now);
-  leadStore.set(ip, hits);
+  leadStore.set(key, hits);
   return true;
 }
 

@@ -103,6 +103,16 @@ async function isRealCustomer(matched: MatchedCustomer): Promise<boolean> {
     return true;
   }
   const supabase = businessDb();
+  // Only customers that came in through the booking form or the contact form can
+  // be bare leads; anything the owner created or imported is a real record.
+  const { data: cust, error: custError } = await supabase
+    .from("customers")
+    .select("source")
+    .eq("id", matched.id)
+    .maybeSingle();
+  if (custError) throw new Error(`lead: read customer failed: ${custError.message}`);
+  const source = (cust as { source: string } | null)?.source;
+  if (source !== "booking" && source !== "contact_form") return true;
   const { data: props, error } = await supabase
     .from("properties")
     .select("id, needs_followup, out_of_service_area")
@@ -124,11 +134,15 @@ async function captureInAreaLead(
   details: LeadDetails,
   coords: { lat: number; lng: number },
   serviceType: "residential" | "commercial",
-  matched: MatchedCustomer | null
+  matched: MatchedCustomer | null,
+  allowWrite: () => boolean
 ): Promise<void> {
   // Existing real customers are never touched. A returning customer re-entering
   // their own address must not get a flag or a second property.
   if (matched && (await isRealCustomer(matched))) return;
+
+  // Spend the per-IP budget only when a write is really about to happen.
+  if (!allowWrite()) return;
 
   const { id: customerId } = matched
     ? { id: matched.id }
@@ -174,12 +188,13 @@ export async function captureInAreaLeadBestEffort(
   details: LeadDetails,
   coords: { lat: number; lng: number },
   serviceType: "residential" | "commercial",
-  matched: MatchedCustomer | null
+  matched: MatchedCustomer | null,
+  allowWrite: () => boolean
 ): Promise<void> {
   let timer: ReturnType<typeof setTimeout> | undefined;
   try {
     await Promise.race([
-      captureInAreaLead(details, coords, serviceType, matched).catch((err) => {
+      captureInAreaLead(details, coords, serviceType, matched, allowWrite).catch((err) => {
         console.error("in-area lead capture failed", err);
       }),
       new Promise<void>((resolve) => {
