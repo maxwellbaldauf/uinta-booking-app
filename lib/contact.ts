@@ -52,7 +52,15 @@ export async function submitContact(
     } else {
       const { data: prop } = await supabase
         .from("properties")
-        .insert({ customer_id: customerId, address: input.address.trim(), source: "contact_form", ...patch })
+        // 'pending', not the 'active' default: a lead is not a paying plan, so it
+        // must stay out of the field app's MRR / active-client counts.
+        .insert({
+          customer_id: customerId,
+          address: input.address.trim(),
+          source: "contact_form",
+          plan_status: "pending",
+          ...patch,
+        })
         .select("id")
         .single();
       propertyId = (prop as { id: string } | null)?.id ?? null;

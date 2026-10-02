@@ -67,6 +67,9 @@ export async function saveFlaggedLead(
       customer_id: customerId,
       address: details.address,
       source: "booking",
+      // 'pending', not the 'active' default: a lead is not a paying plan, so it
+      // must stay out of the field app's MRR / active-client counts.
+      plan_status: "pending",
       ...propertyPatch,
     })
     .select("id")

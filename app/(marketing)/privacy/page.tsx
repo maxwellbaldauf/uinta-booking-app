@@ -55,15 +55,15 @@ export default function PrivacyPage() {
             <strong>If you check availability but don’t book:</strong> when
             you enter your details in the booking form, we check your
             address. If your address is outside our service area, if we have
-            no open appointment, or if we show you open appointment times and
-            you leave without booking, we save your name, email address,
-            phone number, address (and its map location), and your ice
-            machine’s brand and model in our records as a lead (matched to an
-            existing record if you are already a customer). We do not send
-            you automatic emails or texts because of this, and we may follow
-            up with you personally about your request. If you leave the
-            booking form before it checks your address, we do not save what
-            you typed.
+            no open appointment, or if we show you open appointment times, we
+            save your name, email address, phone number, address (and its map
+            location), and your ice machine’s brand and model in our records
+            as a lead (matched to an existing record if you are already a
+            customer). We save this when we check your address, whether or not
+            you go on to book. We do not send you automatic emails or texts
+            because of this, and we may follow up with you personally about
+            your request. If you leave the booking form before it checks your
+            address, we do not save what you typed.
           </li>
           <li>
             <strong>Testimonials:</strong> we publish customer testimonials
@@ -238,8 +238,8 @@ export default function PrivacyPage() {
           customer and afterward as long as we reasonably need them for
           business, tax, and legal records. We do not delete these
           automatically. Leads (people who contact us, chat with us, or are
-          saved when we can’t book them or when they see appointment times
-          and don’t book, and who never become customers) are kept until the
+          saved when we can’t book them or when they see appointment
+          times, and who never become customers) are kept until the
           person asks us to delete them. To ask, email{" "}
           <a href={NAP.emailHref}>{NAP.email}</a> or call{" "}
           <a href={NAP.phoneHref}>{NAP.phoneDisplay}</a>. Copies of our
