@@ -8,7 +8,7 @@ import { JsonLd } from "@/components/marketing/JsonLd";
 // (incl. out-of-area / no-availability leads saved via saveFlaggedLead and the
 // sessionStorage handoff to /contact in lib/contactHandoff.ts), contact form,
 // chat widget (Anthropic), Stripe saved card, Resend email, Kit opt-in,
-// Plausible, Google Ads base tag (marketing pages + /book only), Google
+// Microsoft Clarity + Google Ads base tag (both marketing pages + /book only), Google
 // address autocomplete + geocoding, Supabase, Netlify. If a new data flow is added, this page has to change with it —
 // bump PAGE_UPDATED.privacy when it does.
 export const metadata = pageMetadata({
@@ -92,9 +92,24 @@ export default function PrivacyPage() {
         <h2>Information Collected Automatically</h2>
         <ul>
           <li>
-            <strong>Analytics:</strong> we use Plausible Analytics to count
-            page visits. Plausible does not use cookies and does not track
-            you across other websites.
+            <strong>Analytics and session recordings (Microsoft
+            Clarity):</strong> our public pages and the booking page use
+            Microsoft Clarity to record how visitors use them, such as where
+            they click and scroll, and to build heatmaps, so we can improve
+            the site. We configure Clarity to mask text and form inputs, so
+            what you type into our forms is not shown in recordings. Clarity
+            sets cookies on your device to recognize a returning visitor and
+            to join page views into one session; some are set by Microsoft.
+            Clarity sends this information to Microsoft, which handles it
+            under the{" "}
+            <a href="https://privacy.microsoft.com/privacystatement" rel="noopener noreferrer">
+              Microsoft Privacy Statement
+            </a>
+            . We do not add Clarity to the personal links we email to
+            customers (payment, invoice, visit, and consent pages) or to the
+            contact form page. If you reach the contact form by clicking
+            through from another page on our site, Clarity may already be
+            loaded from that earlier page.
           </li>
           <li>
             <strong>Advertising (Google Ads):</strong> our public pages and
@@ -188,7 +203,7 @@ export default function PrivacyPage() {
             </a>
             .
           </li>
-          <li><strong>Plausible</strong> — visit counts, without cookies.</li>
+          <li><strong>Microsoft Clarity</strong> — session recordings and heatmaps of how visitors use our public pages, with text and form input masked.</li>
         </ul>
         <p>
           We may also disclose information if required by law, or to protect

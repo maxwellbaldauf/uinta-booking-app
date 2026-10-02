@@ -5,6 +5,7 @@ import { SiteHeader } from "@/components/marketing/SiteHeader";
 import { SiteFooter } from "@/components/marketing/SiteFooter";
 import { MobileCtaBar } from "@/components/marketing/MobileCtaBar";
 import { MarketingScripts } from "@/components/marketing/MarketingScripts";
+import { ClarityTag } from "@/components/ClarityTag";
 import { GoogleAdsTag } from "@/components/GoogleAdsTag";
 import { ChatWidget } from "@/components/chat/ChatWidget";
 
@@ -27,6 +28,7 @@ export default function MarketingLayout({
       <MarketingScripts />
       <ChatWidget />
       <GoogleAdsTag />
+      <ClarityTag />
     </div>
   );
 }

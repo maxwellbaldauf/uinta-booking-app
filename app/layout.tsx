@@ -1,5 +1,4 @@
 import type { Metadata, Viewport } from "next";
-import Script from "next/script";
 import { SITE_ORIGIN } from "@/lib/site";
 import { inter, tenorSans } from "./fonts";
 import "./globals.css";
@@ -17,12 +16,6 @@ export const viewport: Viewport = {
   initialScale: 1,
 };
 
-// Only load analytics in production with a configured domain — no dev noise.
-const PLAUSIBLE_DOMAIN =
-  process.env.NODE_ENV === "production"
-    ? process.env.NEXT_PUBLIC_PLAUSIBLE_DOMAIN
-    : undefined;
-
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
@@ -35,17 +28,6 @@ export default function RootLayout({
     <html lang="en" data-scroll-behavior="smooth">
       <body className={`${inter.variable} ${tenorSans.variable}`}>
         {children}
-        {/* Plausible — privacy-friendly, no cookie banner needed. Loads only
-            when a domain is configured. This is a plain public website: no
-            service worker, no PWA (Project A is the installable one). */}
-        {PLAUSIBLE_DOMAIN && (
-          <Script
-            defer
-            data-domain={PLAUSIBLE_DOMAIN}
-            src="https://plausible.io/js/script.js"
-            strategy="afterInteractive"
-          />
-        )}
       </body>
     </html>
   );

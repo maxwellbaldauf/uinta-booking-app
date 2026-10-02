@@ -1,5 +1,6 @@
 import { BookingFlow } from "@/components/booking/BookingFlow";
 import { BrandBar } from "@/components/BrandBar";
+import { ClarityTag } from "@/components/ClarityTag";
 import { GoogleAdsTag } from "@/components/GoogleAdsTag";
 import { LegalLinks } from "@/components/LegalLinks";
 import { getSettings } from "@/lib/settings";
@@ -25,11 +26,12 @@ export default async function BookPage() {
   return (
     <>
       <BrandBar />
-      <main className="page">
+      <main className="page" data-clarity-mask="true">
         <BookingFlow basePriceCents={basePriceCents} commercialPriceCents={commercialPriceCents} />
       </main>
       <LegalLinks />
       <GoogleAdsTag />
+      <ClarityTag />
     </>
   );
 }

@@ -32,7 +32,7 @@ Stripe dashboard — Elements can't mount without it.
 4. Magic-link portal (reschedule / cancel)
 5. Contact form + dead-end lead capture
 6. Import payment-setup page (`/pay/[token]`)
-7. Marketing placeholder + Plausible
+7. Marketing placeholder + Microsoft Clarity
 8. AI chat widget — lead capture on the marketing pages
    (`components/chat/ChatWidget.tsx`, `app/api/chat`, `lib/chat/*`). Server-side
    Anthropic call (`claude-haiku-4-5`), grounded in `lib/faq.ts` + a curated

@@ -17,8 +17,8 @@ const GOOGLE_ADS_IMG =
 // currently-static marketing pages down with it.
 const CSP_REPORT_ONLY = [
   "default-src 'self'",
-  `script-src 'self' https://js.stripe.com https://maps.googleapis.com https://plausible.io ${GOOGLE_ADS_SCRIPT}`,
-  `connect-src 'self' https://api.stripe.com https://maps.googleapis.com https://plausible.io ${GOOGLE_ADS_CONNECT}`,
+  `script-src 'self' https://js.stripe.com https://maps.googleapis.com https://*.clarity.ms ${GOOGLE_ADS_SCRIPT}`,
+  `connect-src 'self' https://api.stripe.com https://maps.googleapis.com https://*.clarity.ms ${GOOGLE_ADS_CONNECT}`,
   "frame-src https://js.stripe.com",
   `img-src 'self' data: https: ${GOOGLE_ADS_IMG}`,
   "style-src 'self'",

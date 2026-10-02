@@ -203,6 +203,7 @@ export function ChatWidget() {
       {open && (
         <div
           className="uic-panel"
+          data-clarity-mask="true"
           role="dialog"
           aria-label="Chat with Uinta Ice Co."
         >

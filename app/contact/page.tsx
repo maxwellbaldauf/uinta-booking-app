@@ -15,7 +15,7 @@ export default function ContactPage() {
   return (
     <>
       <BrandBar />
-      <main className="page">
+      <main className="page" data-clarity-mask="true">
         <ContactForm />
       </main>
       <LegalLinks />
