@@ -83,9 +83,11 @@ export async function saveFlaggedLead(
 //
 // Saved when availability returns open times. NO schema change: the lead is a
 // property with plan_status 'pending' (excluded from MRR / active counts and
-// never auto-scheduled — scheduleNextRecurring requires 'active'; a lead has no
-// job, and handleJobCharged's pending -> active flip is job-driven, so the
-// field app's backlog meaning of 'pending' never touches it),
+// never auto-scheduled — scheduleNextRecurring requires 'active'. The field app
+// also uses 'pending' for backlog properties and shows it as "Awaiting first
+// payment"; handleJobCharged flips pending -> active on the first successful
+// charge, which is the intended path if the owner turns a lead into a customer
+// from the field app),
 // needs_followup true (the field app's follow-up list) and a human-readable
 // marker in notes. There is no automatic outreach: nothing here emails, texts,
 // or charges anyone, and every reminder / invoice / clustering automation keys

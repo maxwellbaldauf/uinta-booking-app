@@ -6,7 +6,8 @@ import { JsonLd } from "@/components/marketing/JsonLd";
 
 // Written against what the site actually does (audited 2026-10-01): booking
 // (incl. out-of-area / no-availability leads saved via saveFlaggedLead, in-area
-// visitors who see times and leave saved via captureInAreaLead, and the
+// visitors who are shown times, saved best-effort via captureInAreaLead unless
+// they are already a customer, over a cap, or the save times out, and the
 // sessionStorage handoff to /contact in lib/contactHandoff.ts), contact form,
 // chat widget (Anthropic), Stripe saved card, Resend email, Kit opt-in,
 // Microsoft Clarity + Google Ads base tag (both marketing pages + /book only), Google
@@ -59,8 +60,8 @@ export default function PrivacyPage() {
             save your name, email address, phone number, address (and its map
             location), and your ice machine’s brand and model in our records
             as a lead (matched to an existing record if you are already a
-            customer). We save this when we check your address, whether or not
-            you go on to book. We do not send you automatic emails or texts
+            customer). We save this at that point, whether or not you go on to
+            book, unless you are already one of our customers. We do not send you automatic emails or texts
             because of this, and we may follow up with you personally about
             your request. If you leave the booking form before it checks your
             address, we do not save what you typed.
