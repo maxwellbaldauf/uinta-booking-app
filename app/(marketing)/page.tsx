@@ -19,6 +19,7 @@ import { Sources } from "@/components/marketing/Sources";
 import { JsonLd } from "@/components/marketing/JsonLd";
 import { JOB_PHOTOS } from "@/lib/jobPhotos";
 import { SOURCE_LINKS } from "@/lib/sources";
+import { GoogleBadge } from "@/components/marketing/GoogleBadge";
 import { LazyGoogleReviews } from "@/components/marketing/LazyGoogleReviews";
 import { ReviewsView } from "@/components/marketing/ReviewsView";
 import { previewReviews } from "@/lib/googleReviews.preview";
@@ -155,6 +156,9 @@ export default async function HomePage({
           </div>
         </div>
       </section>
+
+      {/* Link-only Google badge (no API call) */}
+      <GoogleBadge />
 
       {/* Trust bar */}
       <div className="mkt-trustbar">

@@ -104,6 +104,12 @@ export const SOCIAL_LINKS = [
   { key: "tiktok", name: "TikTok", href: "https://www.tiktok.com/@uintaiceco" },
 ] as const;
 
+// Public Google Business Profile listing — the home page's "Reviewed on Google"
+// badge links here. Same listing as the first SAME_AS entry below (verified in a
+// browser 2026-10-01: opens "Uinta Ice Company", 5.0, with its reviews; the
+// place_id URL lands on the identical listing).
+export const GOOGLE_PROFILE_URL = "https://www.google.com/maps?cid=13160342441906296365";
+
 // JSON-LD `sameAs`: the Google Business Profile listing (derived from the
 // feature id in the Maps place URL, …:0xb6a2edb97452562d) plus the socials.
 export const SAME_AS: string[] = [

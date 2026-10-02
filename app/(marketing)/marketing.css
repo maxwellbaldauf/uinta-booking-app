@@ -523,6 +523,40 @@
   }
 }
 
+/* ---- Google badge (home, under the hero) -------------------------
+   Static link-only badge. The block height is fixed (not min-height) so the
+   page can't shift whatever the font does; one line fits down to 320px. */
+
+.mkt-gbadge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 64px;
+  background: var(--paper);
+}
+.mkt-gbadge__link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  color: var(--ink);
+  text-decoration: none;
+  white-space: nowrap;
+}
+.mkt-gbadge__stars {
+  display: inline-flex;
+  gap: 2px;
+}
+.mkt-gbadge__label {
+  font-family: var(--font-display), "Trebuchet MS", sans-serif;
+  font-size: var(--text-base);
+  line-height: 1;
+  letter-spacing: 0.04em;
+}
+.mkt-gbadge__link:hover .mkt-gbadge__label {
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
 /* ---- Page head (content pages) ---------------------------------- */
 
 .mkt-pagehead {
