@@ -486,8 +486,8 @@
   border-bottom: 1px solid var(--line);
   background: var(--paper-sunk);
 }
-/* Mobile: a clean vertical list. Desktop: one centered row with dot
-   separators (which only read right on a single line). */
+/* Mobile: a clean vertical list. Desktop/tablet: wrapping rows with dot
+   separators (see the min-width block below). */
 .mkt-trustbar ul {
   display: flex;
   flex-direction: column;
@@ -503,65 +503,72 @@
 .mkt-trustbar li {
   display: block;
 }
+/* Desktop/tablet separators. The items wrap, and a "·" glued to an item's
+   end (or start) dangles at a line break. So: each item stretches to fill its
+   row (flex-grow), carries its leading "·" in its own left padding, and is
+   pulled left by that padding. The first item on every row therefore sits
+   with its dot outside the list box, where overflow: hidden clips it; the
+   dots that remain are always between two items on the same row. Horizontal
+   padding is 0 on the list (the width calc gives the same gutters) because
+   overflow clips at the padding box. */
 @media (min-width: 48rem) {
   .mkt-trustbar ul {
+    --sep: var(--space-md);
     flex-direction: row;
     flex-wrap: wrap;
     align-items: center;
-    justify-content: center;
     gap: var(--space-2xs) 0;
-    padding: var(--space-md) var(--space-xl);
+    width: min(100% - 2 * var(--space-xl), var(--width-wide) - 2 * var(--space-xl));
+    padding: var(--space-md) 0;
+    overflow: hidden;
   }
   .mkt-trustbar li {
-    display: inline-flex;
+    position: relative;
+    flex: 1 1 auto;
+    display: flex;
     align-items: center;
+    justify-content: center;
+    margin-left: calc(-1 * var(--sep));
+    padding-left: var(--sep);
+    text-align: center;
   }
-  .mkt-trustbar li:not(:last-child)::after {
+  .mkt-trustbar li::before {
     content: "·";
-    margin: 0 var(--space-sm);
+    position: absolute;
+    left: 0;
+    width: var(--sep);
+    text-align: center;
     color: var(--ink-faint);
   }
 }
 
-/* ---- Google badge (home, under the hero) -------------------------
-   Static link-only badge. At normal text size it is exactly one 64px line
-   (no shift); min-height lets it wrap instead of overflowing at large text
-   or high zoom. */
+/* ---- Google badge (first item in the home trust strip) ---------
+   Looks like its sibling items (inherits their size and colour); only the
+   hover/focus state marks it as a link. */
 
 .mkt-gbadge {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 64px;
-  padding: 0 var(--space-md);
-  background: var(--paper);
-}
-.mkt-gbadge__link {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-xs);
-  color: var(--ink);
-  flex-wrap: wrap;
-  justify-content: center;
+  gap: var(--space-2xs);
+  color: inherit;
   text-decoration: none;
-}
-.mkt-gbadge__link:focus-visible {
-  outline: 2px solid var(--ink);
-  outline-offset: 4px;
 }
 .mkt-gbadge__stars {
   display: inline-flex;
-  gap: 2px;
+  gap: 1px;
 }
-.mkt-gbadge__label {
+.mkt-gbadge__google {
   font-family: var(--font-display), "Trebuchet MS", sans-serif;
-  font-size: var(--text-base);
-  line-height: 1;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.03em;
 }
-.mkt-gbadge__link:hover .mkt-gbadge__label {
+.mkt-gbadge:hover {
+  color: var(--ink);
   text-decoration: underline;
   text-underline-offset: 4px;
+}
+.mkt-gbadge:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
 }
 
 /* ---- Page head (content pages) ---------------------------------- */

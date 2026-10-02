@@ -157,12 +157,13 @@ export default async function HomePage({
         </div>
       </section>
 
-      {/* Link-only Google badge (no API call) */}
-      <GoogleBadge />
-
       {/* Trust bar */}
       <div className="mkt-trustbar">
         <ul>
+          <li>
+            {/* Link-only Google badge (no API call) */}
+            <GoogleBadge />
+          </li>
           {TRUST_BAR.map((item) => (
             <li key={item}>{item}</li>
           ))}
