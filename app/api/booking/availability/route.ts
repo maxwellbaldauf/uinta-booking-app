@@ -53,7 +53,10 @@ export async function POST(req: Request) {
     const result = await checkAvailability(details, body.serviceType, {
       allowLeadCapture: () => allowLeadWrite(ip, "inarea"),
     });
-    const saved = result.status === "out_of_area" || result.status === "no_availability";
+    const saved =
+      result.status === "out_of_area" || result.status === "no_availability"
+        ? true
+        : result.status === "ok" && !!result.leadCaptured;
     return NextResponse.json({ ...result, saved });
   } catch (err) {
     console.error("availability route error", err);

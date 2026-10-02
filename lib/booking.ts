@@ -12,6 +12,7 @@ import {
   findConvertibleLeadProperty,
   SAW_TIMES_NOTE,
   saveFlaggedLead,
+  stripSawTimesNote,
   type LeadDetails,
 } from "@/lib/leads";
 import {
@@ -52,6 +53,9 @@ export type AvailabilityResult =
       // true = matched customer accepted an OLDER version and must re-accept
       // (drives the "we've updated the agreement" notice, not the gate itself).
       agreementStale: boolean;
+      // true = an in-area lead row for this visitor is known to exist (saved now
+      // or already there). The UI ignores it; the route reports it as `saved`.
+      leadCaptured?: boolean;
     };
 
 export async function checkAvailability(
@@ -88,8 +92,15 @@ export async function checkAvailability(
 
   // In-area visitor who sees times: keep them as a lead in case they leave.
   // Best effort and time-capped — never blocks or fails the availability check.
+  let leadCaptured = false;
   if (opts?.allowLeadCapture) {
-    await captureInAreaLeadBestEffort(details, geo, serviceType, matched, opts.allowLeadCapture);
+    leadCaptured = await captureInAreaLeadBestEffort(
+      details,
+      geo,
+      serviceType,
+      matched,
+      opts.allowLeadCapture
+    );
   }
 
   // Once-per-customer agreement: required for a brand-new customer, or a matched
@@ -120,6 +131,7 @@ export async function checkAvailability(
       : null,
     agreementRequired,
     agreementStale,
+    leadCaptured,
   };
 }
 
@@ -369,10 +381,10 @@ export async function createBookingRecord(
   // jobs qualifies (see findConvertibleLeadProperty). Guarded again on the
   // update itself so a concurrent change can't convert the wrong row.
   // A read error here must never fail a paid booking: log it and insert as usual.
-  let leadPropertyId: string | null = null;
+  let leadProperty: { id: string; notes: string | null } | null = null;
   if (matched) {
     try {
-      leadPropertyId = await findConvertibleLeadProperty(customerId, details.address);
+      leadProperty = await findConvertibleLeadProperty(customerId, details.address);
     } catch (err) {
       console.error("lead conversion lookup failed; inserting a new property", err);
     }
@@ -380,14 +392,19 @@ export async function createBookingRecord(
   // If the conversion matches nothing (the row changed since we looked), fall
   // back to the normal insert rather than failing a paid booking.
   let converted: { id: string } | null = null;
-  if (leadPropertyId) {
+  if (leadProperty) {
     const res = await supabase
       .from("properties")
-      .update({ ...propertyFields, needs_followup: false, notes: null })
-      .eq("id", leadPropertyId)
+      // Clear the marker; anything the owner added after it is kept.
+      .update({
+        ...propertyFields,
+        needs_followup: false,
+        notes: stripSawTimesNote(leadProperty.notes),
+      })
+      .eq("id", leadProperty.id)
       .eq("customer_id", customerId)
       .eq("plan_status", "pending")
-      .eq("notes", SAW_TIMES_NOTE)
+      .like("notes", `${SAW_TIMES_NOTE}%`)
       .select("id")
       .maybeSingle();
     if (res.error) console.error("lead conversion update failed; inserting a new property", res.error);
