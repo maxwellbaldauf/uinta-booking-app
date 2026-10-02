@@ -25,6 +25,11 @@ export class SlotUnavailableError extends Error {}
 // step rather than stranding them on slots / payment.
 export class AgreementRequiredError extends Error {}
 
+// A contact field (name / email / phone / address) failed the shared rules in
+// lib/contactValidation. The booking action maps it to a flag that sends the
+// client back to the details step, where the fields can actually be fixed.
+export class ContactValidationError extends Error {}
+
 // ---- availability check (spec §1 steps 2–5, §2) --------------------------
 
 export type AvailabilityResult =
@@ -144,7 +149,7 @@ export async function createBookingRecord(
   // Contact fields: same rules as the details step, so a raw POST with a blank
   // name / bad email / short phone gets a clear message, not a DB failure.
   const contactError = firstContactError(details ?? {});
-  if (contactError) throw new Error(`${contactError}.`);
+  if (contactError) throw new ContactValidationError(`${contactError}.`);
 
   const supabase = businessDb();
 

@@ -142,6 +142,13 @@ export function BookingFlow({
         return;
       }
 
+      // A contact field failed server validation — only the details step can fix it.
+      if (res.contactInvalid) {
+        setError(res.error);
+        setStep("details");
+        return;
+      }
+
       // Slot got taken mid-flow — refresh the list and send them back to pick again.
       if (res.slotTaken) {
         const fresh = await fetchAvailability(d, st);

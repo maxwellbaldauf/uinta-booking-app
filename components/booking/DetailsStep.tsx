@@ -53,7 +53,11 @@ export function DetailsStep({
   // A field's message shows after its first blur — never while they're still
   // typing the first time. It then clears live as the value becomes valid.
   // (Continue is disabled while invalid, so there is no "tried to continue" path.)
-  const [touched, setTouched] = useState<Partial<Record<keyof ContactFields, boolean>>>({});
+  // Prefilled values (coming back from a later step) are shown validated right
+  // away, so a server-side rejection points at the offending field.
+  const [touched, setTouched] = useState<Partial<Record<keyof ContactFields, boolean>>>(
+    initial ? { fullName: true, email: true, phone: true, address: true } : {}
+  );
   const touch = (k: keyof ContactFields) => () => setTouched((t) => ({ ...t, [k]: true }));
 
   const errors = validateContact(d);
