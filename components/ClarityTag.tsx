@@ -33,10 +33,15 @@ declare global {
 }
 
 const subscribe = () => () => {};
-// Stripe's 3DS return lands on /book with the SetupIntent client secret in the
-// query string, and Clarity records the page URL. Don't load it there. The
-// server snapshot is "blocked", so the tag only ever renders after hydration.
-const urlAllowed = () => !window.location.search.includes("setup_intent_client_secret");
+// Stripe's 3DS return lands on /book with the SetupIntent client secret, id and
+// status in the query string (the same three GoogleAdsTag strips), and Clarity
+// records the page URL. Don't load it there. The server snapshot is "blocked",
+// so the tag only ever renders after hydration.
+const STRIPE_RETURN_PARAMS = ["setup_intent_client_secret", "setup_intent", "redirect_status"];
+const urlAllowed = () => {
+  const params = new URLSearchParams(window.location.search);
+  return !STRIPE_RETURN_PARAMS.some((p) => params.has(p));
+};
 
 export function ClarityTag() {
   const allowed = useSyncExternalStore(subscribe, urlAllowed, () => false);

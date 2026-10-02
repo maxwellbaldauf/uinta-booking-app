@@ -339,7 +339,7 @@ function renderInline(segment: string): ReactNode[] {
       out.push(
         !href ? (
           <span key={`l${key}`}>{linkText}</span>
-        ) : href.startsWith("/") && !TOKEN_ROUTE_RE.test(href) ? (
+        ) : href.startsWith("/") && !isTokenRoute(href) ? (
           <Link key={`l${key}`} href={href} className="uic-inline-link">
             {linkText}
           </Link>
@@ -386,6 +386,16 @@ function withBreaks(text: string, keyBase: number): ReactNode[] {
 // Token routes (the URL is a bearer credential) get a plain <a>, i.e. a full
 // page load, so the analytics tags from this page aren't resident there.
 const TOKEN_ROUTE_RE = /^\/(visit|pay|invoice|cluster-consent)(\/|$|\?|#)/i;
+
+function isTokenRoute(href: string): boolean {
+  try {
+    // Resolve dot segments and percent-escapes the way the router would.
+    const path = decodeURIComponent(new URL(href, "http://x").pathname);
+    return TOKEN_ROUTE_RE.test(path);
+  } catch {
+    return true; // can't parse it -> treat as a full page load, the safe side
+  }
+}
 
 function safeHref(raw: string): string | null {
   const h = raw.trim();
