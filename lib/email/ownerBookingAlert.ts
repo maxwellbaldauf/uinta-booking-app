@@ -1,6 +1,7 @@
 import { getEmailBrand, type EmailBrand } from "@/lib/email/brand";
 import { businessDb, businessTz } from "@/lib/tenant/business";
 import { getSettings, formatUsd } from "@/lib/settings";
+import { getEffectivePriceCents } from "@/lib/pricing";
 import { getResend } from "@/lib/email/resend";
 import { renderEmail, detailsTable, escapeHtml } from "@/lib/email/shell";
 import { arrivalBlockLabel } from "@/lib/schedule/blocks";
@@ -19,7 +20,9 @@ type JobRow = {
 type Prop = {
   id: string;
   address: string;
+  customer_id: string | null;
   service_type: string | null;
+  custom_price_cents: number | null;
   ice_maker_brand: string | null;
   ice_maker_model: string | null;
   customer: { full_name: string | null; phone: string | null } | null;
@@ -34,7 +37,7 @@ async function loadJob(jobId: string): Promise<JobRow | null> {
     .from("jobs")
     .select(
       "id, scheduled_date, arrival_block, blocks_needed, quoted_price_cents, " +
-        "property:properties(id, address, service_type, ice_maker_brand, ice_maker_model, customer:customers(full_name, phone))"
+        "property:properties(id, customer_id, address, service_type, custom_price_cents, ice_maker_brand, ice_maker_model, customer:customers(full_name, phone))"
     )
     .eq("id", jobId)
     .single();
@@ -45,9 +48,34 @@ async function loadJob(jobId: string): Promise<JobRow | null> {
 export type OwnerAlertKind = "new" | "rescheduled";
 export type OwnerAlertOpts = {
   kind?: OwnerAlertKind; // default "new"
-  // Only known at booking time (customer match); omitted → row hidden.
-  isReturning?: boolean;
+  // Business-local "today" (YYYY-MM-DD) captured by the caller when the slot
+  // was chosen, so a booking made just before midnight isn't mislabeled.
+  today?: string;
+  // Reschedules only: the slot the visit was moved from.
+  previous?: { date: string; arrivalBlock: number; blocksNeeded: number };
 };
+
+// "Returning" = this customer has at least one OTHER non-cancelled job. A
+// customers row alone isn't enough — contact-form leads and archived
+// customers have one too. Best-effort: any error reads as "new".
+async function hasPriorJob(customerId: string | null, jobId: string): Promise<boolean> {
+  if (!customerId) return false;
+  try {
+    const db = businessDb();
+    const { data: props } = await db.from("properties").select("id").eq("customer_id", customerId);
+    const ids = (props ?? []).map((p) => (p as { id: string }).id);
+    if (ids.length === 0) return false;
+    const { count } = await db
+      .from("jobs")
+      .select("id", { count: "exact", head: true })
+      .in("property_id", ids)
+      .neq("id", jobId)
+      .neq("status", "cancelled");
+    return (count ?? 0) > 0;
+  } catch {
+    return false;
+  }
+}
 
 // Build the owner alert for a self-serve booking (or a customer reschedule).
 // Fires for every date; a visit for TODAY gets an unmissable same-day callout.
@@ -57,7 +85,7 @@ export async function buildOwnerBookingAlert(
   jobId: string,
   opts: OwnerAlertOpts = {}
 ): Promise<
-  | (Omit<BuiltEmail, "to"> & { to: string | null; propertyId: string | null })
+  | (Omit<BuiltEmail, "to"> & { to: string | null; propertyId: string | null; sameDay: boolean })
   | { error: string }
 > {
   const kind = opts.kind ?? "new";
@@ -74,7 +102,8 @@ export async function buildOwnerBookingAlert(
   const property = flatten(job.property);
   const customer = flatten(property?.customer);
 
-  const sameDay = job.scheduled_date === todayISODate(await businessTz());
+  const today = opts.today ?? todayISODate(await businessTz());
+  const sameDay = job.scheduled_date === today;
   const windowLabel = arrivalBlockLabel(job.arrival_block, job.blocks_needed ?? undefined);
   const dateLong = formatVisitDate(job.scheduled_date, { withYear: true });
   const dateShort = formatVisitDate(job.scheduled_date);
@@ -86,19 +115,43 @@ export async function buildOwnerBookingAlert(
       : property?.service_type === "residential"
         ? "Residential"
         : "—";
-  const price = formatUsd(job.quoted_price_cents ?? settings.base_price_cents);
-  const who = customer?.full_name?.trim() || property?.address || "new";
+  const price = formatUsd(
+    job.quoted_price_cents ??
+      getEffectivePriceCents(
+        {
+          service_type: property?.service_type === "commercial" ? "commercial" : "residential",
+          custom_price_cents: property?.custom_price_cents ?? null,
+        },
+        {
+          basePriceCents: settings.base_price_cents,
+          commercialPriceCents: settings.commercial_price_cents,
+        }
+      )
+  );
+  const who = customer?.full_name?.trim() || property?.address || "unknown customer";
+  const returning = kind === "new" ? await hasPriorJob(property?.customer_id ?? null, jobId) : null;
 
   const rows = [
     { label: "Customer", value: customer?.full_name?.trim() || "—" },
-    ...(opts.isReturning === undefined
+    ...(returning === null
       ? []
-      : [{ label: "Customer type", value: opts.isReturning ? "Returning customer" : "New customer" }]),
+      : [{ label: "Customer type", value: returning ? "Returning customer" : "New customer" }]),
     { label: "Phone", value: customer?.phone || "—" },
     { label: "Address", value: property?.address || "—" },
     { label: "Service", value: service },
     { label: "Date", value: sameDay ? `${dateLong} (TODAY)` : dateLong },
     { label: "Arrival window", value: windowLabel },
+    ...(opts.previous
+      ? [
+          {
+            label: "Was",
+            value: `${formatVisitDate(opts.previous.date, { withYear: true })}, ${arrivalBlockLabel(
+              opts.previous.arrivalBlock,
+              opts.previous.blocksNeeded
+            )}`,
+          },
+        ]
+      : []),
     { label: "Price", value: price },
     { label: "Ice maker", value: iceMaker },
   ];
@@ -140,11 +193,18 @@ export async function buildOwnerBookingAlert(
     ? `⚡ SAME-DAY ${kind === "rescheduled" ? "reschedule" : "booking"} — ${windowLabel} today (${who})`
     : `${kind === "rescheduled" ? "Rescheduled" : "New booking"} — ${dateShort}, ${windowLabel} (${who})`;
 
-  return { to: settings.business_email, propertyId: property?.id ?? null, subject, html, text };
+  return {
+    to: settings.business_email,
+    propertyId: property?.id ?? null,
+    sameDay,
+    subject,
+    html,
+    text,
+  };
 }
 
 // Alerts the owner when a customer books (or reschedules) a visit. If there's
-// no recipient or the send fails, flag the property needs_followup as a
+// no recipient or the send fails on a SAME-DAY visit, flag the property needs_followup as a
 // backstop. Never throws.
 export async function sendOwnerBookingAlert(
   jobId: string,
@@ -157,15 +217,19 @@ export async function sendOwnerBookingAlert(
       return;
     }
 
+    // Backstop only for same-day visits (urgent, easy to miss). For ordinary
+    // bookings the visit is already on the schedule, and flagging would put
+    // real booked customers in the lead/follow-up list.
+    const backstopPropertyId = built.sameDay ? built.propertyId : null;
     const recipient = opts.overrideTo ?? built.to;
     const resend = await getResend();
 
     if (!recipient || !resend) {
       console.error(
-        "sendOwnerBookingAlert: no recipient (settings.business_email) or Resend not configured — flagging needs_followup",
+        "sendOwnerBookingAlert: no recipient (settings.business_email) or Resend not configured — flagging needs_followup (same-day only)",
         { jobId, hasRecipient: !!recipient, hasResend: !!resend }
       );
-      await flagNeedsFollowup(built.propertyId);
+      await flagNeedsFollowup(backstopPropertyId);
       return;
     }
 
@@ -178,8 +242,8 @@ export async function sendOwnerBookingAlert(
     });
 
     if (error) {
-      console.error("sendOwnerBookingAlert: Resend send failed — flagging needs_followup", error, { jobId });
-      await flagNeedsFollowup(built.propertyId);
+      console.error("sendOwnerBookingAlert: Resend send failed — flagging needs_followup (same-day only)", error, { jobId });
+      await flagNeedsFollowup(backstopPropertyId);
     }
   } catch (err) {
     console.error("sendOwnerBookingAlert: unexpected error", err, { jobId });

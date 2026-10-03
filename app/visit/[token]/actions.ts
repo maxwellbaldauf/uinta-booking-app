@@ -3,7 +3,7 @@
 import { businessDb, businessTz } from "@/lib/tenant/business";
 import { getVisitByToken, getRescheduleSlots } from "@/lib/visit";
 import { slotStillAvailable } from "@/lib/scheduling";
-import { addDaysToISODate, localMidnightUtcISO } from "@/lib/time/zone";
+import { addDaysToISODate, localMidnightUtcISO, todayISODate } from "@/lib/time/zone";
 import { sendBookingConfirmationEmail } from "@/lib/email/bookingConfirmation";
 import { sendCancellationEmail } from "@/lib/email/cancellation";
 import { sendOwnerBookingAlert } from "@/lib/email/ownerBookingAlert";
@@ -51,6 +51,7 @@ export async function rescheduleVisit(
       return { ok: false, error: "That time was just taken. Please pick another.", slotTaken: true };
     }
 
+    const today = todayISODate(await businessTz());
     const supabase = businessDb();
     const { error } = await supabase
       .from("jobs")
@@ -73,9 +74,20 @@ export async function rescheduleVisit(
       return { ok: false, error: "We couldn't save that change. Please try again." };
     }
 
-    // Updated confirmation + .ics, plus an owner alert (same-day flagged in it).
-    await sendBookingConfirmationEmail(visit.jobId, { variant: "rescheduled" });
-    await sendOwnerBookingAlert(visit.jobId, { kind: "rescheduled" });
+    // Updated confirmation + .ics, plus an owner alert (same-day flagged in
+    // it). Independent of each other, so sent together.
+    await Promise.all([
+      sendBookingConfirmationEmail(visit.jobId, { variant: "rescheduled" }),
+      sendOwnerBookingAlert(visit.jobId, {
+        kind: "rescheduled",
+        today,
+        previous: {
+          date: visit.scheduledDate,
+          arrivalBlock: visit.arrivalBlock,
+          blocksNeeded: visit.blocksNeeded,
+        },
+      }),
+    ]);
 
     return {
       ok: true,

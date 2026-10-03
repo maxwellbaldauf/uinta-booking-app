@@ -19,7 +19,7 @@ import {
   resolveConfirmedSetupIntent,
   setStripeDefaultPaymentMethod,
 } from "@/lib/stripe/payments";
-import { addDaysToISODate, localMidnightUtcISO } from "@/lib/time/zone";
+import { addDaysToISODate, localMidnightUtcISO, todayISODate } from "@/lib/time/zone";
 import { sendBookingConfirmationEmail } from "@/lib/email/bookingConfirmation";
 import { sendOwnerBookingAlert } from "@/lib/email/ownerBookingAlert";
 import { subscribeToQuotesList } from "@/lib/kit";
@@ -447,6 +447,9 @@ export async function createBookingRecord(
   }
 
   // --- job ---
+  // Captured now (not at email time) so the owner alert's same-day flag can't
+  // flip if the booking straddles local midnight.
+  const today = todayISODate(await businessTz());
   const token = crypto.randomUUID();
   const { data: job, error: jobError } = await supabase
     .from("jobs")
@@ -492,30 +495,28 @@ export async function createBookingRecord(
     await supabase.from("customers").update(agreementStamp).eq("id", customerId);
   }
 
-  // Confirmation email + .ics (spec §8.1). Non-blocking — the job exists
-  // whether or not the email lands; only stamp confirmation_sent_at on success.
-  // First-time agreement acceptance also gets a PDF copy of the agreement
-  // attached alongside the .ics (once per customer, not per booking).
-  const sent = await sendBookingConfirmationEmail(jobId, {
-    attachAgreement: firstAgreementAcceptance,
-  });
+  // Confirmation email + .ics (spec §8.1), owner alert and Kit signup are
+  // independent of each other, so they run together rather than one after
+  // another (the customer waits on all of them). Each is non-blocking in the
+  // sense that the job exists whether or not it lands:
+  //  - confirmation: only stamp confirmation_sent_at on success. First-time
+  //    agreement acceptance also gets a PDF copy of the agreement attached
+  //    alongside the .ics (once per customer, not per booking).
+  //  - owner alert: every self-serve booking; a same-day one is flagged as such
+  //    inside the email. Never throws.
+  //  - Kit (daily quotes list): separate provider, separate consent, purely
+  //    marketing. subscribeToQuotesList never throws and its result is
+  //    deliberately ignored so nothing about the booking depends on Kit.
+  const [sent] = await Promise.all([
+    sendBookingConfirmationEmail(jobId, { attachAgreement: firstAgreementAcceptance }),
+    sendOwnerBookingAlert(jobId, { kind: "new", today }),
+    input.quotesOptIn ? subscribeToQuotesList(details.email) : Promise.resolve(),
+  ]);
   if (sent) {
     await supabase
       .from("jobs")
       .update({ confirmation_sent_at: new Date().toISOString() })
       .eq("id", jobId);
-  }
-
-  // Owner alert for every self-serve booking; a same-day one is flagged as
-  // such inside the email (it can land with an hour's notice).
-  await sendOwnerBookingAlert(jobId, { kind: "new", isReturning: !!matched });
-
-  // Daily-quotes email list (Kit). Separate provider, separate consent, purely
-  // marketing — strictly fire-and-forget: subscribeToQuotesList never throws,
-  // and its result is deliberately ignored so nothing about the booking depends
-  // on Kit being reachable.
-  if (input.quotesOptIn) {
-    await subscribeToQuotesList(details.email);
   }
 
   return {
