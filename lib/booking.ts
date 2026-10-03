@@ -23,6 +23,7 @@ import { addDaysToISODate, localMidnightUtcISO, todayISODate } from "@/lib/time/
 import { sendBookingConfirmationEmail } from "@/lib/email/bookingConfirmation";
 import { sendOwnerBookingAlert } from "@/lib/email/ownerBookingAlert";
 import { subscribeToQuotesList } from "@/lib/kit";
+import { syncJobCalendar } from "@/lib/calendarSync";
 
 export class SlotUnavailableError extends Error {}
 
@@ -504,12 +505,14 @@ export async function createBookingRecord(
   //    alongside the .ics (once per customer, not per booking).
   //  - owner alert: every self-serve booking; a same-day one is flagged as such
   //    inside the email. Never throws.
+  //  - calendar sync: the field app creates the Google Calendar event.
   //  - Kit (daily quotes list): separate provider, separate consent, purely
   //    marketing. subscribeToQuotesList never throws and its result is
   //    deliberately ignored so nothing about the booking depends on Kit.
   const [sent] = await Promise.all([
     sendBookingConfirmationEmail(jobId, { attachAgreement: firstAgreementAcceptance }),
     sendOwnerBookingAlert(jobId, { kind: "new", today }),
+    syncJobCalendar(jobId), // owner's Google Calendar (via the field app); never throws
     input.quotesOptIn ? subscribeToQuotesList(details.email) : Promise.resolve(),
   ]);
   if (sent) {

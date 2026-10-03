@@ -1,6 +1,7 @@
 "use server";
 
 import { businessDb, businessTz } from "@/lib/tenant/business";
+import { syncJobCalendar } from "@/lib/calendarSync";
 import { getClusterConsentByToken } from "@/lib/clusterConsent";
 import { slotStillAvailable } from "@/lib/scheduling";
 import { addDaysToISODate, localMidnightUtcISO } from "@/lib/time/zone";
@@ -131,7 +132,10 @@ export async function acceptClusterSuggestion(token: string): Promise<ClusterCon
       .update({ applied_at: new Date().toISOString() })
       .eq("id", consent.id);
 
-    await sendBookingConfirmationEmail(consent.jobId, { variant: "cluster_matched" });
+    await Promise.all([
+      sendBookingConfirmationEmail(consent.jobId, { variant: "cluster_matched" }),
+      syncJobCalendar(consent.jobId), // moves the existing Google Calendar event
+    ]);
 
     return { ok: true };
   } catch (err) {

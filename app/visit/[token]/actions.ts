@@ -7,6 +7,7 @@ import { addDaysToISODate, localMidnightUtcISO, todayISODate } from "@/lib/time/
 import { sendBookingConfirmationEmail } from "@/lib/email/bookingConfirmation";
 import { sendCancellationEmail } from "@/lib/email/cancellation";
 import { sendOwnerBookingAlert } from "@/lib/email/ownerBookingAlert";
+import { syncJobCalendar } from "@/lib/calendarSync";
 import { arrivalBlockLabel } from "@/lib/schedule/blocks";
 
 export type RescheduleOption = { slotDate: string; arrivalBlock: number; blockLabel: string };
@@ -78,6 +79,7 @@ export async function rescheduleVisit(
     // it). Independent of each other, so sent together.
     await Promise.all([
       sendBookingConfirmationEmail(visit.jobId, { variant: "rescheduled" }),
+      syncJobCalendar(visit.jobId), // moves the existing Google Calendar event in place
       sendOwnerBookingAlert(visit.jobId, {
         kind: "rescheduled",
         today,
@@ -136,7 +138,11 @@ export async function cancelVisit(token: string, scope: CancelScope): Promise<Ca
     }
 
     // Payment method is deliberately left on file either way (spec §3).
-    await sendCancellationEmail(visit.jobId, { planCancelled: scope === "property" });
+    // The calendar event is deleted via the field app (job is now cancelled).
+    await Promise.all([
+      sendCancellationEmail(visit.jobId, { planCancelled: scope === "property" }),
+      syncJobCalendar(visit.jobId),
+    ]);
 
     return { ok: true, scope };
   } catch (err) {
