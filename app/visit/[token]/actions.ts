@@ -3,10 +3,10 @@
 import { businessDb, businessTz } from "@/lib/tenant/business";
 import { getVisitByToken, getRescheduleSlots } from "@/lib/visit";
 import { slotStillAvailable } from "@/lib/scheduling";
-import { addDaysToISODate, localMidnightUtcISO, todayISODate } from "@/lib/time/zone";
+import { addDaysToISODate, localMidnightUtcISO } from "@/lib/time/zone";
 import { sendBookingConfirmationEmail } from "@/lib/email/bookingConfirmation";
 import { sendCancellationEmail } from "@/lib/email/cancellation";
-import { sendSameDayBookingAlert } from "@/lib/email/sameDayAlert";
+import { sendOwnerBookingAlert } from "@/lib/email/ownerBookingAlert";
 import { arrivalBlockLabel } from "@/lib/schedule/blocks";
 
 export type RescheduleOption = { slotDate: string; arrivalBlock: number; blockLabel: string };
@@ -73,11 +73,9 @@ export async function rescheduleVisit(
       return { ok: false, error: "We couldn't save that change. Please try again." };
     }
 
-    // Updated confirmation + .ics; owner alert if it's now a same-day visit.
+    // Updated confirmation + .ics, plus an owner alert (same-day flagged in it).
     await sendBookingConfirmationEmail(visit.jobId, { variant: "rescheduled" });
-    if (choice.slotDate === todayISODate(await businessTz())) {
-      await sendSameDayBookingAlert(visit.jobId);
-    }
+    await sendOwnerBookingAlert(visit.jobId, { kind: "rescheduled" });
 
     return {
       ok: true,

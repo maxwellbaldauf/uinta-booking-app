@@ -28,7 +28,7 @@ Stripe dashboard — Elements can't mount without it.
    `/api/payment/setup-intent`, `/api/payment/finalize`). Isolation harness at
    `/dev/payment-setup` (dev only; delete `app/dev` + `app/api/dev` before launch).
 2. Booking flow
-3. Confirmation email + `.ics` + same-day owner alert
+3. Confirmation email + `.ics` + owner alert (every self-serve booking/reschedule; same-day flagged)
 4. Magic-link portal (reschedule / cancel)
 5. Contact form + dead-end lead capture
 6. Import payment-setup page (`/pay/[token]`)

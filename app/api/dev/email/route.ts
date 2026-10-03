@@ -1,14 +1,14 @@
 import { NextResponse } from "next/server";
 import { isDev } from "@/lib/dev";
 import { buildBookingConfirmationEmail, sendBookingConfirmationEmail } from "@/lib/email/bookingConfirmation";
-import { buildSameDayBookingAlert, sendSameDayBookingAlert } from "@/lib/email/sameDayAlert";
+import { buildOwnerBookingAlert, sendOwnerBookingAlert } from "@/lib/email/ownerBookingAlert";
 import { buildCancellationEmail, sendCancellationEmail } from "@/lib/email/cancellation";
 import { buildPaymentSetupRequestEmail, sendPaymentSetupRequestEmail } from "@/lib/email/paymentSetupRequest";
 
 export const runtime = "nodejs";
 
 // DEV ONLY. Preview / test-send the emails without spamming customers.
-//   GET  ?jobId=X&kind=confirmation|rescheduled|same_day|cancel[&part=html|text|ics]
+//   GET  ?jobId=X&kind=confirmation|rescheduled|owner_alert|owner_alert_rescheduled|cancel[&part=html|text|ics]
 //   GET  ?token=X&kind=payment_setup[&part=html|text]
 //   POST { jobId|token, kind, to }
 function guard() {
@@ -17,7 +17,8 @@ function guard() {
 
 async function build(jobId: string, token: string, kind: string) {
   if (kind === "payment_setup") return buildPaymentSetupRequestEmail(token);
-  if (kind === "same_day") return buildSameDayBookingAlert(jobId);
+  if (kind === "owner_alert") return buildOwnerBookingAlert(jobId);
+  if (kind === "owner_alert_rescheduled") return buildOwnerBookingAlert(jobId, { kind: "rescheduled" });
   if (kind === "cancel") return buildCancellationEmail(jobId, { planCancelled: true });
   if (kind === "rescheduled") return buildBookingConfirmationEmail(jobId, { variant: "rescheduled" });
   return buildBookingConfirmationEmail(jobId);
@@ -73,8 +74,11 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "jobId required" }, { status: 400 });
   }
 
-  if (body.kind === "same_day") {
-    await sendSameDayBookingAlert(body.jobId, { overrideTo: body.to });
+  if (body.kind === "owner_alert" || body.kind === "owner_alert_rescheduled") {
+    await sendOwnerBookingAlert(body.jobId, {
+      kind: body.kind === "owner_alert_rescheduled" ? "rescheduled" : "new",
+      overrideTo: body.to,
+    });
     return NextResponse.json({ ok: true, note: "check server logs for send status" });
   }
   if (body.kind === "cancel") {

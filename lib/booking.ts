@@ -19,9 +19,9 @@ import {
   resolveConfirmedSetupIntent,
   setStripeDefaultPaymentMethod,
 } from "@/lib/stripe/payments";
-import { addDaysToISODate, localMidnightUtcISO, todayISODate } from "@/lib/time/zone";
+import { addDaysToISODate, localMidnightUtcISO } from "@/lib/time/zone";
 import { sendBookingConfirmationEmail } from "@/lib/email/bookingConfirmation";
-import { sendSameDayBookingAlert } from "@/lib/email/sameDayAlert";
+import { sendOwnerBookingAlert } from "@/lib/email/ownerBookingAlert";
 import { subscribeToQuotesList } from "@/lib/kit";
 
 export class SlotUnavailableError extends Error {}
@@ -506,10 +506,9 @@ export async function createBookingRecord(
       .eq("id", jobId);
   }
 
-  // Same-day owner alert — a booking for today can land with an hour's notice.
-  if (chosenSlot.slotDate === todayISODate(await businessTz())) {
-    await sendSameDayBookingAlert(jobId);
-  }
+  // Owner alert for every self-serve booking; a same-day one is flagged as
+  // such inside the email (it can land with an hour's notice).
+  await sendOwnerBookingAlert(jobId, { kind: "new", isReturning: !!matched });
 
   // Daily-quotes email list (Kit). Separate provider, separate consent, purely
   // marketing — strictly fire-and-forget: subscribeToQuotesList never throws,
