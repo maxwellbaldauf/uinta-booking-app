@@ -36,6 +36,7 @@
 // nightly sweep as a safety net, in case an accept/decline's own call
 // above didn't run to completion — e.g. a crash mid-request).
 import { businessDb } from "@/lib/tenant/business";
+import { syncJobCalendar } from "@/lib/calendarSync";
 import { sendBookingConfirmationEmail } from "@/lib/email/bookingConfirmation";
 
 type Row = {
@@ -120,7 +121,10 @@ async function applyMove(
     .from("cluster_suggestion_jobs")
     .update({ applied_at: new Date().toISOString() })
     .eq("id", row.id);
-  await sendBookingConfirmationEmail(row.job_id, { variant: "cluster_matched" });
+  await Promise.all([
+    sendBookingConfirmationEmail(row.job_id, { variant: "cluster_matched" }),
+    syncJobCalendar(row.job_id), // moves the existing Google Calendar event
+  ]);
   return true;
 }
 

@@ -6,7 +6,8 @@ import { slotStillAvailable } from "@/lib/scheduling";
 import { addDaysToISODate, localMidnightUtcISO, todayISODate } from "@/lib/time/zone";
 import { sendBookingConfirmationEmail } from "@/lib/email/bookingConfirmation";
 import { sendCancellationEmail } from "@/lib/email/cancellation";
-import { sendSameDayBookingAlert } from "@/lib/email/sameDayAlert";
+import { sendOwnerBookingAlert } from "@/lib/email/ownerBookingAlert";
+import { syncJobCalendar } from "@/lib/calendarSync";
 import { arrivalBlockLabel } from "@/lib/schedule/blocks";
 
 export type RescheduleOption = { slotDate: string; arrivalBlock: number; blockLabel: string };
@@ -51,6 +52,7 @@ export async function rescheduleVisit(
       return { ok: false, error: "That time was just taken. Please pick another.", slotTaken: true };
     }
 
+    const today = todayISODate(await businessTz());
     const supabase = businessDb();
     const { error } = await supabase
       .from("jobs")
@@ -73,11 +75,21 @@ export async function rescheduleVisit(
       return { ok: false, error: "We couldn't save that change. Please try again." };
     }
 
-    // Updated confirmation + .ics; owner alert if it's now a same-day visit.
-    await sendBookingConfirmationEmail(visit.jobId, { variant: "rescheduled" });
-    if (choice.slotDate === todayISODate(await businessTz())) {
-      await sendSameDayBookingAlert(visit.jobId);
-    }
+    // Updated confirmation + .ics, plus an owner alert (same-day flagged in
+    // it). Independent of each other, so sent together.
+    await Promise.all([
+      sendBookingConfirmationEmail(visit.jobId, { variant: "rescheduled" }),
+      syncJobCalendar(visit.jobId), // moves the existing Google Calendar event in place
+      sendOwnerBookingAlert(visit.jobId, {
+        kind: "rescheduled",
+        today,
+        previous: {
+          date: visit.scheduledDate,
+          arrivalBlock: visit.arrivalBlock,
+          blocksNeeded: visit.blocksNeeded,
+        },
+      }),
+    ]);
 
     return {
       ok: true,
@@ -126,7 +138,11 @@ export async function cancelVisit(token: string, scope: CancelScope): Promise<Ca
     }
 
     // Payment method is deliberately left on file either way (spec §3).
-    await sendCancellationEmail(visit.jobId, { planCancelled: scope === "property" });
+    // The calendar event is deleted via the field app (job is now cancelled).
+    await Promise.all([
+      sendCancellationEmail(visit.jobId, { planCancelled: scope === "property" }),
+      syncJobCalendar(visit.jobId),
+    ]);
 
     return { ok: true, scope };
   } catch (err) {

@@ -16,7 +16,7 @@ function flatten<T>(v: T | T[] | null | undefined): T | null {
 // Sent from the customer's OWN decline action (app/cluster-consent/[token]/
 // actions.ts) — this repo already has a working Resend setup, so no
 // cross-repo call is needed just to alert the owner, same reasoning as
-// sendSameDayBookingAlert. Kept separate from uinta-field-app's
+// sendOwnerBookingAlert. Kept separate from uinta-field-app's
 // lib/email/clusterExpiredAlert.ts (that one fires for a silent deadline
 // expiry, discovered by that repo's own nightly sweep) — different trigger,
 // different repo, must never cross-wire. Returns false on any failure;

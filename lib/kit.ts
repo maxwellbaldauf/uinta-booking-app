@@ -5,7 +5,7 @@
 //
 // Every call here is best-effort and NEVER throws. A Kit outage, a bad key, a
 // slow response, or a malformed address must not affect a booking — same
-// fire-and-forget contract as lib/email/sameDayAlert.ts.
+// fire-and-forget contract as lib/email/ownerBookingAlert.ts.
 
 const KIT_API_BASE = "https://api.kit.com/v4";
 
