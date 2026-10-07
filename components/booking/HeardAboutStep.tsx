@@ -46,8 +46,11 @@ export function HeardAboutStep({
   const shownError = clientError?.msg ?? serverError;
 
   function choose(key: HeardAboutSource) {
+    // Only a real change of option clears the error: submit() programmatically
+    // focuses the Other box on a blank-Other error, and that focus must not
+    // wipe the message it just set.
+    if (key !== source) setClientError(null);
     setSource(key);
-    setClientError(null);
   }
 
   function submit(e: React.FormEvent) {
