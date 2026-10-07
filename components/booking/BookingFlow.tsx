@@ -7,6 +7,8 @@ import { ErrorBanner, secondaryButtonStyle } from "@/components/ui/form";
 import { ServiceTypeStep, type ServiceType } from "./ServiceTypeStep";
 import { DetailsStep, type BookingDetails } from "./DetailsStep";
 import { AgreementStep } from "./AgreementStep";
+import { HeardAboutStep } from "./HeardAboutStep";
+import type { HeardAboutAnswer } from "@/lib/heardAbout";
 import { SlotStep, type OfferedSlotView } from "./SlotStep";
 import { DeadEndNotice, type DeadEndKind } from "./DeadEndNotice";
 import { BookedConfirmation } from "./BookedConfirmation";
@@ -15,6 +17,7 @@ import { SERVICE_AGREEMENT_VERSION } from "@/lib/agreement";
 type Step =
   | "service-type"
   | "details"
+  | "source"
   | "agreement"
   | "slots"
   | "payment"
@@ -27,6 +30,7 @@ type Availability = {
   matchedCustomer: { hasPaymentMethod: boolean; paymentDisplay: string | null } | null;
   agreementRequired: boolean;
   agreementStale: boolean;
+  sourceRequired: boolean;
 };
 
 export function BookingFlow({
@@ -48,6 +52,9 @@ export function BookingFlow({
   // Set true when the customer accepts on the agreement step this session. The
   // server re-derives whether acceptance was required and enforces it.
   const [agreementAccepted, setAgreementAccepted] = useState(false);
+  // "How did you hear about us?" - only asked of first-time bookers; the server
+  // decides (sourceRequired) and re-validates on submit.
+  const [heardAbout, setHeardAbout] = useState<HeardAboutAnswer | null>(null);
   const [result, setResult] = useState<CreateBookingResponse | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -83,11 +90,17 @@ export function BookingFlow({
           matchedCustomer: data.matchedCustomer,
           agreementRequired: data.agreementRequired,
           agreementStale: data.agreementStale,
+          sourceRequired: !!data.sourceRequired,
         });
+        // Never submit an answer the server isn't asking for (e.g. the email was
+        // changed to an existing customer's).
+        if (!data.sourceRequired) setHeardAbout(null);
         // Re-check on every details submit — never carry a stale acceptance
         // (e.g. the email was changed to a different, already-accepted customer).
         setAgreementAccepted(false);
-        setStep(data.agreementRequired ? "agreement" : "slots");
+        setStep(
+          data.sourceRequired ? "source" : data.agreementRequired ? "agreement" : "slots"
+        );
       } else {
         setDeadEnd({ kind: data.status as DeadEndKind, saved: !!data.saved });
         setStep("dead_end");
@@ -125,11 +138,20 @@ export function BookingFlow({
           ? { accepted: true, version: SERVICE_AGREEMENT_VERSION }
           : undefined,
         quotesOptIn: d.quotesOptIn,
+        heardAbout: heardAbout ?? undefined,
       });
       setResult(res);
 
       if (res.ok) {
         setStep("done");
+        return;
+      }
+
+      // The server says the "how did you hear about us" answer is missing or
+      // invalid - back to that step; details, slot and payment are all kept.
+      if (res.sourceRequired) {
+        setError(res.error);
+        setStep("source");
         return;
       }
 
@@ -158,6 +180,7 @@ export function BookingFlow({
             matchedCustomer: fresh.matchedCustomer,
             agreementRequired: fresh.agreementRequired,
             agreementStale: fresh.agreementStale,
+            sourceRequired: !!fresh.sourceRequired,
           });
         }
         setChosen(null);
@@ -169,7 +192,7 @@ export function BookingFlow({
       setError(res.error);
       setStep("slots");
     },
-    [fetchAvailability, agreementAccepted]
+    [fetchAvailability, agreementAccepted, heardAbout]
   );
 
   function handleSlotContinue(choice: { slot: OfferedSlotView; useExistingCard: boolean }) {
@@ -254,6 +277,24 @@ export function BookingFlow({
     );
   }
 
+  if (step === "source" && availability) {
+    return (
+      <HeardAboutStep
+        initial={heardAbout}
+        error={error}
+        onBack={() => {
+          setError(null);
+          setStep("details");
+        }}
+        onContinue={(answer) => {
+          setHeardAbout(answer);
+          setError(null);
+          setStep(availability.agreementRequired ? "agreement" : "slots");
+        }}
+      />
+    );
+  }
+
   if (step === "agreement" && availability) {
     return (
       <AgreementStep
@@ -261,7 +302,7 @@ export function BookingFlow({
         error={error}
         onBack={() => {
           setError(null);
-          setStep("details");
+          setStep(availability.sourceRequired ? "source" : "details");
         }}
         onContinue={() => {
           setAgreementAccepted(true);

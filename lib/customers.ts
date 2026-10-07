@@ -62,12 +62,13 @@ export type MatchedCustomer = {
   service_agreement_version: string | null;
   grandfathered_price_cents: number | null;
   archived_at: string | null;
+  heard_about_source: string | null;
 };
 
 const MATCH_COLS =
   "id, full_name, email, phone, stripe_customer_id, default_payment_method_id, " +
   "default_payment_method_type, payment_display, service_agreement_accepted_at, " +
-  "service_agreement_version, grandfathered_price_cents, archived_at";
+  "service_agreement_version, grandfathered_price_cents, archived_at, heard_about_source";
 
 // ILIKE treats %, _, and \ as pattern metacharacters — escaping them makes a
 // raw string behave as an exact (case-insensitive) match instead of a

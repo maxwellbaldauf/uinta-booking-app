@@ -121,7 +121,7 @@ type LeadProperty = {
 // One round trip: is this matched customer a real one, and if it is a bare lead,
 // what lead properties does it already hold? Leads must never touch real
 // customers' records.
-async function readLeadState(
+export async function readLeadState(
   matched: MatchedCustomer
 ): Promise<{ real: true } | { real: false; addresses: string[] }> {
   if (matched.archived_at) return { real: true }; // the owner archived them on purpose

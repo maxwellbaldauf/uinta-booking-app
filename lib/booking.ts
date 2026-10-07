@@ -3,13 +3,15 @@ import { geocodeAddress } from "@/lib/geocode";
 import { getSettings } from "@/lib/settings";
 import { isInServiceArea } from "@/lib/serviceArea";
 import { getOfferedSlots, slotStillAvailable, type OfferedSlot } from "@/lib/scheduling";
-import { matchCustomerByEmailOrPhone, normalizePhone } from "@/lib/customers";
+import { matchCustomerByEmailOrPhone, normalizePhone, type MatchedCustomer } from "@/lib/customers";
+import { parseHeardAbout, type HeardAboutAnswer } from "@/lib/heardAbout";
 import { getEffectivePriceCents } from "@/lib/pricing";
 import { agreementIsCurrent, SERVICE_AGREEMENT_VERSION } from "@/lib/agreement";
 import { firstContactError } from "@/lib/contactValidation";
 import {
   captureInAreaLeadBestEffort,
   findConvertibleLeadProperty,
+  readLeadState,
   SAW_TIMES_NOTE,
   saveFlaggedLead,
   stripSawTimesNote,
@@ -38,6 +40,24 @@ export class AgreementRequiredError extends Error {}
 // client back to the details step, where the fields can actually be fixed.
 export class ContactValidationError extends Error {}
 
+// The "How did you hear about us?" answer is required for this customer and the
+// request carried none, or carried an invalid one. The booking action maps it to
+// a flag that sends the client back to that step with their other data intact.
+export class SourceRequiredError extends Error {}
+
+// Is the attribution question owed by this person? Asked once per customer, and
+// only of first-time bookers: nobody matched, or a matched record that is still
+// a bare lead (a contact-form / "saw times" lead with no real property, job,
+// card or agreement — the same readLeadState test the lead paths use) AND has no
+// stored answer. Legacy / imported / owner-entered customers and anyone who has
+// already answered are never asked and never backfilled. Decided server-side in
+// both the availability check and the booking itself; the client only reflects it.
+async function heardAboutRequired(matched: MatchedCustomer | null): Promise<boolean> {
+  if (!matched) return true;
+  if (matched.heard_about_source) return false;
+  return !(await readLeadState(matched)).real;
+}
+
 // ---- availability check (spec §1 steps 2–5, §2) --------------------------
 
 export type AvailabilityResult =
@@ -54,6 +74,8 @@ export type AvailabilityResult =
       // true = matched customer accepted an OLDER version and must re-accept
       // (drives the "we've updated the agreement" notice, not the gate itself).
       agreementStale: boolean;
+      // true = show the "How did you hear about us?" step (first-time booker).
+      sourceRequired: boolean;
       // true = THIS request saved a new in-area lead row. The UI ignores it; the
       // route turns it into `saved` and strips it from the response.
       leadCaptured?: boolean;
@@ -114,6 +136,8 @@ export async function checkAvailability(
     matched.service_agreement_accepted_at != null &&
     !agreementIsCurrent(matched.service_agreement_version);
 
+  const sourceRequired = await heardAboutRequired(matched);
+
   return {
     status: "ok",
     // is_fallback is deliberately dropped here — the customer must see no
@@ -132,6 +156,7 @@ export async function checkAvailability(
       : null,
     agreementRequired,
     agreementStale,
+    sourceRequired,
     leadCaptured,
   };
 }
@@ -160,6 +185,9 @@ export type CreateBookingInput = {
   // (Kit, not Resend). Purely marketing — no bearing on the booking or any
   // transactional email.
   quotesOptIn: boolean;
+  // The "How did you hear about us?" answer. Untrusted: re-validated, and only
+  // used when the server finds this customer owes one (see heardAboutRequired).
+  heardAbout?: unknown;
 };
 
 export type CreateBookingResult = {
@@ -217,6 +245,17 @@ export async function createBookingRecord(
 
   const settings = await getSettings();
   const matched = await matchCustomerByEmailOrPhone(details.email, details.phone);
+
+  // --- "how did you hear about us" (first-time bookers only; never overwritten) ---
+  // The server decides whether it's required. If it is and the answer is missing
+  // or fails the allow-list, reject before anything is written. If it isn't
+  // (returning / legacy customer), whatever the client sent is ignored.
+  let heardAbout: HeardAboutAnswer | null = null;
+  if (await heardAboutRequired(matched)) {
+    const parsed = parseHeardAbout(input.heardAbout);
+    if (!parsed.ok) throw new SourceRequiredError(parsed.error);
+    heardAbout = parsed.value;
+  }
 
   // --- service agreement (spec: once per customer, re-prompted on a version
   // change; mirrors payment_authorized_at) --------------------------------
@@ -307,6 +346,9 @@ export async function createBookingRecord(
         phone: normalizePhone(details.phone) ?? (details.phone.trim() || null),
         source: "booking",
         stripe_customer_id: stripeCustomerId,
+        ...(heardAbout
+          ? { heard_about_source: heardAbout.source, heard_about_detail: heardAbout.detail }
+          : {}),
       })
       .select("id")
       .single();
@@ -494,6 +536,19 @@ export async function createBookingRecord(
   // stamped acceptance that would suppress the one-time PDF on the retry.
   if (agreementStamp) {
     await supabase.from("customers").update(agreementStamp).eq("id", customerId);
+  }
+
+  // A matched bare lead who just answered: store it, but only if no answer is
+  // stored yet (the .is() guard makes "never overwrite" true even under a race).
+  // A new customer already got theirs in the insert above. Best effort — losing
+  // an attribution answer must not fail a booking that already exists.
+  if (heardAbout && matched) {
+    const { error: haError } = await supabase
+      .from("customers")
+      .update({ heard_about_source: heardAbout.source, heard_about_detail: heardAbout.detail })
+      .eq("id", customerId)
+      .is("heard_about_source", null);
+    if (haError) console.error("could not save heard-about answer", haError.message);
   }
 
   // Confirmation email + .ics (spec §8.1), owner alert and Kit signup are
