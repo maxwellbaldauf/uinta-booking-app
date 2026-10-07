@@ -6,10 +6,11 @@ type GeocodeResult = { lat: number; lng: number; city: string | null } | null;
 
 type AddressComponent = { long_name?: string; types?: string[] };
 
-// Municipality name: `locality`, then `postal_town` (UK-style countries), then
-// `sublocality` / `administrative_area_level_3` as last resorts.
+// Municipality name: `locality`, then `postal_town` (UK-style countries). No
+// neighborhood/township fallbacks: a missing city shows as "No city found"
+// rather than a name that fragments the ranking.
 export function cityFromComponents(components: AddressComponent[] | undefined): string | null {
-  for (const type of ["locality", "postal_town", "sublocality", "administrative_area_level_3"]) {
+  for (const type of ["locality", "postal_town"]) {
     const hit = components?.find((c) => c.types?.includes(type) && c.long_name);
     if (hit?.long_name) return hit.long_name;
   }
