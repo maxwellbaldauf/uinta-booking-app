@@ -1,6 +1,20 @@
 // Copied verbatim from Project A's lib/geocode.ts — kept identical on purpose.
 
-type GeocodeResult = { lat: number; lng: number } | null;
+// city comes from Google's structured address_components (never parsed from the
+// free-text address). null when Google returned none.
+type GeocodeResult = { lat: number; lng: number; city: string | null } | null;
+
+type AddressComponent = { long_name?: string; types?: string[] };
+
+// Municipality name: `locality`, then `postal_town` (UK-style countries), then
+// `sublocality` / `administrative_area_level_3` as last resorts.
+export function cityFromComponents(components: AddressComponent[] | undefined): string | null {
+  for (const type of ["locality", "postal_town", "sublocality", "administrative_area_level_3"]) {
+    const hit = components?.find((c) => c.types?.includes(type) && c.long_name);
+    if (hit?.long_name) return hit.long_name;
+  }
+  return null;
+}
 
 export async function geocodeAddress(address: string): Promise<GeocodeResult> {
   const apiKey = process.env.GOOGLE_MAPS_API_KEY;
@@ -47,5 +61,5 @@ export async function geocodeAddress(address: string): Promise<GeocodeResult> {
   }
 
   const { lat, lng } = data.results[0].geometry.location;
-  return { lat, lng };
+  return { lat, lng, city: cityFromComponents(data.results[0].address_components) };
 }

@@ -21,7 +21,7 @@ export type LeadFlags = {
 // actually submits it). Best-effort dedupe on (customer, exact address).
 export async function saveFlaggedLead(
   details: LeadDetails,
-  coords: { lat: number; lng: number } | null,
+  coords: { lat: number; lng: number; city?: string | null } | null,
   flags: LeadFlags
 ): Promise<{ customerId: string; propertyId: string }> {
   const supabase = businessDb();
@@ -36,6 +36,7 @@ export async function saveFlaggedLead(
     ice_maker_model: details.iceMakerModel || null,
     latitude: coords?.lat ?? null,
     longitude: coords?.lng ?? null,
+    city: coords?.city ?? null,
     geocoded_at: coords ? new Date().toISOString() : null,
     geocode_failed: !coords,
     out_of_service_area: flags.out_of_service_area ?? false,
@@ -161,7 +162,7 @@ export async function readLeadState(
 // saved (already there, real customer, capped, or over budget).
 async function captureInAreaLead(
   details: LeadDetails,
-  coords: { lat: number; lng: number },
+  coords: { lat: number; lng: number; city?: string | null },
   serviceType: "residential" | "commercial",
   matched: MatchedCustomer | null,
   allowWrite: () => boolean
@@ -207,6 +208,7 @@ async function captureInAreaLead(
     source: "booking",
     latitude: coords.lat,
     longitude: coords.lng,
+    city: coords.city ?? null,
     geocoded_at: new Date().toISOString(),
     geocode_failed: false,
     ice_maker_brand: details.iceMakerBrand || null,
@@ -238,7 +240,7 @@ const inflight = new Map<string, Promise<boolean>>();
 // this call saved a new lead.
 export async function captureInAreaLeadBestEffort(
   details: LeadDetails,
-  coords: { lat: number; lng: number },
+  coords: { lat: number; lng: number; city?: string | null },
   serviceType: "residential" | "commercial",
   matched: MatchedCustomer | null,
   allowWrite: () => boolean

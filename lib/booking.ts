@@ -426,6 +426,7 @@ export async function createBookingRecord(
     address: details.address,
     latitude: geo.lat,
     longitude: geo.lng,
+    city: geo.city,
     geocoded_at: new Date().toISOString(),
     geocode_failed: false,
     ice_maker_brand: details.iceMakerBrand || null,

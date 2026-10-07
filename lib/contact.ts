@@ -34,6 +34,7 @@ export async function submitContact(
       ice_maker_model: input.iceMakerModel || null,
       latitude: geo?.lat ?? null,
       longitude: geo?.lng ?? null,
+      city: geo?.city ?? null,
       geocoded_at: geo ? new Date().toISOString() : null,
       geocode_failed: !geo,
       needs_followup: true,
