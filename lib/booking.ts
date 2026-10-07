@@ -55,7 +55,10 @@ export class SourceRequiredError extends Error {}
 async function heardAboutRequired(matched: MatchedCustomer | null): Promise<boolean> {
   if (!matched) return true;
   if (matched.heard_about_source) return false;
-  return !(await readLeadState(matched)).real;
+  // ignoreStripeId: the payment step stamps a lead's row with a Stripe customer
+  // before booking, which must not flip them to "real" between the availability
+  // check and the booking itself (the answer would be silently dropped).
+  return !(await readLeadState(matched, { ignoreStripeId: true })).real;
 }
 
 // ---- availability check (spec §1 steps 2–5, §2) --------------------------

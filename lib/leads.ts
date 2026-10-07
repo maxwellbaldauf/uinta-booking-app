@@ -122,12 +122,16 @@ type LeadProperty = {
 // what lead properties does it already hold? Leads must never touch real
 // customers' records.
 export async function readLeadState(
-  matched: MatchedCustomer
+  matched: MatchedCustomer,
+  // The booking flow's payment step writes stripe_customer_id onto a matched
+  // lead's row BEFORE the booking exists, so for "has this person ever actually
+  // booked?" (the how-did-you-hear question) a Stripe id alone proves nothing.
+  opts?: { ignoreStripeId?: boolean }
 ): Promise<{ real: true } | { real: false; addresses: string[] }> {
   if (matched.archived_at) return { real: true }; // the owner archived them on purpose
   if (
     matched.default_payment_method_id ||
-    matched.stripe_customer_id ||
+    (matched.stripe_customer_id && !opts?.ignoreStripeId) ||
     matched.service_agreement_accepted_at
   ) {
     return { real: true };
