@@ -139,7 +139,12 @@ export async function checkAvailability(
     matched.service_agreement_accepted_at != null &&
     !agreementIsCurrent(matched.service_agreement_version);
 
-  const sourceRequired = await heardAboutRequired(matched);
+  // If the lookup itself hiccups, ask anyway: the server re-decides at booking
+  // and ignores an answer it doesn't need, so over-asking is the safe default.
+  const sourceRequired = await heardAboutRequired(matched).catch((err) => {
+    console.error("heardAboutRequired failed; asking", err);
+    return true;
+  });
 
   return {
     status: "ok",
@@ -359,6 +364,21 @@ export async function createBookingRecord(
     customerId = data.id;
   }
 
+  // A matched bare lead who just answered: store it now, before the job/payment
+  // writes, so a later failure can't leave a booked customer with no answer
+  // (they'd then count as "real" and never be asked again). Only if none is
+  // stored yet — the .is() guard makes "never overwrite" true even under a
+  // race. A new customer already got theirs in the insert above. A failure
+  // here is logged, not fatal: the answer isn't worth losing a booking over.
+  if (heardAbout && matched) {
+    const { error: haError } = await supabase
+      .from("customers")
+      .update({ heard_about_source: heardAbout.source, heard_about_detail: heardAbout.detail })
+      .eq("id", customerId)
+      .is("heard_about_source", null);
+    if (haError) console.error("could not save heard-about answer", haError.message);
+  }
+
   // Where does the new card live? A different card chosen by a customer who
   // already has a default → per-property override. Otherwise → customer default.
   const asPropertyOverride =
@@ -539,19 +559,6 @@ export async function createBookingRecord(
   // stamped acceptance that would suppress the one-time PDF on the retry.
   if (agreementStamp) {
     await supabase.from("customers").update(agreementStamp).eq("id", customerId);
-  }
-
-  // A matched bare lead who just answered: store it, but only if no answer is
-  // stored yet (the .is() guard makes "never overwrite" true even under a race).
-  // A new customer already got theirs in the insert above. Best effort — losing
-  // an attribution answer must not fail a booking that already exists.
-  if (heardAbout && matched) {
-    const { error: haError } = await supabase
-      .from("customers")
-      .update({ heard_about_source: heardAbout.source, heard_about_detail: heardAbout.detail })
-      .eq("id", customerId)
-      .is("heard_about_source", null);
-    if (haError) console.error("could not save heard-about answer", haError.message);
   }
 
   // Confirmation email + .ics (spec §8.1), owner alert and Kit signup are

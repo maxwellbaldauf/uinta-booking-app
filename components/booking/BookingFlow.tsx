@@ -55,6 +55,10 @@ export function BookingFlow({
   // "How did you hear about us?" - only asked of first-time bookers; the server
   // decides (sourceRequired) and re-validates on submit.
   const [heardAbout, setHeardAbout] = useState<HeardAboutAnswer | null>(null);
+  // True when the server bounced a finished booking back to the source step: on
+  // continue, re-submit it (slot and payment are still held) instead of walking
+  // the slot / payment steps again.
+  const [resumeBooking, setResumeBooking] = useState(false);
   const [result, setResult] = useState<CreateBookingResponse | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -117,7 +121,9 @@ export function BookingFlow({
       d: BookingDetails,
       st: ServiceType,
       choice: { slot: OfferedSlotView; useExistingCard: boolean },
-      pay: PaymentSetupResult | null
+      pay: PaymentSetupResult | null,
+      // Used when resuming right after the source step, before state has settled.
+      answerOverride?: HeardAboutAnswer
     ) => {
       setStep("submitting");
       setError(null);
@@ -138,7 +144,7 @@ export function BookingFlow({
           ? { accepted: true, version: SERVICE_AGREEMENT_VERSION }
           : undefined,
         quotesOptIn: d.quotesOptIn,
-        heardAbout: heardAbout ?? undefined,
+        heardAbout: answerOverride ?? heardAbout ?? undefined,
       });
       setResult(res);
 
@@ -151,6 +157,7 @@ export function BookingFlow({
       // invalid - back to that step; details, slot and payment are all kept.
       if (res.sourceRequired) {
         setError(res.error);
+        setResumeBooking(true);
         setStep("source");
         return;
       }
@@ -289,6 +296,11 @@ export function BookingFlow({
         onContinue={(answer) => {
           setHeardAbout(answer);
           setError(null);
+          if (resumeBooking && details && serviceType && chosen) {
+            setResumeBooking(false);
+            void runCreateBooking(details, serviceType, chosen, payment, answer);
+            return;
+          }
           setStep(availability.agreementRequired ? "agreement" : "slots");
         }}
       />
