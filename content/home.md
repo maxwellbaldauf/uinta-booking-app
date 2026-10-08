@@ -20,7 +20,7 @@ Get Your Utah Ice Machine Making Clean Ice Again
 Professional descaling, deep cleaning, and sanitizing for Scotsman, Sub-Zero, U-Line, KitchenAid, and GE undercounter ice machines. We work in your kitchen. It takes about an hour.
 
 ### Subhead, second line (set smaller)
-Homes across Utah County and Salt Lake County, plus light commercial machines in offices, showrooms, and breakrooms.
+Homes across Utah County and Salt Lake County.
 
 ### CTAs
 - **Primary button:** Book a cleaning → `/book`
@@ -28,9 +28,9 @@ Homes across Utah County and Salt Lake County, plus light commercial machines in
 - **Tertiary text link:** See pricing → `#pricing`
 
 ### Trust bar (directly beneath, single row)
-Licensed and insured · Serving Utah since 2022 · Residential and light commercial · Scotsman, Sub-Zero, U-Line, KitchenAid, GE · Locally owned in Lehi · Utah County and Salt Lake County
+Licensed and insured · Serving Utah since 2022 · Scotsman, Sub-Zero, U-Line, KitchenAid, GE · Locally owned in Lehi · Utah County and Salt Lake County
 
-**Developer note:** six items is long for one row on a 380px viewport. If it wraps badly, drop "Locally owned in Lehi" first. Do not drop "Licensed and insured" or "Residential and light commercial."
+**Developer note:** five items is long for one row on a 380px viewport. If it wraps badly, drop "Locally owned in Lehi" first. Do not drop "Licensed and insured."
 
 **Image slot:** Hero image. Real photo preferred once available.
 **Alt text (when photo exists):** Technician cleaning the evaporator plate of a Scotsman undercounter ice machine in a Utah home kitchen.
@@ -193,9 +193,6 @@ Do We Service Your Machine?
 
 **Machine types.** Undercounter and built-in residential ice machines producing nugget, pebble, gourmet, clear, and crescent ice.
 
-**Light commercial.** Offices, retail showrooms, and small business breakrooms. Same descale, deep clean, and sanitize, on a larger machine with more components. Those visits run about an hour and a half.
-→ Link: [residential and commercial pricing](#pricing)
-
 **Where we work.** Based in Lehi, serving a 75-mile radius across Utah County and Salt Lake County, including Alpine, Highland, Salt Lake City, Holladay, Park City, Heber City, Draper, and Sandy.
 → Link: [the full list of cities we serve](/service-areas)
 
@@ -257,9 +254,7 @@ We come back and clean it again at no charge.
 ### H2
 What It Costs
 
-Two tiers, priced to the work. Each block below states what the visit covers before it states the number.
-
-**Developer note:** render these as two side-by-side cards on desktop, stacked on mobile with residential first. The included-work paragraph must sit above the price inside each card, never beside it or below it. A commercial reader who sees the two numbers before the two scopes will read this as the same job at double the price.
+**Developer note:** one card. The included-work paragraph must sit above the price, never beside it or below it.
 
 ---
 
@@ -276,20 +271,7 @@ Alt text pattern: "Residential undercounter ice machine being [descaled / hand c
 
 ---
 
-#### Light commercial
-
-A larger machine with more components. More parts to disassemble, clean, and reassemble, which is why the visit runs about an hour and a half rather than an hour. Same nickel-safe descale, hand cleaning, and food-contact sanitizing, across more surface area. All supplies included. Offices, retail showrooms, and small business breakrooms.
-
-**$300 per visit.**
-
-Two visits a year, on a machine your business runs on every day.
-
-**[ASSET SLOT — three photos, commercial. Real photos only.]**
-Alt text pattern: "Light commercial ice machine being [descaled / hand cleaned / sanitized] in a Utah [office / showroom]."
-
----
-
-Both are flat rates. Not starting prices, not estimates, and not quotes that change when we open the machine. Both run on the same six-month schedule, and we track your service date and reach out when it's due.
+Flat rate. Not a starting price, not an estimate, and not a quote that changes when we open the machine. It runs on a six-month schedule, and we track your service date and reach out when it's due.
 
 **CTA button:** Book a cleaning → `/book`
 
@@ -317,11 +299,11 @@ If you're not satisfied with the cleaning, we come back and clean it again at no
 ### H2
 About Uinta Ice Co.
 
-Uinta Ice Co. is an ice machine cleaning service based in Lehi, Utah. We descale, deep clean, and sanitize undercounter and built-in ice machines on site, for homes across Utah County and Salt Lake County and for light commercial accounts including offices, retail showrooms, and small business breakrooms, within a 75-mile service radius. We have served Utah since 2022 and we are licensed and insured.
+Uinta Ice Co. is an ice machine cleaning service based in Lehi, Utah. We descale, deep clean, and sanitize undercounter and built-in ice machines on site, for homes across Utah County and Salt Lake County, within a 75-mile service radius. We have served Utah since 2022 and we are licensed and insured.
 
 We service Scotsman, Sub-Zero, U-Line, KitchenAid, GE Profile, and GE Monogram machines producing nugget, pebble, gourmet, clear, and crescent ice, along with most other residential makes. Our standard service interval is every six months, which reflects the hardness of Utah water relative to the three-to-six-month range manufacturers typically recommend.
 
-A residential visit takes about one hour. A light commercial visit takes about an hour and a half, because the units are larger and have more components to disassemble and clean. All supplies are included in both. Call or text (801) 796-2675. Email max@uintaice.com.
+A residential visit takes about one hour. All supplies are included. Call or text (801) 796-2675. Email max@uintaice.com.
 
 ---
 
@@ -346,10 +328,7 @@ Checked and clear: no "peace of mind," "we've got you covered," "look no further
 
 **LocalBusiness** on the home page. Name Uinta Ice Co., LLC, address Lehi UT, telephone (801) 796-2675, email max@uintaice.com, areaServed the 75-mile radius, foundingDate 2022.
 
-**Service, two offerings** under the same provider, so both tiers are machine-readable as distinct services rather than one service at two prices:
+**Service**, one offering under the provider:
 - Residential ice machine cleaning. Price 200 USD, per visit, duration approx. PT1H.
-- Light commercial ice machine cleaning. Price 300 USD, per visit, duration approx. PT1H30M.
-
-Set the duration on both. It is the field that carries the reason for the price difference in structured form, and leaving it off makes the two offerings look identical to a crawler.
 
 **FAQPage** on Section 10, covering all eleven questions.

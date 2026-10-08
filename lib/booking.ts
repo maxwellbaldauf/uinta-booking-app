@@ -86,7 +86,7 @@ export type AvailabilityResult =
 
 export async function checkAvailability(
   details: LeadDetails,
-  serviceType: "residential" | "commercial",
+  serviceType: ServiceType,
   // Asked right before a lead row would actually be written; false (e.g. the
   // per-IP cap) skips the lead save and nothing else — availability is never blocked.
   opts?: { allowLeadCapture?: () => boolean }
@@ -103,12 +103,7 @@ export async function checkAvailability(
     return { status: "out_of_area" };
   }
 
-  // A commercial booking always requests 2 blocks — no 1-block option is ever
-  // offered to a customer (that's an owner-only override, set later from the
-  // field app). See ServiceTypeStep.
-  const blocksNeeded = serviceType === "commercial" ? 2 : 1;
-
-  const slots = await getOfferedSlots(geo.lat, geo.lng, blocksNeeded);
+  const slots = await getOfferedSlots(geo.lat, geo.lng, NEW_BOOKING_BLOCKS);
   if (slots.length === 0) {
     await saveFlaggedLead(details, geo, { needs_followup: true });
     return { status: "no_availability" };
@@ -171,10 +166,14 @@ export async function checkAvailability(
 
 // ---- booking creation (spec §1 steps 6–7) -------------------------------
 
-export type ServiceType = "residential" | "commercial";
+// New public bookings are residential, one block - nothing else. Existing
+// commercial jobs keep their own stored blocks_needed everywhere (portal
+// reschedule, cluster consent, invoices); this guard is for creation only.
+export type ServiceType = "residential";
+const NEW_BOOKING_BLOCKS = 1;
 
 export function isServiceType(v: unknown): v is ServiceType {
-  return v === "residential" || v === "commercial";
+  return v === "residential";
 }
 
 export type CreateBookingInput = {
@@ -219,20 +218,15 @@ export async function createBookingRecord(
 
   // Re-validate everything server-side — never trust what the client carried.
   // createBooking (a Server Action) is a real POST-able endpoint independent
-  // of the UI; CreateBookingInput's "residential" | "commercial" union is a
-  // compile-time-only guarantee that says nothing about a raw request body,
-  // so an unchecked serviceType here would let any value other than the exact
-  // literal "commercial" silently fall through to residential pricing and a
-  // 1-block reservation — a deterministic, one-directional underpayment/
-  // under-provisioning bug, not just a type mismatch. Same guard the
-  // availability route already applies before its own use of this field.
+  // of the UI; the ServiceType type is a compile-time-only guarantee that
+  // says nothing about a raw request body, so a "commercial" (or anything
+  // else) here is rejected rather than allowed to create a non-residential
+  // booking. Same guard the availability route applies.
   if (!isServiceType(input.serviceType)) {
     throw new Error("Invalid service type.");
   }
 
-  // A commercial booking always resolves to 2 blocks here regardless of what
-  // blocksNeeded the client's chosen slot implies.
-  const blocksNeeded = input.serviceType === "commercial" ? 2 : 1;
+  const blocksNeeded = NEW_BOOKING_BLOCKS;
 
   const geo = await geocodeAddress(details.address);
   if (!geo) throw new Error("Could not verify that address. Please check it and try again.");

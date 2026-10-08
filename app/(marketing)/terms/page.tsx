@@ -51,8 +51,7 @@ export default function TermsPage() {
         <h2>Information on This Site</h2>
         <p>
           The articles, troubleshooting guides, and other information on this
-          site are general guidance for residential and light commercial ice
-          machines. They are not a substitute for your manufacturer’s
+          site are general guidance for residential ice machines. They are not a substitute for your manufacturer’s
           instructions or for an in-person inspection, and you follow them at
           your own risk. Prices and availability shown on the site can change;
           the price that applies to your visit is the one confirmed when you

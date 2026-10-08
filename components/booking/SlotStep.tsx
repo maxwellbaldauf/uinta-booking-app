@@ -3,13 +3,13 @@
 import { useState } from "react";
 import { buttonStyle, secondaryButtonStyle, ErrorBanner } from "@/components/ui/form";
 import { SlotGrid, type OfferedSlotView } from "./SlotGrid";
-import type { ServiceType } from "./ServiceTypeStep";
+import { formatUsdWhole } from "@/lib/settings";
 
 export type { OfferedSlotView };
 
 export function SlotStep({
   slots,
-  serviceType,
+  basePriceCents,
   matchedCustomer,
   busy,
   error,
@@ -17,7 +17,7 @@ export function SlotStep({
   onContinue,
 }: {
   slots: OfferedSlotView[];
-  serviceType: ServiceType;
+  basePriceCents: number | null;
   matchedCustomer: { hasPaymentMethod: boolean; paymentDisplay: string | null } | null;
   busy: boolean;
   error: string | null;
@@ -34,10 +34,13 @@ export function SlotStep({
       <div>
         <h1 style={{ fontSize: 22, margin: 0 }}>Choose a time</h1>
         <p style={{ color: "var(--color-fg-muted)", margin: "4px 0 0" }}>
-          {serviceType === "commercial"
-            ? "We'll give you a combined arrival window covering the full visit."
-            : "We'll give you a 90-minute arrival window."}
+          {"We'll give you a 90-minute arrival window."}
         </p>
+        {basePriceCents != null && (
+          <p style={{ color: "var(--color-fg-muted)", margin: "4px 0 0" }}>
+            Cleaning is {formatUsdWhole(basePriceCents)} per visit, about an hour.
+          </p>
+        )}
       </div>
 
       <SlotGrid slots={slots} selected={selected} onSelect={setSelected} />

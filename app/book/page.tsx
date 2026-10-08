@@ -13,13 +13,11 @@ export const metadata = {
 
 export default async function BookPage() {
   let basePriceCents: number | null = null;
-  let commercialPriceCents: number | null = null;
   try {
     const settings = await getSettings();
     basePriceCents = settings.base_price_cents;
-    commercialPriceCents = settings.commercial_price_cents;
   } catch {
-    // ServiceTypeStep tolerates nulls (omits the price line) rather than
+    // The slot step tolerates a null price (omits the price line) rather than
     // blocking booking entirely on a settings-fetch hiccup.
   }
 
@@ -27,7 +25,7 @@ export default async function BookPage() {
     <>
       <BrandBar />
       <main className="page" data-clarity-mask="true">
-        <BookingFlow basePriceCents={basePriceCents} commercialPriceCents={commercialPriceCents} />
+        <BookingFlow basePriceCents={basePriceCents} />
       </main>
       <LegalLinks />
       <GoogleAdsTag />

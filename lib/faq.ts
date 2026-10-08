@@ -1,3 +1,8 @@
+// The one answer for a commercial inquiry — used by the FAQ below and quoted
+// by the chat assistant (lib/chat/knowledge.ts), so the two can't drift.
+export const COMMERCIAL_INQUIRY_ANSWER =
+  "Not right now. We’re focused on residential undercounter machines at the moment. If you have a commercial machine, call or text (801) 796-2675 and we’ll talk it through directly.";
+
 // FAQ content, transcribed from content/*.md.
 //
 // HOME_FAQ and SERVICE_FAQ are rendered as a visible Q&A block on the home and
@@ -87,7 +92,7 @@ export const SERVICE_FAQ: FaqItem[] = [
   },
   {
     q: "Do you service commercial machines?",
-    a: "Yes, light commercial. Offices, retail showrooms, and small business breakrooms. Those visits run about an hour and a half because the units are larger and have more components. We don’t service high-volume food-service or restaurant equipment.",
+    a: COMMERCIAL_INQUIRY_ANSWER,
   },
   {
     q: "Is this the same as ice machine maintenance?",
@@ -133,10 +138,6 @@ export const TROUBLESHOOTING_FAQ: FaqItem[] = [
     q: "Can I clean my own ice machine?",
     a: "You can safely empty and wash the bin, keep the vent and condenser clear, and change the water filter. Full descaling risks permanent damage if the solution isn’t nickel-safe, and the reservoir and pump can’t be cleaned without disassembly.",
   },
-  {
-    q: "Why does commercial ice machine cleaning cost more than residential?",
-    a: "Residential cleaning is $200 for a visit of about an hour. Light commercial cleaning is $300 for a visit of about an hour and a half, because the units are larger and have more components to disassemble, clean, and reassemble. The cleaning process itself is the same.",
-  },
 ];
 
 // brands.md — the "FAQ schema pair" from each brand section
@@ -162,12 +163,8 @@ export const BRANDS_FAQ: FaqItem[] = [
     a: "A nickel-safe ice machine cleaner. GE’s parts catalog specifies one for its undercounter Monogram ice machines because the evaporators are plated, and non-approved descalers strip that plating.",
   },
   {
-    q: "What commercial ice machine brands does Uinta Ice Co. clean?",
-    a: "Most commonly Scotsman, Manitowoc, and Hoshizaki. We also service Follett, Ice-O-Matic, Icetro, and most other light commercial makes in offices, retail showrooms, and breakrooms.",
-  },
-  {
     q: "Do you service ice machine brands other than the ones listed?",
-    a: "Yes. Uinta Ice Co. services most residential and light commercial ice machine makes. The listed brands are the ones most commonly found in Utah homes and offices.",
+    a: "Yes. Uinta Ice Co. services most residential ice machine makes. The listed brands are the ones most commonly found in Utah homes.",
   },
 ];
 
@@ -191,6 +188,6 @@ export const AREAS_FAQ: FaqItem[] = [
   },
   {
     q: "How far does Uinta Ice Co. travel?",
-    a: "We’re based in Lehi, Utah and serve a 75-mile radius, covering Utah County, Salt Lake County, and the Park City and Heber corridor. The same radius applies to residential and light commercial accounts.",
+    a: "We’re based in Lehi, Utah and serve a 75-mile radius, covering Utah County, Salt Lake County, and the Park City and Heber corridor.",
   },
 ];

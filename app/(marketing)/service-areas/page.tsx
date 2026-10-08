@@ -77,11 +77,10 @@ export default function ServiceAreasPage() {
           Last updated: {PAGE_UPDATED.serviceAreas.display}
         </p>
         <p className="mkt-lead">
-          Uinta Ice Co. is based in Lehi and cleans residential and light
-          commercial ice machines within a 75-mile radius, covering Utah
-          County, Salt Lake County, and the Park City and Heber corridor. We
-          come to you. A residential visit takes about an hour, a light
-          commercial visit about an hour and a half.
+          Uinta Ice Co. is based in Lehi and cleans residential ice
+          machines within a 75-mile radius, covering Utah County, Salt Lake
+          County, and the Park City and Heber corridor. We come to you. A
+          visit takes about an hour.
         </p>
         <div className="mkt-cta-row">
           <Link href="/book" className="mkt-btn mkt-btn--primary">

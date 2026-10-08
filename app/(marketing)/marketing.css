@@ -763,31 +763,13 @@
   margin-top: var(--space-2xs);
 }
 
-/* Two tier cards: residential + commercial. Scope paragraph sits above the
-   price inside each card on purpose — a reader who sees both numbers before
-   both scopes reads it as the same job at double the price. */
+/* Pricing card. Scope paragraph sits above the price inside the card on
+   purpose. */
 .mkt-pricing-cards {
   display: grid;
   grid-template-columns: 1fr;
   gap: var(--space-lg);
   margin: var(--space-lg) 0;
-}
-@media (min-width: 48rem) {
-  /* .mkt-pricing-cards lives inside the page's measure-width (~680px) prose
-     column, which is correct for running text but leaves this, the only
-     card grid on the page, stuck at mobile-ish width on desktop. Break it
-     out to the site's wide container (--width-wide, ~1140px) the same way
-     the hero/header/footer do, centered on the viewport regardless of the
-     narrower parent. Desktop-only (this media query); mobile is untouched. */
-  .mkt-pricing-cards {
-    grid-template-columns: 1fr 1fr;
-    width: 100vw;
-    max-width: var(--width-wide);
-    margin-left: 50%;
-    transform: translateX(-50%);
-    padding-inline: var(--space-xl);
-    box-sizing: border-box;
-  }
 }
 
 .mkt-pricing-card {
@@ -1056,8 +1038,8 @@
     grid-template-columns: 1fr 1fr;
   }
   /* Three columns need more than the prose measure — break the whole block
-     (title, cards, attribution) out to the wide container exactly like
-     .mkt-pricing-cards does, so they stay aligned with each other. */
+     (title, cards, attribution) out to the wide container (--width-wide),
+     centered on the viewport, so they stay aligned with each other. */
   .mkt-reviews[data-cols="3"] .mkt-reviews__list {
     grid-template-columns: repeat(3, 1fr);
   }

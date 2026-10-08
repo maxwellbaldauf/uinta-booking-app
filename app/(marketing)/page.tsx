@@ -40,7 +40,6 @@ export const metadata = pageMetadata({
 const TRUST_BAR = [
   "Licensed and insured",
   "Serving Utah homes since 2022",
-  "Residential and light commercial",
   "Scotsman, Sub-Zero, U-Line, KitchenAid, GE",
   "Locally owned in Lehi",
   "Utah County and Salt Lake County",
@@ -59,33 +58,22 @@ export default async function HomePage({
   const reviewsPreview = previewCount === null ? undefined : previewReviews(previewCount);
 
   let price: string | null = null;
-  let commercialPrice: string | null = null;
   let priceCents: number | null = null;
-  let commercialPriceCents: number | null = null;
   try {
     const settings = await getSettings();
     price = formatUsdWhole(settings.base_price_cents);
-    commercialPrice = formatUsdWhole(settings.commercial_price_cents);
     priceCents = settings.base_price_cents;
-    commercialPriceCents = settings.commercial_price_cents;
   } catch {
     price = null;
-    commercialPrice = null;
   }
 
   const schema = [
-    localBusinessSchema(
-      priceCents != null && commercialPriceCents != null
-        ? { priceRangeCents: { residential: priceCents, commercial: commercialPriceCents } }
-        : undefined
-    ),
+    localBusinessSchema(priceCents != null ? { priceCents } : undefined),
     websiteSchema(),
     breadcrumbSchema([{ name: "Home", path: "/" }]),
     faqPageSchema(HOME_FAQ),
     webPageSchema({ path: "/", dateModified: PAGE_UPDATED.home.iso }),
-    // Two distinct Service offerings under the same provider (rather than one
-    // service at two prices) so a crawler can tell the tiers apart — price and
-    // duration both live here, DB-sourced, never a literal in this file.
+    // Price and duration both live here, DB-sourced, never a literal in this file.
     ...(priceCents != null
       ? [
           serviceSchema({
@@ -96,19 +84,6 @@ export default async function HomePage({
             serviceType: "Residential ice machine cleaning",
             offer: { priceCents, durationIso: "PT1H" },
             idSuffix: "-residential",
-          }),
-        ]
-      : []),
-    ...(commercialPriceCents != null
-      ? [
-          serviceSchema({
-            name: "Light commercial ice machine cleaning",
-            description:
-              "Full teardown of removable components, nickel-safe descale, reservoir and bin deep clean, food-contact sanitize, and test, for offices, retail showrooms, and small business breakrooms.",
-            path: "/",
-            serviceType: "Light commercial ice machine cleaning",
-            offer: { priceCents: commercialPriceCents, durationIso: "PT1H30M" },
-            idSuffix: "-commercial",
           }),
         ]
       : []),
@@ -130,9 +105,7 @@ export default async function HomePage({
         />
         <div className="mkt-hero__inner">
           <p className="mkt-hero__wordmark">Uinta Ice&nbsp;Co</p>
-          <p className="mkt-hero__eyebrow">
-            Residential and light commercial ice machine cleaning
-          </p>
+          <p className="mkt-hero__eyebrow">Residential ice machine cleaning</p>
           <h1>Get Your Utah Ice Machine Making Clean Ice Again</h1>
           <p className="mkt-hero__subhead">
             Professional descaling, deep cleaning, and sanitizing for Scotsman,
@@ -419,13 +392,6 @@ export default async function HomePage({
             ice.
           </p>
           <p>
-            <strong>Light commercial.</strong> Offices, retail showrooms, and
-            small business breakrooms. Same descale, deep clean, and sanitize,
-            on a larger machine with more components. Those visits run about
-            an hour and a half.{" "}
-            <Link href="#pricing">Residential and commercial pricing</Link>.
-          </p>
-          <p>
             <strong>Where we work.</strong> Based in Lehi, serving a 75-mile
             radius across Utah County and Salt Lake County, including Alpine,
             Highland, Salt Lake City, Holladay, Park City, Heber City, Draper,
@@ -464,9 +430,8 @@ export default async function HomePage({
         {/* SECTION 11 — PRICING */}
         <section id="pricing" className="mkt-section">
           <h2>What It Costs</h2>
-          {price && commercialPrice ? (
+          {price ? (
             <>
-              <p>Two tiers, priced to the work.</p>
               <div className="mkt-pricing-cards">
                 <div className="mkt-pricing-card">
                   <h3>Residential</h3>
@@ -505,91 +470,13 @@ export default async function HomePage({
                     />
                   </div>
                 </div>
-                <div className="mkt-pricing-card">
-                  <h3>Light commercial</h3>
-                  <p>
-                    A light commercial ice machine cleaning from Uinta Ice
-                    Co. is {commercialPrice} per visit, about an hour and a
-                    half, all supplies included. A larger machine with more
-                    components means more parts to disassemble, clean, and
-                    reassemble. Same nickel-safe descale, hand cleaning, and
-                    food-contact sanitizing, across more surface area, for
-                    offices, retail showrooms, and small business breakrooms.
-                  </p>
-                  <p className="mkt-price">
-                    {commercialPrice}
-                    <span>per visit</span>
-                  </p>
-                  <p>Two visits a year, on a machine your business runs on every day.</p>
-                  <div className="mkt-pricing-photos">
-                    <Image
-                      src="/images/scotsman-commercial.jpg"
-                      alt="Scotsman-style modular light commercial ice machine, the type Uinta Ice Co. services."
-                      width={200}
-                      height={200}
-                    />
-                    <Image
-                      src="/images/manitowoc-commercial.jpg"
-                      alt="Manitowoc-style modular light commercial ice machine, the type Uinta Ice Co. services."
-                      width={200}
-                      height={200}
-                    />
-                    <Image
-                      src="/images/hoshizaki-commercial.jpg"
-                      alt="Hoshizaki-style modular light commercial ice machine, the type Uinta Ice Co. services."
-                      width={200}
-                      height={200}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className="mkt-table-wrap">
-                <table className="mkt-table">
-                  <thead>
-                    <tr>
-                      <td />
-                      <th scope="col">Residential</th>
-                      <th scope="col">Light commercial</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <th scope="row">Price</th>
-                      <td data-col="Residential">{price} per visit</td>
-                      <td data-col="Light commercial">{commercialPrice} per visit</td>
-                    </tr>
-                    <tr>
-                      <th scope="row">Visit length</th>
-                      <td data-col="Residential">About an hour</td>
-                      <td data-col="Light commercial">About an hour and a half</td>
-                    </tr>
-                    <tr>
-                      <th scope="row">Cadence</th>
-                      <td data-col="Residential">Two visits a year</td>
-                      <td data-col="Light commercial">Two visits a year</td>
-                    </tr>
-                    <tr>
-                      <th scope="row">Supplies</th>
-                      <td data-col="Residential">All included</td>
-                      <td data-col="Light commercial">All included</td>
-                    </tr>
-                    <tr>
-                      <th scope="row">Typical settings</th>
-                      <td data-col="Residential">Homes</td>
-                      <td data-col="Light commercial">
-                        Offices, retail showrooms, small business breakrooms
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
               </div>
 
               <p>
-                Both are flat rates. Not starting prices, not estimates, and
-                not quotes that change when we open the machine. Both run on
-                the same six-month schedule — you sign a short agreement, we
-                handle the scheduling, and you can stop any time.
+                Flat rate. Not a starting price, not an estimate, and not a
+                quote that changes when we open the machine. It runs on a
+                six-month schedule — you sign a short agreement, we handle the
+                scheduling, and you can stop any time.
               </p>
             </>
           ) : (
@@ -641,9 +528,7 @@ export default async function HomePage({
             Uinta Ice Co. is an ice machine cleaning service based in Lehi,
             Utah. We descale, deep clean, and sanitize undercounter and
             built-in ice machines on site, for homes across Utah County and
-            Salt Lake County and for light commercial accounts including
-            offices, retail showrooms, and small business breakrooms, within a
-            75-mile service radius. We have served Utah since 2022 and we are
+            Salt Lake County, within a 75-mile service radius. We have served Utah since 2022 and we are
             licensed and insured.
           </p>
           <p>
@@ -655,10 +540,8 @@ export default async function HomePage({
             typically recommend.
           </p>
           <p>
-            A residential visit takes about one hour. A light commercial visit
-            takes about an hour and a half, because the units are larger and
-            have more components to disassemble and clean. All supplies are
-            included in both. Call or text{" "}
+            A residential visit takes about one hour. All supplies are
+            included. Call or text{" "}
             <a href={NAP.phoneHref}>{NAP.phoneDisplay}</a>. Email{" "}
             <a href={NAP.emailHref}>{NAP.email}</a>.
           </p>

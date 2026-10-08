@@ -28,15 +28,14 @@ const WEBSITE_ID = `${SITE_ORIGIN}/#website`;
 const LOGO_URL = `${SITE_ORIGIN}/images/logo2.png`;
 
 const BUSINESS_DESCRIPTION =
-  "Residential and light commercial ice machine cleaning service based in " +
-  "Lehi, Utah. We descale, deep clean, and sanitize undercounter and built-in " +
-  "ice machines in homes, offices, retail showrooms, and small business " +
-  "breakrooms across Utah County and Salt Lake County, within a 75-mile radius.";
+  "Residential ice machine cleaning service based in Lehi, Utah. We descale, " +
+  "deep clean, and sanitize undercounter and built-in ice machines in homes " +
+  "across Utah County and Salt Lake County, within a 75-mile radius.";
 
 export function localBusinessSchema(opts?: {
   // Live-sourced, like serviceSchema()'s offer — never a literal, so this
   // can't drift from the actual price the way a hardcoded range could.
-  priceRangeCents?: { residential: number; commercial: number };
+  priceCents?: number;
 }): Record<string, unknown> {
   return {
     "@type": "LocalBusiness",
@@ -48,11 +47,7 @@ export function localBusinessSchema(opts?: {
     email: NAP.email,
     description: BUSINESS_DESCRIPTION,
     foundingDate: String(ESTABLISHED_YEAR),
-    ...(opts?.priceRangeCents
-      ? {
-          priceRange: `$${Math.round(opts.priceRangeCents.residential / 100)}–$${Math.round(opts.priceRangeCents.commercial / 100)}`,
-        }
-      : {}),
+    ...(opts?.priceCents != null ? { priceRange: `$${Math.round(opts.priceCents / 100)}` } : {}),
     logo: LOGO_URL,
     image: [LOGO_URL],
     address: {
@@ -128,25 +123,23 @@ export function serviceSchema(opts: {
   name: string;
   description: string;
   path: string;
-  // Defaults to the general (both-tiers) description; pass an explicit value
-  // for a tier-specific entry (e.g. the home page's two Service offerings).
+  // Defaults to the general description; pass an explicit value to override.
   serviceType?: string;
-  // Present only for an entry that names a specific tier's price — the caller
+  // Present only for an entry that names a specific price — the caller
   // passes the already-fetched settings value, so this stays live/DB-sourced
   // rather than a literal that could drift. durationIso is an ISO 8601
   // duration (e.g. "PT1H", "PT1H30M"); attached via additionalProperty since
   // Service has no first-class duration field, still a fully valid pattern
   // for a checkable structured fact.
   offer?: { priceCents: number; durationIso: string };
-  // Required when a page emits more than one Service node at the same path
-  // (e.g. home's residential + commercial offerings) — without it both would
-  // share the same #service @id, an invalid collision for two distinct nodes.
+  // Required when a page emits more than one Service node at the same path —
+  // without it both would share the same #service @id, an invalid collision.
   idSuffix?: string;
 }): Record<string, unknown> {
   return {
     "@type": "Service",
     "@id": `${SITE_ORIGIN}${opts.path}#service${opts.idSuffix ?? ""}`,
-    serviceType: opts.serviceType ?? "Residential and light commercial ice machine cleaning",
+    serviceType: opts.serviceType ?? "Residential ice machine cleaning",
     name: opts.name,
     description: opts.description,
     url: `${SITE_ORIGIN}${opts.path}`,

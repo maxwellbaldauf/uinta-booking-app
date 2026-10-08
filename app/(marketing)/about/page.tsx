@@ -9,7 +9,7 @@ import { JOB_PHOTOS } from "@/lib/jobPhotos";
 export const metadata = pageMetadata({
   title: "About Uinta Ice Co. | Ice Machine Cleaning in Lehi, Utah",
   description:
-    "Uinta Ice Co., LLC cleans residential and light commercial ice machines across Utah County and Salt Lake County. Licensed and insured, cleaning only, since 2022.",
+    "Uinta Ice Co., LLC cleans residential ice machines across Utah County and Salt Lake County. Licensed and insured, cleaning only, since 2022.",
   path: "/about",
 });
 
@@ -32,8 +32,8 @@ export default function AboutPage() {
         <h1>About Uinta Ice Co.</h1>
         <p className="mkt-updated">Last updated: {PAGE_UPDATED.about.display}</p>
         <p className="mkt-lead">
-          Uinta Ice Co. is a Lehi, Utah company that cleans residential and
-          light commercial ice machines. Undercounter and built-in ice
+          Uinta Ice Co. is a Lehi, Utah company that cleans residential
+          ice machines. Undercounter and built-in ice
           machines are our specialty, and cleaning them is all we do. We take
           pride in an obsessive level of detail and cleanliness, and if
           you’re not satisfied with the cleaning, we’ll come back and clean
@@ -55,9 +55,7 @@ export default function AboutPage() {
       <section className="mkt-section">
         <h2>Who We Serve</h2>
         <p>
-          Residential ice machines in Utah homes, and light commercial
-          machines in offices, retail showrooms, and small business
-          breakrooms.{" "}
+          Residential ice machines in Utah homes.{" "}
           <Link href="/brands">The brands we service most often</Link> and{" "}
           <Link href="/service-areas">where we work</Link> have their own
           pages.

@@ -2,7 +2,7 @@
 **Uinta Ice Co., LLC** | Slug: `/ice-machine-cleaning`
 
 **Title tag (56):** Residential Ice Machine Cleaning Service | Uinta Ice Co.
-**Meta description (153):** Full teardown, nickel-safe descale, reservoir and bin deep clean, and food-safe sanitize. About an hour for homes, 90 minutes for light commercial units.
+**Meta description (153):** Full teardown, nickel-safe descale, reservoir and bin deep clean, and food-safe sanitize. About an hour for homes.
 
 Approx. 1,420 words of body copy. No price anywhere on this page.
 
@@ -17,8 +17,6 @@ Approx. 1,420 words of body copy. No price anywhere on this page.
 Residential Ice Machine Cleaning in Utah, Start to Finish
 
 Uinta Ice Co. descales, deep cleans, and sanitizes residential ice machines in the customer's home. A visit takes about an hour, covers every component the water and ice touch, and includes all supplies. We're based in Lehi and serve Utah County and Salt Lake County within a 75-mile radius.
-
-We also service light commercial machines in offices, retail showrooms, and small business breakrooms. Those visits run about an hour and a half, because the units are larger and have more components.
 
 This page covers exactly what that visit involves, what we use, and what we'll tell you when we're done.
 
@@ -136,29 +134,6 @@ Semi-annual service keeps an undercounter machine at full production and keeps t
 
 ---
 
-## SECTION 6
-`anchor id: #commercial`
-
-> **PSYCHOLOGY: Specificity as authority.** The price difference is explained by three concrete facts stated once, without apology or hedging. A reader who sees the reason does not need to be persuaded of the fairness.
-
-### H2
-What's Different About a Commercial Cleaning?
-
-Three things. The machine is larger, it has more components, and the visit takes about an hour and a half instead of an hour.
-
-We service light commercial accounts: offices, retail showrooms, and small business breakrooms. The process is the same one described above. Nickel-safe descale of the water path, hand cleaning of the reservoir and bin, food-contact sanitizing of every surface the ice touches, and a test cycle before we leave.
-
-What changes is the scope of the disassembly. A commercial unit has more removable parts, more surface area in the water path, and a larger bin. Every one of those has to come apart, get cleaned, and go back together. That's where the additional half hour goes, and it's the whole of the difference in price.
-
-Light commercial is the boundary. We're not a restaurant equipment company. We don't service high-volume food-service machines and we don't provide health-code inspection support.
-
-→ Link: [residential and commercial pricing](/#pricing)
-
-**FAQ schema pair:**
-Q: What's the difference between commercial and residential ice machine cleaning?
-A: The cleaning process is the same. Commercial units are larger and have more components to disassemble, clean, and reassemble, so a commercial visit takes about an hour and a half compared with about an hour for a residential machine.
-
-
 ## SECTION 7
 `anchor id: #what-we-dont-do`
 
@@ -187,8 +162,6 @@ Undercounter and built-in residential ice machines producing nugget, pebble, gou
 
 The brands we see most often are Scotsman, Sub-Zero, U-Line, KitchenAid, GE Profile, and GE Monogram. We service most other residential makes as well, so call if yours isn't on that list.
 
-On the light commercial side, we service undercounter and freestanding machines in offices, retail showrooms, and breakrooms.
-
 → Link: [what each brand needs, and where each one tends to fail](/brands)
 → Link: [the cities we serve across Utah County and Salt Lake County](/service-areas)
 
@@ -215,9 +188,9 @@ If scale is the cause, yes, and scale is the most common cause we see in Utah. I
 It's a food-contact sanitizer, applied to surfaces the ice touches and used as directed for that purpose.
 
 **Do you service commercial machines?**
-Yes, light commercial. Offices, retail showrooms, and small business breakrooms. Those visits run about an hour and a half because the units are larger and have more components. We don't service high-volume food-service or restaurant equipment.
+Not right now. We're focused on residential undercounter machines at the moment. If you have a commercial machine, call or text (801) 796-2675 and we'll talk it through directly.
 
-**Schema note:** mark up all six as FAQPage question/answer pairs, plus the commercial pair in Section 6.
+**Schema note:** mark up all six as FAQPage question/answer pairs.
 
 ---
 

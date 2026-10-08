@@ -37,13 +37,11 @@ export function DetailsStep({
   initial,
   busy,
   error,
-  onBack,
   onSubmit,
 }: {
   initial?: BookingDetails;
   busy: boolean;
   error: string | null;
-  onBack: () => void;
   onSubmit: (details: BookingDetails) => void;
 }) {
   const [d, setD] = useState<BookingDetails>(initial ?? EMPTY);
@@ -211,13 +209,6 @@ export function DetailsStep({
       )}
 
       <div style={{ display: "flex", gap: "var(--space-2)" }}>
-        <button
-          type="button"
-          onClick={onBack}
-          style={{ ...secondaryButtonStyle, width: "auto", flex: "0 0 auto", padding: "14px 16px" }}
-        >
-          Back
-        </button>
         <button type="submit" disabled={!canSubmit} style={{ ...buttonStyle, opacity: canSubmit ? 1 : 0.6 }}>
           {busy ? "Checking availability…" : "See available times"}
         </button>
