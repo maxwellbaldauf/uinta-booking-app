@@ -35,6 +35,7 @@
 // POST /api/internal/resolve-day-sequence (called by uinta-field-app's
 // nightly sweep as a safety net, in case an accept/decline's own call
 // above didn't run to completion — e.g. a crash mid-request).
+import { fetchEnabledBlockIndexes, spanIsEnabled } from "@/lib/schedule/enabledBlocks";
 import { businessDb } from "@/lib/tenant/business";
 import { syncJobCalendar } from "@/lib/calendarSync";
 import { sendBookingConfirmationEmail } from "@/lib/email/bookingConfirmation";
@@ -104,6 +105,16 @@ async function applyMove(
   row: Row,
   expectedCurrentBlock: number
 ): Promise<boolean> {
+  // A proposal stored before a window was turned off must not land a job in
+  // it. Leave the job where it is (applied_at stays null; the suggestion is
+  // simply never applied).
+  const { data: jobRow } = await supabase.from("jobs").select("blocks_needed").eq("id", row.job_id).maybeSingle();
+  const enabled = await fetchEnabledBlockIndexes(supabase);
+  if (!spanIsEnabled(enabled, row.proposed_arrival_block, jobRow?.blocks_needed ?? 1)) {
+    console.error("resolvePendingDaySequenceMoves: proposed block is turned off, not applying", { jobId: row.job_id });
+    return false;
+  }
+
   const { data: updated, error } = await supabase
     .from("jobs")
     .update({ arrival_block: row.proposed_arrival_block })
