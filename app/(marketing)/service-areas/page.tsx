@@ -273,8 +273,7 @@ export default function ServiceAreasPage() {
           >
             <p>
               Yes. Orem and Provo are twenty to thirty minutes from our base in
-              Lehi, well inside the area we serve. Most of the ice machines we
-              see in both cities are Scotsman units making pebble ice.
+              Lehi, well inside the area we serve.
             </p>
             <p>
               Both cities publish their water hardness in their annual water
