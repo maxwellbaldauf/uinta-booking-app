@@ -63,8 +63,8 @@ const WATER_HARDNESS = [
     area: "Orem",
     supplier: "City of Orem (wells, springs, and treated surface water)",
     hardness:
-      "7–25 gpg (city wells and springs); 6.55–9 gpg (regional treatment plant water)",
-    classification: "Hard to very hard",
+      "7–25 gpg (city sources); 6.55–9 gpg (regional treatment plant water)",
+    classification: "Moderately hard to very hard",
   },
 ] as const;
 
@@ -242,7 +242,7 @@ export default function ServiceAreasPage() {
               Hills.
             </p>
             <p>
-              This is the broadest of our four areas and the most varied. Draper
+              This is the broadest of our service areas and the most varied. Draper
               and the Lehi bench look like Alpine, newer high-end construction
               with built-in machines specified during the build. Provo, Orem, and
               the older Utah Valley cities skew toward retrofit installs in
@@ -279,15 +279,12 @@ export default function ServiceAreasPage() {
               Both cities publish their water hardness in their annual water
               quality reports. Provo reports typical levels of 10 to 15 grains
               per gallon. Orem blends surface water with well and spring water,
-              and reports 7 to 25 grains per gallon for its own wells and
-              springs and 6.55 to 9 for water from the regional treatment plant.
-              Much of that range sits above the 10.5 grains per gallon line for
-              very hard water, which is why an ice maker in either city is worth
-              keeping on a regular cleaning schedule.
-            </p>
-            <p>
-              Uinta Ice Co. is a Lehi-based ice machine cleaning company, and
-              the service takes about an hour.
+              and reports 7 to 25 grains per gallon for its own sources and 6.55
+              to 9 for water from the regional treatment plant. Provo’s typical
+              range straddles the 10.5 grains per gallon line for very hard
+              water, and the top of Orem’s range sits well above it, so an ice
+              maker in either city is worth keeping on a regular cleaning
+              schedule.
             </p>
             <p>
               <Link href="/ice-machine-cleaning">What a cleaning includes</Link>.
