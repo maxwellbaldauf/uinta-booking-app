@@ -3,9 +3,11 @@
 import { useCallback, useState } from "react";
 import { buttonStyle, secondaryButtonStyle, ErrorBanner } from "@/components/ui/form";
 import { SlotGrid, formatSlotDate, type OfferedSlotView } from "@/components/booking/SlotGrid";
+import { MonthSlotPicker, type MonthlyInfo } from "@/components/booking/MonthSlotPicker";
 import { CancelDialog } from "./CancelDialog";
 import {
   getRescheduleOptions,
+  getRescheduleMonthOptions,
   rescheduleVisit,
   cancelVisit,
   type CancelScope,
@@ -29,6 +31,8 @@ export function VisitPortal({ visit }: { visit: VisitView }) {
 
   const [slots, setSlots] = useState<OfferedSlotView[] | null>(null);
   const [selected, setSelected] = useState<OfferedSlotView | null>(null);
+  // Set when the business has a booking horizon: the month picker replaces the list.
+  const [monthly, setMonthly] = useState<MonthlyInfo | null>(null);
   const [current, setCurrent] = useState({
     date: visit.scheduledDate,
     window: visit.arrivalWindowLabel,
@@ -46,8 +50,17 @@ export function VisitPortal({ visit }: { visit: VisitView }) {
       setSlots([]);
       return;
     }
+    setMonthly(res.monthly ?? null);
     setSlots(res.slots);
   }, [visit.token]);
+
+  const loadMonth = useCallback(
+    async (month: string): Promise<OfferedSlotView[] | null> => {
+      const res = await getRescheduleMonthOptions(visit.token, month);
+      return res.ok ? res.slots : null;
+    },
+    [visit.token]
+  );
 
   async function confirmReschedule() {
     if (!selected) return;
@@ -66,7 +79,10 @@ export function VisitPortal({ visit }: { visit: VisitView }) {
     setError(res.error);
     if (res.slotTaken) {
       const fresh = await getRescheduleOptions(visit.token);
-      if (fresh.ok) setSlots(fresh.slots);
+      if (fresh.ok) {
+        setMonthly(fresh.monthly ?? null);
+        setSlots(fresh.slots);
+      }
       setSelected(null);
     }
   }
@@ -150,6 +166,14 @@ export function VisitPortal({ visit }: { visit: VisitView }) {
 
         {slots === null ? (
           <p style={{ color: "var(--color-fg-muted)" }}>Loading open times…</p>
+        ) : monthly ? (
+          <MonthSlotPicker
+            initialSlots={slots}
+            monthly={monthly}
+            loadMonth={loadMonth}
+            selected={selected}
+            onSelect={setSelected}
+          />
         ) : (
           <SlotGrid slots={slots} selected={selected} onSelect={setSelected} />
         )}

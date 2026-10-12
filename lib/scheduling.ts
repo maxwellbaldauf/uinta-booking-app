@@ -1,7 +1,17 @@
 import { businessDb, businessTz } from "@/lib/tenant/business";
 import { getSettings } from "@/lib/settings";
 import { ARRIVAL_BLOCKS, arrivalBlockLabel } from "@/lib/schedule/blocks";
-import { todayISODate, nowMinutesIn, timeToMinutes, addDaysToISODate } from "@/lib/time/zone";
+import {
+  todayISODate,
+  nowMinutesIn,
+  timeToMinutes,
+  addDaysToISODate,
+  addMonthsToISODate,
+  diffISODays,
+  monthOf,
+  monthStart,
+  monthEnd,
+} from "@/lib/time/zone";
 import { fetchNearbyScheduledJobs } from "@/lib/clustering/nearbyJobs";
 import { rerankCandidatesByDrivingTime } from "@/lib/clustering/rerank";
 
@@ -44,7 +54,15 @@ export async function getOfferedSlots(
   lat: number,
   lng: number,
   blocksNeeded = 1,
-  opts?: { excludeJobId?: string; skipRerank?: boolean; fromDate?: string; windowDays?: number }
+  opts?: {
+    excludeJobId?: string;
+    skipRerank?: boolean;
+    fromDate?: string;
+    windowDays?: number;
+    // Only the month picker passes this (see getOfferedSlotsForMonth); omitted
+    // = the function's own default of 30, i.e. exactly the legacy behavior.
+    fallbackLimit?: number;
+  }
 ): Promise<OfferedSlot[]> {
   const supabase = businessDb();
   const settings = await getSettings();
@@ -66,6 +84,7 @@ export async function getOfferedSlots(
     window_days: windowDays,
     p_blocks_needed: blocksNeeded,
     ...(opts?.excludeJobId ? { exclude_job_id: opts.excludeJobId } : {}),
+    ...(opts?.fallbackLimit ? { p_fallback_limit: opts.fallbackLimit } : {}),
   });
   if (error) throw new Error(`get_available_slots failed: ${error.message}`);
 
@@ -142,4 +161,114 @@ export async function slotStillAvailable(
   return (
     fresh.find((s) => s.slotDate === slotDate && s.arrivalBlock === arrivalBlock) ?? null
   );
+}
+
+// ---------------------------------------------------------------------------
+// Booking horizon (settings.booking_horizon_months) and the month-at-a-time
+// picker.
+//
+// booking_horizon_months NULL (the shipped state) = legacy: customers see the
+// settings.lookahead_days window, rendered by the old SlotGrid. 1..6 = the
+// month picker, up to that many CALENDAR months from the business's own
+// "today". It is read tolerantly (any error -> NULL) so this code is safe to
+// deploy before migration 024 reaches the database.
+
+export const MAX_HORIZON_MONTHS = 6; // ceiling regardless of the setting
+
+export type BookingHorizon = {
+  months: number | null; // null = legacy window
+  today: string; // business-local
+  maxDate: string; // last bookable date, inclusive
+};
+
+let horizonCache: { at: number; months: number | null } | null = null;
+
+async function readHorizonMonths(): Promise<number | null> {
+  if (horizonCache && Date.now() - horizonCache.at < 60_000) return horizonCache.months;
+  const { data, error } = await businessDb().from("settings").select("booking_horizon_months").single();
+  const raw = error ? null : (data as unknown as { booking_horizon_months: number | null } | null)?.booking_horizon_months;
+  const months =
+    typeof raw === "number" && Number.isInteger(raw) && raw >= 1 ? Math.min(raw, MAX_HORIZON_MONTHS) : null;
+  horizonCache = { at: Date.now(), months };
+  return months;
+}
+
+export async function getBookingHorizon(): Promise<BookingHorizon> {
+  const [settings, tz, months] = await Promise.all([getSettings(), businessTz(), readHorizonMonths()]);
+  const today = todayISODate(tz);
+  return {
+    months,
+    today,
+    maxDate:
+      months == null ? addDaysToISODate(today, settings.lookahead_days) : addMonthsToISODate(today, months),
+  };
+}
+
+// Server-side enforcement for anything that books or moves a visit to a
+// customer-chosen date: refuses past dates and anything beyond the horizon.
+export async function dateOutsideHorizon(slotDate: string): Promise<boolean> {
+  const h = await getBookingHorizon();
+  return slotDate < h.today || slotDate > h.maxDate;
+}
+
+export type MonthSlots = {
+  month: string; // "YYYY-MM"
+  slots: OfferedSlot[];
+  minMonth: string;
+  maxMonth: string;
+};
+
+// One calendar month of offers (the month being viewed), clamped to
+// [today, maxDate]. NEVER calls the Route Matrix: SlotGrid / the month picker
+// order by date, so the driving-time rerank has no customer-visible effect
+// here (it only re-sorts rows; is_fallback/booking_match_type are per-row
+// flags it never alters). Zero paid lookups, any number of months.
+export async function getOfferedSlotsForMonth(
+  lat: number,
+  lng: number,
+  blocksNeeded: number,
+  month: string,
+  opts?: { excludeJobId?: string }
+): Promise<MonthSlots | null> {
+  const h = await getBookingHorizon();
+  if (h.months == null) return null;
+  const minMonth = monthOf(h.today);
+  const maxMonth = monthOf(h.maxDate);
+  const result = (slots: OfferedSlot[]): MonthSlots => ({ month, slots, minMonth, maxMonth });
+  if (month < minMonth || month > maxMonth) return result([]);
+
+  const from = monthStart(month) > h.today ? monthStart(month) : h.today;
+  const to = monthEnd(month) < h.maxDate ? monthEnd(month) : h.maxDate;
+  if (from > to) return result([]);
+
+  const slots = await getOfferedSlots(lat, lng, blocksNeeded, {
+    ...opts,
+    skipRerank: true,
+    fromDate: from,
+    windowDays: diffISODays(from, to),
+    fallbackLimit: 2000,
+  });
+  return result(slots);
+}
+
+// The first month (from this month on) that has any offer — where the picker
+// opens. Stops at the first non-empty month; at most MAX_HORIZON_MONTHS + 1
+// cheap SQL calls, usually one.
+export async function getFirstOpenMonth(
+  lat: number,
+  lng: number,
+  blocksNeeded: number,
+  opts?: { excludeJobId?: string; hideSlot?: (s: OfferedSlot) => boolean }
+): Promise<MonthSlots | null> {
+  const h = await getBookingHorizon();
+  if (h.months == null) return null;
+  const last = monthOf(h.maxDate);
+  let month = monthOf(h.today);
+  for (;;) {
+    const res = await getOfferedSlotsForMonth(lat, lng, blocksNeeded, month, opts);
+    if (!res) return null;
+    const slots = opts?.hideSlot ? res.slots.filter((s) => !opts.hideSlot!(s)) : res.slots;
+    if (slots.length > 0 || month >= last) return { ...res, slots };
+    month = monthOf(addDaysToISODate(monthEnd(month), 1));
+  }
 }

@@ -1,6 +1,6 @@
 import { businessDb } from "@/lib/tenant/business";
 import { arrivalBlockLabel } from "@/lib/schedule/blocks";
-import { getOfferedSlots } from "@/lib/scheduling";
+import { getOfferedSlots, getFirstOpenMonth, getOfferedSlotsForMonth } from "@/lib/scheduling";
 
 export type Visit = {
   jobId: string;
@@ -116,4 +116,42 @@ export async function getRescheduleSlots(visit: Visit) {
   return slots
     .filter((s) => !(s.slotDate === visit.scheduledDate && s.arrivalBlock === visit.arrivalBlock))
     .map((s) => ({ slotDate: s.slotDate, arrivalBlock: s.arrivalBlock, blockLabel: s.blockLabel }));
+}
+
+// ---- month-at-a-time reschedule (booking horizon set) ----------------------
+
+export type RescheduleMonthView = {
+  month: string;
+  minMonth: string;
+  maxMonth: string;
+  slots: { slotDate: string; arrivalBlock: number; blockLabel: string }[];
+};
+
+// Same exclusions as getRescheduleSlots: the visit's own id never counts as a
+// route match, its blocks_needed is the JOB'S, and its current window is hidden.
+function isCurrentWindow(visit: Visit) {
+  return (s: { slotDate: string; arrivalBlock: number }) =>
+    s.slotDate === visit.scheduledDate && s.arrivalBlock === visit.arrivalBlock;
+}
+
+function toView(slots: { slotDate: string; arrivalBlock: number; blockLabel: string }[]) {
+  return slots.map((s) => ({ slotDate: s.slotDate, arrivalBlock: s.arrivalBlock, blockLabel: s.blockLabel }));
+}
+
+// null = this business has no booking horizon set (use the legacy list).
+export async function getRescheduleFirstMonth(visit: Visit): Promise<RescheduleMonthView | null> {
+  if (visit.latitude == null || visit.longitude == null) return null;
+  const res = await getFirstOpenMonth(visit.latitude, visit.longitude, visit.blocksNeeded, {
+    excludeJobId: visit.jobId,
+    hideSlot: isCurrentWindow(visit),
+  });
+  return res && { ...res, slots: toView(res.slots) };
+}
+
+export async function getRescheduleMonth(visit: Visit, month: string): Promise<RescheduleMonthView | null> {
+  if (visit.latitude == null || visit.longitude == null) return null;
+  const res = await getOfferedSlotsForMonth(visit.latitude, visit.longitude, visit.blocksNeeded, month, {
+    excludeJobId: visit.jobId,
+  });
+  return res && { ...res, slots: toView(res.slots.filter((s) => !isCurrentWindow(visit)(s))) };
 }

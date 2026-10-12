@@ -73,3 +73,56 @@ export function localToUtc(tz: string, isoDate: string, time: string): Date {
 export function localMidnightUtcISO(tz: string, isoDate: string): string {
   return localToUtc(tz, isoDate, "00:00").toISOString();
 }
+
+// ---- booking horizon / month math (plain calendar math, no timezone) ----
+
+// How long a visit's magic link outlives the visit date. The link must still
+// open (view-only once the job leaves "scheduled") for this many days after.
+export const MAGIC_LINK_GRACE_DAYS = 14;
+
+// access_token_expires_at for a visit on `visitDate`: valid through the
+// visit date + MAGIC_LINK_GRACE_DAYS, dead at local midnight after that.
+export function accessTokenExpiryISO(tz: string, visitDate: string): string {
+  return localMidnightUtcISO(tz, addDaysToISODate(visitDate, MAGIC_LINK_GRACE_DAYS + 1));
+}
+
+// "YYYY-MM" of a "YYYY-MM-DD".
+export function monthOf(isoDate: string): string {
+  return isoDate.slice(0, 7);
+}
+
+export function isMonthString(v: unknown): v is string {
+  return typeof v === "string" && /^\d{4}-(0[1-9]|1[0-2])$/.test(v);
+}
+
+// "YYYY-MM" + n months.
+export function addMonthsToMonth(month: string, n: number): string {
+  const [y, m] = month.split("-").map(Number);
+  const idx = y * 12 + (m - 1) + n;
+  return `${Math.floor(idx / 12)}-${String((idx % 12) + 1).padStart(2, "0")}`;
+}
+
+export function monthStart(month: string): string {
+  return `${month}-01`;
+}
+
+export function monthEnd(month: string): string {
+  return addDaysToISODate(monthStart(addMonthsToMonth(month, 1)), -1);
+}
+
+// Whole calendar months from a date, clamped to the target month's length
+// (Aug 31 + 6 months = Feb 28/29), e.g. "6 months from today".
+export function addMonthsToISODate(isoDate: string, months: number): string {
+  const target = addMonthsToMonth(monthOf(isoDate), months);
+  const day = Math.min(Number(isoDate.slice(8, 10)), Number(monthEnd(target).slice(8, 10)));
+  return `${target}-${String(day).padStart(2, "0")}`;
+}
+
+// Whole days from a to b (b - a), calendar math only.
+export function diffISODays(a: string, b: string): number {
+  const ms = (s: string) => {
+    const [y, m, d] = s.split("-").map(Number);
+    return Date.UTC(y, m - 1, d);
+  };
+  return Math.round((ms(b) - ms(a)) / 86_400_000);
+}

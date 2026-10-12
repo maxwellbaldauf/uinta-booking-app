@@ -28,6 +28,8 @@ type Step =
 
 type Availability = {
   slots: OfferedSlotView[];
+  // Set when the business has a booking horizon: month picker + its signed context.
+  monthly?: { ctx: string; month: string; minMonth: string; maxMonth: string };
   matchedCustomer: { hasPaymentMethod: boolean; paymentDisplay: string | null } | null;
   agreementRequired: boolean;
   agreementStale: boolean;
@@ -66,6 +68,28 @@ export function BookingFlow({ basePriceCents }: { basePriceCents: number | null 
     return res.json();
   }, []);
 
+  // Month-picker fetch: signed context + month, nothing else (no address, no
+  // geocoding). Null on any failure; the picker offers a retry.
+  const monthlyCtx = availability?.monthly?.ctx;
+  const loadMonth = useCallback(
+    async (month: string): Promise<OfferedSlotView[] | null> => {
+      if (!monthlyCtx) return null;
+      try {
+        const res = await fetch("/api/booking/availability/month", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ctx: monthlyCtx, month }),
+        });
+        if (!res.ok) return null;
+        const data = (await res.json()) as { slots?: OfferedSlotView[] };
+        return data.slots ?? null;
+      } catch {
+        return null;
+      }
+    },
+    [monthlyCtx]
+  );
+
   async function handleDetails(d: BookingDetails) {
     setDetails(d);
     setBusy(true);
@@ -79,6 +103,7 @@ export function BookingFlow({ basePriceCents }: { basePriceCents: number | null 
       if (data.status === "ok") {
         setAvailability({
           slots: data.slots,
+          monthly: data.monthly,
           matchedCustomer: data.matchedCustomer,
           agreementRequired: data.agreementRequired,
           agreementStale: data.agreementStale,
@@ -171,6 +196,7 @@ export function BookingFlow({ basePriceCents }: { basePriceCents: number | null 
         if (fresh.status === "ok") {
           setAvailability({
             slots: fresh.slots,
+            monthly: fresh.monthly,
             matchedCustomer: fresh.matchedCustomer,
             agreementRequired: fresh.agreementRequired,
             agreementStale: fresh.agreementStale,
@@ -301,6 +327,7 @@ export function BookingFlow({ basePriceCents }: { basePriceCents: number | null 
     return (
       <SlotStep
         slots={availability.slots}
+        monthly={availability.monthly ? { info: availability.monthly, loadMonth } : undefined}
         basePriceCents={basePriceCents}
         matchedCustomer={availability.matchedCustomer}
         busy={busy}

@@ -3,12 +3,14 @@
 import { useState } from "react";
 import { buttonStyle, secondaryButtonStyle, ErrorBanner } from "@/components/ui/form";
 import { SlotGrid, type OfferedSlotView } from "./SlotGrid";
+import { MonthSlotPicker, type MonthlyInfo } from "./MonthSlotPicker";
 import { formatUsdWhole } from "@/lib/settings";
 
 export type { OfferedSlotView };
 
 export function SlotStep({
   slots,
+  monthly,
   basePriceCents,
   matchedCustomer,
   busy,
@@ -17,6 +19,8 @@ export function SlotStep({
   onContinue,
 }: {
   slots: OfferedSlotView[];
+  // Present when the business has a booking horizon (month-at-a-time picker).
+  monthly?: { info: MonthlyInfo; loadMonth: (month: string) => Promise<OfferedSlotView[] | null> };
   basePriceCents: number | null;
   matchedCustomer: { hasPaymentMethod: boolean; paymentDisplay: string | null } | null;
   busy: boolean;
@@ -43,7 +47,17 @@ export function SlotStep({
         )}
       </div>
 
-      <SlotGrid slots={slots} selected={selected} onSelect={setSelected} />
+      {monthly ? (
+        <MonthSlotPicker
+          initialSlots={slots}
+          monthly={monthly.info}
+          loadMonth={monthly.loadMonth}
+          selected={selected}
+          onSelect={setSelected}
+        />
+      ) : (
+        <SlotGrid slots={slots} selected={selected} onSelect={setSelected} />
+      )}
 
       {showCardChoice && selected && (
         <div

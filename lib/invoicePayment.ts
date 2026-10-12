@@ -54,7 +54,7 @@ function flatten<T>(v: T | T[] | null | undefined): T | null {
 
 // Look up a job by its invoice_token (the customer-approved-invoicing flow's
 // own token — deliberately separate from jobs.access_token, which is the
-// upcoming-visit reschedule/cancel token and expires the day after the
+// upcoming-visit reschedule/cancel token and expires two weeks after the
 // visit; an invoice must stay payable well past that). Mirrors
 // findCustomerByPaymentSetupToken / getVisitByToken's shape: returns null for
 // an unknown token OR a job that isn't actually awaiting payment anymore (already

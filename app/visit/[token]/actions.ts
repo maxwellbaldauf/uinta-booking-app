@@ -1,9 +1,15 @@
 "use server";
 
 import { businessDb, businessTz } from "@/lib/tenant/business";
-import { getVisitByToken, getRescheduleSlots } from "@/lib/visit";
-import { slotStillAvailable } from "@/lib/scheduling";
-import { addDaysToISODate, localMidnightUtcISO, todayISODate } from "@/lib/time/zone";
+import {
+  getVisitByToken,
+  getRescheduleSlots,
+  getRescheduleFirstMonth,
+  getRescheduleMonth,
+  type RescheduleMonthView,
+} from "@/lib/visit";
+import { slotStillAvailable, dateOutsideHorizon } from "@/lib/scheduling";
+import { accessTokenExpiryISO, isMonthString, todayISODate } from "@/lib/time/zone";
 import { sendBookingConfirmationEmail } from "@/lib/email/bookingConfirmation";
 import { sendCancellationEmail } from "@/lib/email/cancellation";
 import { sendOwnerBookingAlert } from "@/lib/email/ownerBookingAlert";
@@ -12,14 +18,37 @@ import { arrivalBlockLabel } from "@/lib/schedule/blocks";
 
 export type RescheduleOption = { slotDate: string; arrivalBlock: number; blockLabel: string };
 
+// `monthly` is present when the business has a booking horizon set: `slots` is
+// then just the first month with openings and the picker pages through the rest
+// with getRescheduleMonthOptions. Absent = the legacy lookahead list, as before.
 export async function getRescheduleOptions(
   token: string
-): Promise<{ ok: true; slots: RescheduleOption[] } | { ok: false; error: string }> {
+): Promise<
+  | { ok: true; slots: RescheduleOption[]; monthly?: Omit<RescheduleMonthView, "slots"> }
+  | { ok: false; error: string }
+> {
   const visit = await getVisitByToken(token);
   if (!visit) return { ok: false, error: "This link has expired." };
   if (!visit.canModify) return { ok: false, error: "This visit can no longer be changed online." };
+  const first = await getRescheduleFirstMonth(visit);
+  if (first) {
+    return { ok: true, slots: first.slots, monthly: { month: first.month, minMonth: first.minMonth, maxMonth: first.maxMonth } };
+  }
   const slots = await getRescheduleSlots(visit);
   return { ok: true, slots };
+}
+
+export async function getRescheduleMonthOptions(
+  token: string,
+  month: string
+): Promise<{ ok: true; month: string; slots: RescheduleOption[] } | { ok: false; error: string }> {
+  if (!isMonthString(month)) return { ok: false, error: "Invalid month." };
+  const visit = await getVisitByToken(token);
+  if (!visit) return { ok: false, error: "This link has expired." };
+  if (!visit.canModify) return { ok: false, error: "This visit can no longer be changed online." };
+  const res = await getRescheduleMonth(visit, month);
+  if (!res) return { ok: false, error: "Online rescheduling isn't available for this visit." };
+  return { ok: true, month: res.month, slots: res.slots };
 }
 
 export type RescheduleResponse =
@@ -38,6 +67,10 @@ export async function rescheduleVisit(
     }
     if (visit.latitude == null || visit.longitude == null) {
       return { ok: false, error: "We can't reschedule this visit online — please contact us." };
+    }
+
+    if (await dateOutsideHorizon(choice.slotDate)) {
+      return { ok: false, error: "That date isn't open for booking. Please pick another.", slotTaken: true };
     }
 
     const fresh = await slotStillAvailable(
@@ -61,7 +94,7 @@ export async function rescheduleVisit(
         arrival_block: choice.arrivalBlock,
         booking_match_type: fresh.isFallback ? "fallback" : "route_matched",
         // Token unchanged (spec §3); only the expiry follows the new date.
-        access_token_expires_at: localMidnightUtcISO(await businessTz(), addDaysToISODate(choice.slotDate, 2)),
+        access_token_expires_at: accessTokenExpiryISO(await businessTz(), choice.slotDate),
         // Reset both pre-visit reminder stamps so a rescheduled visit gets
         // its own fresh 7-day/24-hour window off the new date, rather than
         // silently inheriting (or skipping) reminders keyed to the old one.

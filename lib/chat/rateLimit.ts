@@ -133,3 +133,37 @@ export function clientIpFromHeaders(headers: Headers): string {
   if (fwd) return fwd.split(",")[0]!.trim();
   return "unknown";
 }
+
+// Per-IP budget for the month picker's /api/booking/availability/month. Cheap
+// (one SQL call, no geocode, no Route Matrix) but unauthenticated, so capped:
+// generous for real month-flipping, hostile to a scraper. Own store/scope, so
+// it never shares a budget with chat or lead capture. Same per-instance
+// in-memory limitation as the rest of this file.
+const MONTH_STORE = Symbol.for("uinta.booking.monthReads");
+const gm = globalThis as typeof globalThis & { [MONTH_STORE]?: Map<string, number[]> };
+const monthStore: Map<string, number[]> = (gm[MONTH_STORE] ??= new Map());
+const MONTH_READ_LIMITS = [
+  { limit: 20, windowMs: 60_000 },
+  { limit: 200, windowMs: 60 * 60_000 },
+];
+
+export function allowMonthRead(ip: string): boolean {
+  const now = Date.now();
+  const longest = MONTH_READ_LIMITS[MONTH_READ_LIMITS.length - 1].windowMs;
+  if (monthStore.size > MAX_TRACKED_IPS) {
+    for (const [k, hits] of monthStore) {
+      if (!hits.some((t) => t > now - longest)) monthStore.delete(k);
+    }
+    if (monthStore.size > MAX_TRACKED_IPS * 2) monthStore.clear();
+  }
+  const hits = (monthStore.get(ip) ?? []).filter((t) => t > now - longest);
+  for (const w of MONTH_READ_LIMITS) {
+    if (countWithin(hits, now, w.windowMs) >= w.limit) {
+      monthStore.set(ip, hits);
+      return false;
+    }
+  }
+  hits.push(now);
+  monthStore.set(ip, hits);
+  return true;
+}

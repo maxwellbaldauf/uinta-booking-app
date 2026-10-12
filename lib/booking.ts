@@ -2,7 +2,15 @@ import { businessDb, businessTz } from "@/lib/tenant/business";
 import { geocodeAddress } from "@/lib/geocode";
 import { getSettings } from "@/lib/settings";
 import { isInServiceArea } from "@/lib/serviceArea";
-import { getOfferedSlots, slotStillAvailable, type OfferedSlot } from "@/lib/scheduling";
+import {
+  getOfferedSlots,
+  slotStillAvailable,
+  getBookingHorizon,
+  getFirstOpenMonth,
+  dateOutsideHorizon,
+  type OfferedSlot,
+} from "@/lib/scheduling";
+import { signBookingContext } from "@/lib/bookingContext";
 import { matchCustomerByEmailOrPhone, normalizePhone, type MatchedCustomer } from "@/lib/customers";
 import { parseHeardAbout, type HeardAboutAnswer } from "@/lib/heardAbout";
 import { getEffectivePriceCents } from "@/lib/pricing";
@@ -21,7 +29,7 @@ import {
   resolveConfirmedSetupIntent,
   setStripeDefaultPaymentMethod,
 } from "@/lib/stripe/payments";
-import { addDaysToISODate, localMidnightUtcISO, todayISODate } from "@/lib/time/zone";
+import { accessTokenExpiryISO, todayISODate } from "@/lib/time/zone";
 import { sendBookingConfirmationEmail } from "@/lib/email/bookingConfirmation";
 import { sendOwnerBookingAlert } from "@/lib/email/ownerBookingAlert";
 import { subscribeToQuotesList } from "@/lib/kit";
@@ -70,6 +78,9 @@ export type AvailabilityResult =
   | {
       status: "ok";
       slots: { slotDate: string; arrivalBlock: number; blockLabel: string }[];
+      // Present only when the business has a booking horizon set: the month
+      // picker's signed context + the month `slots` belongs to + its range.
+      monthly?: { ctx: string; month: string; minMonth: string; maxMonth: string };
       matchedCustomer: { hasPaymentMethod: boolean; paymentDisplay: string | null } | null;
       // true = show the service-agreement step. Once-per-customer: false only for
       // a matched customer who has already accepted the current version.
@@ -103,7 +114,24 @@ export async function checkAvailability(
     return { status: "out_of_area" };
   }
 
-  const slots = await getOfferedSlots(geo.lat, geo.lng, NEW_BOOKING_BLOCKS);
+  // Horizon set: open on the first month that has anything (one month of SQL
+  // per step, no Route Matrix). Not set: the legacy lookahead window, untouched.
+  let monthly: { ctx: string; month: string; minMonth: string; maxMonth: string } | undefined;
+  let slots: OfferedSlot[];
+  if ((await getBookingHorizon()).months != null) {
+    const first = await getFirstOpenMonth(geo.lat, geo.lng, NEW_BOOKING_BLOCKS);
+    slots = first?.slots ?? [];
+    if (first) {
+      monthly = {
+        ctx: signBookingContext({ lat: geo.lat, lng: geo.lng, blocks: NEW_BOOKING_BLOCKS }),
+        month: first.month,
+        minMonth: first.minMonth,
+        maxMonth: first.maxMonth,
+      };
+    }
+  } else {
+    slots = await getOfferedSlots(geo.lat, geo.lng, NEW_BOOKING_BLOCKS);
+  }
   if (slots.length === 0) {
     await saveFlaggedLead(details, geo, { needs_followup: true });
     return { status: "no_availability" };
@@ -151,6 +179,7 @@ export async function checkAvailability(
       arrivalBlock: s.arrivalBlock,
       blockLabel: s.blockLabel,
     })),
+    ...(monthly ? { monthly } : {}),
     matchedCustomer: matched
       ? {
           hasPaymentMethod: !!matched.default_payment_method_id,
@@ -232,6 +261,11 @@ export async function createBookingRecord(
   if (!geo) throw new Error("Could not verify that address. Please check it and try again.");
   if (!(await isInServiceArea(geo.lat, geo.lng))) {
     throw new Error("That address is outside our service area.");
+  }
+
+  // Never book past the horizon (or in the past), whatever the client sent.
+  if (await dateOutsideHorizon(chosenSlot.slotDate)) {
+    throw new SlotUnavailableError("That date isn't open for booking. Please choose another.");
   }
 
   const fresh = await slotStillAvailable(
@@ -535,12 +569,9 @@ export async function createBookingRecord(
       ),
       booking_match_type: fresh.isFallback ? "fallback" : "route_matched",
       access_token: token,
-      // "expires the day after the appointment" — valid through all of the
-      // following day, dead at the start of the day after that.
-      access_token_expires_at: localMidnightUtcISO(
-        await businessTz(),
-        addDaysToISODate(chosenSlot.slotDate, 2)
-      ),
+      // Valid through the visit date + MAGIC_LINK_GRACE_DAYS (lib/time/zone.ts),
+      // so a link in a months-ahead confirmation email still opens after the visit.
+      access_token_expires_at: accessTokenExpiryISO(await businessTz(), chosenSlot.slotDate),
     })
     .select("id")
     .single();

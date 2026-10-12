@@ -4,7 +4,7 @@ import { businessDb, businessTz } from "@/lib/tenant/business";
 import { syncJobCalendar } from "@/lib/calendarSync";
 import { getClusterConsentByToken } from "@/lib/clusterConsent";
 import { slotStillAvailable } from "@/lib/scheduling";
-import { addDaysToISODate, localMidnightUtcISO } from "@/lib/time/zone";
+import { accessTokenExpiryISO } from "@/lib/time/zone";
 import { sendBookingConfirmationEmail } from "@/lib/email/bookingConfirmation";
 import { sendClusterDeclineOwnerAlert } from "@/lib/email/clusterDeclineOwnerAlert";
 import { resolvePendingDaySequenceMoves } from "@/lib/resolveDaySequence";
@@ -112,7 +112,7 @@ export async function acceptClusterSuggestion(token: string): Promise<ClusterCon
         scheduled_date: consent.proposedDate,
         arrival_block: consent.proposedArrivalBlock,
         booking_match_type: fresh.isFallback ? "fallback" : "route_matched",
-        access_token_expires_at: localMidnightUtcISO(await businessTz(), addDaysToISODate(consent.proposedDate, 2)),
+        access_token_expires_at: accessTokenExpiryISO(await businessTz(), consent.proposedDate),
         reminder_7day_sent_at: null,
         reminder_24hr_sent_at: null,
       })
