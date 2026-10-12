@@ -19,6 +19,7 @@ const JUMP = [
   { id: "east-bench", label: "The Salt Lake east bench" },
   { id: "park-city-heber", label: "Park City and Heber" },
   { id: "utah-valley", label: "Utah Valley" },
+  { id: "orem-provo", label: "Orem and Provo" },
   { id: "full-list", label: "Every city we serve" },
   { id: "water-hardness", label: "Water hardness by area" },
 ];
@@ -51,6 +52,19 @@ const WATER_HARDNESS = [
     supplier: "SLC Dept. of Public Utilities (canyon streams + wells)",
     hardness: "Not numerically published; wells confirmed harder",
     classification: "—",
+  },
+  {
+    area: "Provo",
+    supplier: "Provo City Water (springs and wells)",
+    hardness: "10–15 gpg (typical)",
+    classification: "Hard to very hard",
+  },
+  {
+    area: "Orem",
+    supplier: "City of Orem (wells, springs, and treated surface water)",
+    hardness:
+      "7–25 gpg (city wells and springs); 6.55–9 gpg (regional treatment plant water)",
+    classification: "Hard to very hard",
   },
 ] as const;
 
@@ -253,6 +267,41 @@ export default function ServiceAreasPage() {
           </AccordionItem>
 
           <AccordionItem
+            id="orem-provo"
+            headingLevel={2}
+            summary="Do You Clean Ice Makers in Orem and Provo?"
+          >
+            <p>
+              Yes. Orem and Provo are twenty to thirty minutes from our base in
+              Lehi, well inside the area we serve. Most of the ice machines we
+              see in both cities are Scotsman units making pebble ice.
+            </p>
+            <p>
+              Both cities publish their water hardness in their annual water
+              quality reports. Provo reports typical levels of 10 to 15 grains
+              per gallon. Orem blends surface water with well and spring water,
+              and reports 7 to 25 grains per gallon for its own wells and
+              springs and 6.55 to 9 for water from the regional treatment plant.
+              Much of that range sits above the 10.5 grains per gallon line for
+              very hard water, which is why an ice maker in either city is worth
+              keeping on a regular cleaning schedule.
+            </p>
+            <p>
+              Uinta Ice Co. is a Lehi-based ice machine cleaning company, and
+              the service takes about an hour.
+            </p>
+            <p>
+              <Link href="/ice-machine-cleaning">What a cleaning includes</Link>.
+            </p>
+            <p>
+              <Link href="/troubleshooting#how-often">
+                How often Utah machines need service
+              </Link>
+              .
+            </p>
+          </AccordionItem>
+
+          <AccordionItem
             id="full-list"
             headingLevel={2}
             summary="Every City We Serve"
@@ -272,7 +321,7 @@ export default function ServiceAreasPage() {
       <section id="water-hardness" className="mkt-section">
         <h2>Water Hardness by Area</h2>
         <p>
-          The published figures from the water districts we cite above, in one
+          The published figures from the water suppliers we cite above, in one
           table.
         </p>
         <div className="mkt-table-wrap">
@@ -322,6 +371,14 @@ export default function ServiceAreasPage() {
           SOURCE_LINKS.herriman,
           SOURCE_LINKS.southJordan,
           SOURCE_LINKS.slcDpu,
+          {
+            href: "https://orem.gov/wp-content/uploads/2026/04/CCR-2026-brochure-version-final.pdf",
+            label: "City of Orem, 2026 Water Quality Report",
+          },
+          {
+            href: "https://www.provo.gov/DocumentCenter/View/5209/2025-Water-Report-PDF",
+            label: "Provo City, 2025 Water Report",
+          },
         ]}
       />
     </div>
