@@ -1,4 +1,5 @@
-import { businessDb } from "@/lib/tenant/business";
+import { businessDb, businessTz } from "@/lib/tenant/business";
+import { todayISODate } from "@/lib/time/zone";
 import { arrivalBlockLabel } from "@/lib/schedule/blocks";
 import { getOfferedSlots, getFirstOpenMonth, getOfferedSlotsForMonth } from "@/lib/scheduling";
 
@@ -93,7 +94,9 @@ export async function getVisitByToken(token: string): Promise<Visit | null> {
     longitude: property?.longitude ?? null,
     planStatus: property?.plan_status ?? "active",
     expiresAt,
-    canModify: data.status === "scheduled",
+    // A past-dated visit that was never closed out must not be cancellable or
+    // movable through the (now 14-day) link: that would void a delivered service.
+    canModify: data.status === "scheduled" && data.scheduled_date >= todayISODate(await businessTz()),
   };
 }
 

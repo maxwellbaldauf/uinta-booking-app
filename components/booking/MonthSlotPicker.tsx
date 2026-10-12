@@ -2,6 +2,7 @@
 
 import { useCallback, useMemo, useState } from "react";
 import type { OfferedSlotView } from "./SlotGrid";
+import { addMonthsToMonth } from "@/lib/time/zone";
 
 // Month-at-a-time slot picker, used by the booking flow and the portal's
 // reschedule when the business has a booking horizon set. Opens on the month
@@ -18,12 +19,6 @@ const MONTH_NAMES = [
 ];
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const WEEKDAY_LONG = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-
-function addMonth(month: string, n: number): string {
-  const [y, m] = month.split("-").map(Number);
-  const idx = y * 12 + (m - 1) + n;
-  return `${Math.floor(idx / 12)}-${String((idx % 12) + 1).padStart(2, "0")}`;
-}
 
 function monthLabel(month: string): string {
   const [y, m] = month.split("-").map(Number);
@@ -64,8 +59,10 @@ export function MonthSlotPicker({
 }) {
   const [month, setMonth] = useState(monthly.month);
   const [cache, setCache] = useState<Record<string, OfferedSlotView[]>>({ [monthly.month]: initialSlots });
-  const [loading, setLoading] = useState(false);
-  const [failed, setFailed] = useState(false);
+  // Tracked per requested month so a slow or failed request for a month the
+  // customer already left can't flag (or unflag) the one they are viewing.
+  const [loadingMonth, setLoadingMonth] = useState<string | null>(null);
+  const [failedMonth, setFailedMonth] = useState<string | null>(null);
 
   // A refreshed list from the parent ("that time was just taken") replaces
   // the cache and returns to its month. Adjusting state during render, per
@@ -75,7 +72,7 @@ export function MonthSlotPicker({
     setSeenInitial(initialSlots);
     setCache({ [monthly.month]: initialSlots });
     setMonth(monthly.month);
-    setFailed(false);
+    setFailedMonth(null);
   }
 
   const slots = cache[month] ?? null;
@@ -96,10 +93,10 @@ export function MonthSlotPicker({
   // soonest opening.
   const [tapped, setTapped] = useState<string | null>(null);
   const activeDate =
-    selected && selected.slotDate.startsWith(month)
-      ? selected.slotDate
-      : tapped && tapped.startsWith(month) && byDate.has(tapped)
+    tapped && tapped.startsWith(month) && byDate.has(tapped)
       ? tapped
+      : selected && selected.slotDate.startsWith(month)
+      ? selected.slotDate
       : month === monthly.month
       ? (Array.from(byDate.keys()).sort()[0] ?? null)
       : null;
@@ -107,15 +104,15 @@ export function MonthSlotPicker({
   const go = useCallback(
     async (next: string) => {
       setMonth(next);
-      setFailed(false);
+      setFailedMonth(null);
       if (cache[next]) return;
-      setLoading(true);
+      setLoadingMonth(next);
       const res = await loadMonth(next);
-      setLoading(false);
+      setLoadingMonth((m) => (m === next ? null : m));
       if (res) {
         setCache((c) => ({ ...c, [next]: res }));
       } else {
-        setFailed(true);
+        setFailedMonth(next);
       }
     },
     [loadMonth, cache]
@@ -129,6 +126,8 @@ export function MonthSlotPicker({
     ...Array.from({ length: daysInMonth }, (_, i) => i + 1),
   ];
 
+  const loading = loadingMonth === month;
+  const failed = failedMonth === month;
   const canPrev = month > monthly.minMonth;
   const canNext = month < monthly.maxMonth;
   const dayWindows = activeDate ? (byDate.get(activeDate) ?? []) : [];
@@ -140,7 +139,7 @@ export function MonthSlotPicker({
           type="button"
           aria-label="Previous month"
           disabled={!canPrev}
-          onClick={() => go(addMonth(month, -1))}
+          onClick={() => go(addMonthsToMonth(month, -1))}
           style={{ ...navButton, opacity: canPrev ? 1 : 0.35, cursor: canPrev ? "pointer" : "default" }}
         >
           ‹
@@ -152,7 +151,7 @@ export function MonthSlotPicker({
           type="button"
           aria-label="Next month"
           disabled={!canNext}
-          onClick={() => go(addMonth(month, 1))}
+          onClick={() => go(addMonthsToMonth(month, 1))}
           style={{ ...navButton, opacity: canNext ? 1 : 0.35, cursor: canNext ? "pointer" : "default" }}
         >
           ›
@@ -231,7 +230,7 @@ export function MonthSlotPicker({
 
       {failed && (
         <p role="alert" style={{ margin: 0, color: "var(--color-danger)", fontSize: 14 }}>
-          {"We couldn't load that month. "}
+          {"We couldn't load that month. If this keeps happening, go back and re-enter your details. "}
           <button
             type="button"
             onClick={() => go(month)}

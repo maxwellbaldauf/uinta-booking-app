@@ -186,7 +186,10 @@ let horizonCache: { at: number; months: number | null } | null = null;
 async function readHorizonMonths(): Promise<number | null> {
   if (horizonCache && Date.now() - horizonCache.at < 60_000) return horizonCache.months;
   const { data, error } = await businessDb().from("settings").select("booking_horizon_months").single();
-  const raw = error ? null : (data as unknown as { booking_horizon_months: number | null } | null)?.booking_horizon_months;
+  // A failed read is NOT cached: a blip must not flip the business to the
+  // legacy window for a minute (or, on an old DB without the column, retry is cheap).
+  if (error) return horizonCache?.months ?? null;
+  const raw = (data as unknown as { booking_horizon_months: number | null } | null)?.booking_horizon_months;
   const months =
     typeof raw === "number" && Number.isInteger(raw) && raw >= 1 ? Math.min(raw, MAX_HORIZON_MONTHS) : null;
   horizonCache = { at: Date.now(), months };

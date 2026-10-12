@@ -37,7 +37,7 @@ export async function POST(req: Request) {
   }
 
   try {
-    const key = `${ctx.lat.toFixed(4)},${ctx.lng.toFixed(4)}|${ctx.blocks}|${body.month}`;
+    const key = `${ctx.lat},${ctx.lng}|${ctx.blocks}|${body.month}`; // exact coords: adjacency depends on them
     const hit = cache.get(key);
     if (hit && Date.now() - hit.at < CACHE_TTL_MS) return NextResponse.json(hit.body);
 
