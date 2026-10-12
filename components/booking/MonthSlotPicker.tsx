@@ -58,7 +58,12 @@ export function MonthSlotPicker({
   onSelect: (s: OfferedSlotView) => void;
 }) {
   const [month, setMonth] = useState(monthly.month);
-  const [cache, setCache] = useState<Record<string, OfferedSlotView[]>>({ [monthly.month]: initialSlots });
+  // `gen` bumps whenever the parent hands us a fresh list, so a response that was
+  // in flight across that refresh is discarded instead of re-inserting stale data.
+  const [{ gen, data: cache }, setCacheState] = useState<{ gen: number; data: Record<string, OfferedSlotView[]> }>({
+    gen: 0,
+    data: { [monthly.month]: initialSlots },
+  });
   // Tracked per requested month so a slow or failed request for a month the
   // customer already left can't flag (or unflag) the one they are viewing.
   const [loadingMonth, setLoadingMonth] = useState<string | null>(null);
@@ -70,7 +75,7 @@ export function MonthSlotPicker({
   const [seenInitial, setSeenInitial] = useState(initialSlots);
   if (seenInitial !== initialSlots) {
     setSeenInitial(initialSlots);
-    setCache({ [monthly.month]: initialSlots });
+    setCacheState((c) => ({ gen: c.gen + 1, data: { [monthly.month]: initialSlots } }));
     setMonth(monthly.month);
     setFailedMonth(null);
   }
@@ -105,17 +110,18 @@ export function MonthSlotPicker({
     async (next: string) => {
       setMonth(next);
       setFailedMonth(null);
-      if (cache[next]) return;
+      if (cache[next] || loadingMonth === next) return; // loaded, or already on its way
+      const startGen = gen;
       setLoadingMonth(next);
       const res = await loadMonth(next);
       setLoadingMonth((m) => (m === next ? null : m));
       if (res) {
-        setCache((c) => ({ ...c, [next]: res }));
+        setCacheState((c) => (c.gen === startGen ? { gen: c.gen, data: { ...c.data, [next]: res } } : c));
       } else {
         setFailedMonth(next);
       }
     },
-    [loadMonth, cache]
+    [loadMonth, cache, gen, loadingMonth]
   );
 
   const [y, m] = month.split("-").map(Number);
@@ -128,7 +134,9 @@ export function MonthSlotPicker({
 
   const loading = loadingMonth === month;
   const failed = failedMonth === month;
-  const canPrev = month > monthly.minMonth;
+  // Months before the opening month were already scanned empty by the server:
+  // don't send customers back to (and spend requests on) known-empty calendars.
+  const canPrev = month > monthly.month;
   const canNext = month < monthly.maxMonth;
   const dayWindows = activeDate ? (byDate.get(activeDate) ?? []) : [];
 
@@ -230,7 +238,7 @@ export function MonthSlotPicker({
 
       {failed && (
         <p role="alert" style={{ margin: 0, color: "var(--color-danger)", fontSize: 14 }}>
-          {"We couldn't load that month. If this keeps happening, go back and re-enter your details. "}
+          {"We couldn't load that month. "}
           <button
             type="button"
             onClick={() => go(month)}

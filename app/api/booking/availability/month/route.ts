@@ -27,6 +27,11 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
   }
 
+  // Valid JSON that isn't an object (null, 5, true) has no .ctx — a 400, not a crash.
+  if (!body || typeof body !== "object") {
+    return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
+  }
+
   const ctx = verifyBookingContext(body.ctx);
   if (!ctx || !isMonthString(body.month)) {
     return NextResponse.json({ error: "Please start your booking again." }, { status: 400 });

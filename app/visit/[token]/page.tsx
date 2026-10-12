@@ -16,7 +16,7 @@ export default async function VisitPage({ params }: { params: Promise<{ token: s
       <main className="page">
         <h1 style={{ fontSize: 22 }}>This link has expired</h1>
         <p style={{ color: "var(--color-fg-muted)" }}>
-          Reschedule and cancellation links stay active until two weeks after your visit. If
+          Reschedule and cancellation links stop working shortly after your visit. If
           you still need to make a change, get in touch.
         </p>
         <Link href="/contact" style={{ color: "var(--color-primary)" }}>

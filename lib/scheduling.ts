@@ -186,9 +186,16 @@ let horizonCache: { at: number; months: number | null } | null = null;
 async function readHorizonMonths(): Promise<number | null> {
   if (horizonCache && Date.now() - horizonCache.at < 60_000) return horizonCache.months;
   const { data, error } = await businessDb().from("settings").select("booking_horizon_months").single();
-  // A failed read is NOT cached: a blip must not flip the business to the
-  // legacy window for a minute (or, on an old DB without the column, retry is cheap).
-  if (error) return horizonCache?.months ?? null;
+  if (error) {
+    // Only "the column isn't there yet" (code deployed before migration 024)
+    // means legacy mode. Any other failure is a real error: surface it rather
+    // than silently showing a business that HAS a horizon the legacy window.
+    const missingColumn =
+      error.code === "42703" || error.code === "PGRST204" || /booking_horizon_months/.test(error.message ?? "");
+    if (!missingColumn) throw new Error(`booking horizon read failed: ${error.message}`);
+    horizonCache = { at: Date.now(), months: null };
+    return null;
+  }
   const raw = (data as unknown as { booking_horizon_months: number | null } | null)?.booking_horizon_months;
   const months =
     typeof raw === "number" && Number.isInteger(raw) && raw >= 1 ? Math.min(raw, MAX_HORIZON_MONTHS) : null;
@@ -235,6 +242,19 @@ export async function getOfferedSlotsForMonth(
 ): Promise<MonthSlots | null> {
   const h = await getBookingHorizon();
   if (h.months == null) return null;
+  return monthSlotsFor(h, lat, lng, blocksNeeded, month, opts);
+}
+
+// The month query itself, against an ALREADY-resolved horizon (so a caller
+// walking several months resolves it once and sees one consistent range).
+async function monthSlotsFor(
+  h: BookingHorizon,
+  lat: number,
+  lng: number,
+  blocksNeeded: number,
+  month: string,
+  opts?: { excludeJobId?: string }
+): Promise<MonthSlots> {
   const minMonth = monthOf(h.today);
   const maxMonth = monthOf(h.maxDate);
   const result = (slots: OfferedSlot[]): MonthSlots => ({ month, slots, minMonth, maxMonth });
@@ -265,13 +285,13 @@ export async function getFirstOpenMonth(
 ): Promise<MonthSlots | null> {
   const h = await getBookingHorizon();
   if (h.months == null) return null;
+  const first = monthOf(h.today);
   const last = monthOf(h.maxDate);
-  let month = monthOf(h.today);
-  for (;;) {
-    const res = await getOfferedSlotsForMonth(lat, lng, blocksNeeded, month, opts);
-    if (!res) return null;
+  for (let month = first; month <= last; month = monthOf(addDaysToISODate(monthEnd(month), 1))) {
+    const res = await monthSlotsFor(h, lat, lng, blocksNeeded, month, opts);
     const slots = opts?.hideSlot ? res.slots.filter((s) => !opts.hideSlot!(s)) : res.slots;
-    if (slots.length > 0 || month >= last) return { ...res, slots };
-    month = monthOf(addDaysToISODate(monthEnd(month), 1));
+    if (slots.length > 0) return { ...res, slots };
   }
+  // Nothing open anywhere in the horizon: show the current month, empty.
+  return { month: first, slots: [], minMonth: first, maxMonth: last };
 }

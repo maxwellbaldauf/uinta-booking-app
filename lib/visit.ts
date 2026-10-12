@@ -116,9 +116,7 @@ export async function getRescheduleSlots(visit: Visit) {
     excludeJobId: visit.jobId,
   });
   // Don't offer the exact window it's already in.
-  return slots
-    .filter((s) => !(s.slotDate === visit.scheduledDate && s.arrivalBlock === visit.arrivalBlock))
-    .map((s) => ({ slotDate: s.slotDate, arrivalBlock: s.arrivalBlock, blockLabel: s.blockLabel }));
+  return toView(slots.filter((s) => !isCurrentWindow(visit)(s)));
 }
 
 // ---- month-at-a-time reschedule (booking horizon set) ----------------------
