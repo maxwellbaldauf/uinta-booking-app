@@ -10,7 +10,7 @@ import { SOURCE_LINKS } from "@/lib/sources";
 export const metadata = pageMetadata({
   title: "Ice Machine Cleaning Service Areas | Utah County & SLC",
   description:
-    "In-home ice machine cleaning from Alpine and Highland to Holladay, Park City, Heber, and Salt Lake City. Based in Lehi, serving a 75-mile radius.",
+    "In-home ice machine cleaning in Salt Lake City, Holladay, Park City, Heber, Alpine, Highland, Provo, Mapleton, and more. Based in Lehi, serving a 75-mile radius.",
   path: "/service-areas",
 });
 
