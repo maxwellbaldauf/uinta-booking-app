@@ -97,7 +97,8 @@ service itself.
 ### Service area
 
 Based in ${NAP.locality}, ${NAP.region}. A 75-mile radius covering Utah County,
-Salt Lake County, and the Park City and Heber corridor. The cities named on the
+Salt Lake County, Davis County, Ogden and northern Utah, and the Park City and
+Heber corridor. The cities named on the
 site: ${SERVICE_CITIES.join(", ")}. If a city is not on that list it may still
 be inside the radius — do NOT promise service there; say it is likely and offer
 to have someone confirm.
