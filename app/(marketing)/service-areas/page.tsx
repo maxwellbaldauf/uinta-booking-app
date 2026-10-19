@@ -70,31 +70,10 @@ const WATER_HARDNESS = [
     classification: "Moderately hard to very hard",
   },
   {
-    area: "Mapleton",
-    supplier: "Mapleton City (wells and Maple Canyon springs)",
+    area: "Mapleton, Springville, Spanish Fork, Salem",
+    supplier: "Each city’s own system (wells and springs)",
     hardness:
-      "Not published by the city; independent estimates 15–23 gpg (256–393 mg/L)",
-    classification: "Very hard (estimated)",
-  },
-  {
-    area: "Springville",
-    supplier: "Springville City (springs and wells)",
-    hardness:
-      "Not published by the city; independent estimates 15–23 gpg (256–393 mg/L)",
-    classification: "Very hard (estimated)",
-  },
-  {
-    area: "Spanish Fork",
-    supplier: "Spanish Fork City",
-    hardness:
-      "Not published by the city; independent estimates 13–25 gpg (231–427 mg/L)",
-    classification: "Very hard (estimated)",
-  },
-  {
-    area: "Salem",
-    supplier: "Salem City (groundwater)",
-    hardness:
-      "No city figure found; independent estimates 15–19 gpg (256–324 mg/L)",
+      "Not published by these cities; independent estimates 13–25 gpg (231–427 mg/L)",
     classification: "Very hard (estimated)",
   },
 ] as const;
