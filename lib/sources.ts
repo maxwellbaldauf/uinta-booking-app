@@ -40,6 +40,22 @@ export const SOURCE_LINKS = {
     href: "https://jvwcd.gov/file/1532dbfe-7819-4096-bef6-a496c1192ab3/JVW---Consumer-Confidence-Report-2025.pdf",
     label: "Jordan Valley Water Conservancy District — 2025 Consumer Confidence Report (PDF)",
   },
+  mapleton2025: {
+    href: "https://cms9files.revize.com/mapletonut/Public%20Works/Water/2025%20Annual%20Drinking%20Water%20Quality%20Report.pdf",
+    label: "Mapleton City — 2025 Annual Drinking Water Quality Report (PDF)",
+  },
+  springville2025: {
+    href: "https://www.springvilleutah.gov/public-works/wp-content/uploads/sites/14/2026/05/WaterQualityReport_2025-8pg_Digital.pdf",
+    label: "Springville City — 2025 Water Quality Report (PDF)",
+  },
+  tapWaterDataUt: {
+    href: "https://www.tapwaterdata.com/water-hardness/ut",
+    label: "TapWaterData — Utah hardness (USGS county-level estimates)",
+  },
+  aquatellUt: {
+    href: "https://www.aquatell.com/pages/water-hardness-utah",
+    label: "Aquatell — Utah water hardness estimates",
+  },
   scotsman: {
     href: "https://www.scotsman-ice.com/service/Application%20Bulletins/pab2019-01.pdf",
     label: "Scotsman — ice machine cleaning bulletin (Clear 1, nickel-safe)",

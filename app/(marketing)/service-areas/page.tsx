@@ -69,6 +69,34 @@ const WATER_HARDNESS = [
       "7–25 gpg (city sources); 6.55–9 gpg (regional treatment plant water)",
     classification: "Moderately hard to very hard",
   },
+  {
+    area: "Mapleton",
+    supplier: "Mapleton City (wells and Maple Canyon springs)",
+    hardness:
+      "Not published by the city; independent estimates 15–23 gpg (256–393 mg/L)",
+    classification: "Very hard (estimated)",
+  },
+  {
+    area: "Springville",
+    supplier: "Springville City (springs and wells)",
+    hardness:
+      "Not published by the city; independent estimates 15–23 gpg (256–393 mg/L)",
+    classification: "Very hard (estimated)",
+  },
+  {
+    area: "Spanish Fork",
+    supplier: "Spanish Fork City",
+    hardness:
+      "Not published by the city; independent estimates 13–25 gpg (231–427 mg/L)",
+    classification: "Very hard (estimated)",
+  },
+  {
+    area: "Salem",
+    supplier: "Salem City (groundwater)",
+    hardness:
+      "No city figure found; independent estimates 15–19 gpg (256–324 mg/L)",
+    classification: "Very hard (estimated)",
+  },
 ] as const;
 
 // No FAQPage schema: the visible accordion prose doesn't match lib/faq.ts's
@@ -361,7 +389,8 @@ export default function ServiceAreasPage() {
         <h2>Water Hardness by Area</h2>
         <p>
           The published figures from the water suppliers we cite above, in one
-          table.
+          table. Where a city doesn’t publish a hardness figure, we show
+          independent estimates and label them as estimates.
         </p>
         <div className="mkt-table-wrap">
           <table className="mkt-table mkt-table--cards">
@@ -419,6 +448,10 @@ export default function ServiceAreasPage() {
             href: "https://www.provo.gov/DocumentCenter/View/5209/2025-Water-Report-PDF",
             label: "Provo City, 2025 Water Report",
           },
+          SOURCE_LINKS.mapleton2025,
+          SOURCE_LINKS.springville2025,
+          SOURCE_LINKS.tapWaterDataUt,
+          SOURCE_LINKS.aquatellUt,
         ]}
       />
     </div>

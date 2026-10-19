@@ -162,10 +162,13 @@ export const SERVICE_CITIES = [
   "Pleasant Grove",
   "Provo",
   "Riverton",
+  "Salem",
   "Salt Lake City",
   "Sandy",
   "Saratoga Springs",
   "South Jordan",
+  "Spanish Fork",
+  "Springville",
   "Sundance",
   "Woodland Hills",
 ] as const;
