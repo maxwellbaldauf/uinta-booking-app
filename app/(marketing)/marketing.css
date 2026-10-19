@@ -1238,6 +1238,43 @@
   }
 }
 
+/* Card layout at every width: the same stacked cards the table collapses to
+   on phones, so long supplier/hardness text wraps instead of scrolling. */
+.mkt-table--cards,
+.mkt-table--cards tbody,
+.mkt-table--cards tr,
+.mkt-table--cards th,
+.mkt-table--cards td {
+  display: block;
+}
+.mkt-table-wrap:has(.mkt-table--cards) {
+  overflow-x: visible;
+}
+.mkt-table--cards thead {
+  display: none;
+}
+.mkt-table--cards tr {
+  margin-bottom: var(--space-sm);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: var(--space-sm);
+}
+.mkt-table--cards th[scope="row"] {
+  border: none;
+  padding: 0 0 var(--space-2xs);
+  font-size: var(--text-base);
+  white-space: normal;
+}
+.mkt-table--cards td {
+  border: none;
+  padding: var(--space-3xs) 0;
+}
+.mkt-table--cards td::before {
+  content: attr(data-col) ": ";
+  font-weight: 600;
+  color: var(--ink-faint);
+}
+
 /* ---- Before/after job photo pairs ---------------------------------- */
 
 .mkt-before-after-grid {

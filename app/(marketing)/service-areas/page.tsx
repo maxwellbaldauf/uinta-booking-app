@@ -364,7 +364,7 @@ export default function ServiceAreasPage() {
           table.
         </p>
         <div className="mkt-table-wrap">
-          <table className="mkt-table">
+          <table className="mkt-table mkt-table--cards">
             <thead>
               <tr>
                 <th scope="col">Area</th>
