@@ -24,6 +24,22 @@ export const SOURCE_LINKS = {
     href: "https://www.slc.gov/utilities/water-quality/",
     label: "Salt Lake City Department of Public Utilities — water sources",
   },
+  slcDpu2025: {
+    href: "https://www.slc.gov/utilities/wp-content/uploads/sites/22/2026/06/2026-04_Water-Quality-Report-2026-digital-FNL.pdf",
+    label: "Salt Lake City Department of Public Utilities — 2025 Water Quality Report (PDF)",
+  },
+  ogden2025: {
+    href: "https://www.ogdencity.gov/DocumentCenter/View/39673/2025-Latest-Version",
+    label: "Ogden City — 2025 Water Quality Report (PDF)",
+  },
+  weberBasin2024: {
+    href: "https://www.weberbasin.gov/Docs/CCR2024.pdf",
+    label: "Weber Basin Water Conservancy District — 2024 Consumer Confidence Report (PDF)",
+  },
+  jvwcd2025: {
+    href: "https://jvwcd.gov/file/1532dbfe-7819-4096-bef6-a496c1192ab3/JVW---Consumer-Confidence-Report-2025.pdf",
+    label: "Jordan Valley Water Conservancy District — 2025 Consumer Confidence Report (PDF)",
+  },
   scotsman: {
     href: "https://www.scotsman-ice.com/service/Application%20Bulletins/pab2019-01.pdf",
     label: "Scotsman — ice machine cleaning bulletin (Clear 1, nickel-safe)",

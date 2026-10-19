@@ -107,7 +107,7 @@ Yes. Lehi is our base, and we serve Draper, American Fork, Pleasant Grove, Lindo
 
 This is the broadest of our four areas and the most varied. Draper and the Lehi bench look like Alpine, newer high-end construction with built-in machines specified during the build. Provo, Orem, and the older Utah Valley cities skew toward retrofit installs in remodeled kitchens.
 
-Where we have a published figure, we use it. South Jordan lists its Jordan Valley Water Conservancy District supply at 7 to 10 grains per gallon, classified as hard. Herriman City reports Jordan Valley supply generally running 12 to 15 grains per gallon. Both sit at or above the threshold where scale becomes a maintenance issue rather than a nuisance.
+Where we have a published figure, we use it. The Jordan Valley Water Conservancy District, which supplies South Jordan, Riverton, and much of the west side of the valley, reports average total hardness of 182.4 mg/L, about 10.7 grains per gallon, across a range of 16 to 381 mg/L. The average alone sits above the threshold where scale becomes a maintenance issue rather than a nuisance.
 
 We also serve Kaysville, Ogden, and the northern edge of our radius. If you're unsure whether you're inside it, call or text and we'll tell you.
 
@@ -171,7 +171,6 @@ If you're not satisfied with the cleaning, we come back and clean it again at no
 
 ## SOURCE NOTES (not for publication)
 - Mountain Regional Water hardness: `https://mtregional.specialdistrict.org/files/882bc66a4/MRW-Water-Hardness.pdf`
-- Herriman City water quality: `https://www.herriman.gov/waterquality`
 - South Jordan City water page: `https://www.sjc.utah.gov/325/Water`
 - Salt Lake City seasonal well supplement: `https://www.slc.gov/utilities/water-quality/`
 

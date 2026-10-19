@@ -73,7 +73,7 @@ export const PAGE_UPDATED = {
   troubleshooting: { display: "September 2026", iso: "2026-09-01" },
   iceMachineCleaning: { display: "September 2026", iso: "2026-09-01" },
   brands: { display: "September 2026", iso: "2026-09-01" },
-  serviceAreas: { display: "October 2026", iso: "2026-10-12" },
+  serviceAreas: { display: "October 2026", iso: "2026-10-19" },
   about: { display: "September 2026", iso: "2026-09-01" },
   reviews: { display: "October 1, 2026", iso: "2026-10-01" },
   terms: { display: "September 30, 2026", iso: "2026-09-30" },

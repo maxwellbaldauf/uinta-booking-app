@@ -18,6 +18,7 @@ const JUMP = [
   { id: "alpine-highland", label: "Alpine and Highland" },
   { id: "east-bench", label: "The Salt Lake east bench" },
   { id: "park-city-heber", label: "Park City and Heber" },
+  { id: "ogden-northern-utah", label: "Ogden and northern Utah" },
   { id: "utah-valley", label: "Utah Valley" },
   { id: "orem-provo", label: "Orem and Provo" },
   { id: "full-list", label: "Every city we serve" },
@@ -25,9 +26,7 @@ const JUMP = [
 ];
 
 // Every figure already stated in the accordion prose above, gathered into one
-// table. Salt Lake City/Holladay has no published numeric figure on this page
-// (only the qualitative "well water is harder" from SLC DPU) — left blank
-// rather than invented.
+// table.
 const WATER_HARDNESS = [
   {
     area: "Park City, Heber, Midway, Sundance",
@@ -36,22 +35,26 @@ const WATER_HARDNESS = [
     classification: "Very hard",
   },
   {
-    area: "South Jordan",
+    area: "South Jordan, Riverton, and other Jordan Valley–supplied areas",
     supplier: "Jordan Valley Water Conservancy District",
-    hardness: "7–10 gpg",
-    classification: "Hard",
+    hardness:
+      "182.4 mg/L average total hardness (≈10.7 gpg); range 16–381 mg/L",
+    classification: "Very hard (average)",
   },
   {
-    area: "Herriman",
-    supplier: "Jordan Valley Water Conservancy District",
-    hardness: "10–12 gpg",
+    area: "Salt Lake City, Holladay, Millcreek, Cottonwood Heights",
+    supplier: "SLC Dept. of Public Utilities",
+    hardness:
+      "Canyon plants 136–212 mg/L (8.0–12.4 gpg); city wells 154–571 mg/L (9.6–33.4 gpg)",
     classification: "Hard to very hard",
   },
   {
-    area: "Salt Lake City, Holladay, east bench",
-    supplier: "SLC Dept. of Public Utilities (canyon streams + wells)",
-    hardness: "Not numerically published; wells confirmed harder",
-    classification: "—",
+    area: "Ogden",
+    supplier:
+      "Ogden City (wells, Pineview, Wheeler Creek) and Weber Basin WCD",
+    hardness:
+      "Ogden City publishes no hardness figure; Weber Basin publishes 10–18 gpg (171–308 mg/L)",
+    classification: "Very hard (Weber Basin portion)",
   },
   {
     area: "Provo",
@@ -178,11 +181,25 @@ export default function ServiceAreasPage() {
               in the cabinet and more particular about drainage.
             </p>
             <p>
-              Water on this side of the valley moves through the year. Salt Lake
-              City’s Department of Public Utilities draws most of its supply from
-              Wasatch canyon streams and supplements with deep valley wells
-              during high-demand summer months, and it says plainly that the well
-              water is harder. A machine here sees a harder summer than winter.
+              Water on this side of the valley moves through the year, and the
+              published numbers show how far. Salt Lake City’s Department of
+              Public Utilities reports hardness by source. Its three canyon
+              treatment plants came in at 136 mg/L at Big Cottonwood, 175 at
+              Parleys, and 212 at City Creek, or about 8 to 12 grains per
+              gallon. The city’s wells are a different matter: 154 to 571 mg/L,
+              roughly 10 to 33 grains per gallon.
+            </p>
+            <p>
+              Those wells come online in summer, when mountain runoff drops and
+              the department blends groundwater into the system to meet demand.
+              A machine in Salt Lake City, Holladay, Millcreek, or Cottonwood
+              Heights can be fed water near the low end of hard in March and
+              water several times harder in August, depending on which sources
+              are feeding that neighborhood.
+            </p>
+            <p>
+              It is why we don’t read a clean evaporator in spring as evidence
+              the machine will stay clean through the year.
             </p>
           </AccordionItem>
 
@@ -199,7 +216,7 @@ export default function ServiceAreasPage() {
             <p>
               That’s documented rather than estimated. Mountain Regional Water,
               the Summit County district supplying much of the Park City area,
-              publishes its hardness at roughly 300 mg/L as calcium carbonate,
+              states its hardness at roughly 300 mg/L as calcium carbonate,
               about 17.5 grains per gallon. Anything above 10.5 grains per gallon
               is classified as very hard.
             </p>
@@ -231,6 +248,32 @@ export default function ServiceAreasPage() {
           </AccordionItem>
 
           <AccordionItem
+            id="ogden-northern-utah"
+            headingLevel={2}
+            summary="Do You Service Ogden and Northern Utah?"
+          >
+            <p>
+              Yes. Ogden, Kaysville, and the northern edge of our radius are
+              inside the area we serve.
+            </p>
+            <p>
+              Ogden City draws from three sources: groundwater wells, surface
+              water from Pineview Reservoir and Wheeler Creek, and treated water
+              purchased from Weber Basin Water Conservancy District. Ogden City’s
+              own water quality report does not publish a hardness figure. Weber
+              Basin does, and tells its customers hardness can range from 10 to
+              18 grains per gallon, or 171 to 308 mg/L. The bottom of that range
+              is already very hard by USGS classification. The top is nearly
+              double the threshold.
+            </p>
+            <p>
+              Because Ogden blends its own wells with that purchased water, what
+              arrives at a given house isn’t one published number. The condition
+              of the evaporator tells us more than a city average does.
+            </p>
+          </AccordionItem>
+
+          <AccordionItem
             id="utah-valley"
             headingLevel={2}
             summary="Do You Service Lehi, Draper, and the Rest of Utah Valley?"
@@ -249,17 +292,17 @@ export default function ServiceAreasPage() {
               remodeled kitchens.
             </p>
             <p>
-              Where we have a published figure, we use it. South Jordan lists its
-              Jordan Valley Water Conservancy District supply at 7 to 10 grains
-              per gallon, classified as hard. Herriman City reports Jordan Valley
-              supply generally running 10 to 12 grains per gallon. Both sit at or
-              above the threshold where scale becomes a maintenance issue rather
-              than a nuisance.
+              Where we have a published figure, we use it. The Jordan Valley
+              Water Conservancy District, which supplies South Jordan, Riverton,
+              and much of the west side of the valley, reports average total
+              hardness of 182.4 mg/L, about 10.7 grains per gallon, across a
+              range of 16 to 381 mg/L. The average alone sits above the
+              threshold where scale becomes a maintenance issue rather than a
+              nuisance.
             </p>
             <p>
-              We also serve Kaysville, Ogden, and the northern edge of our
-              radius. If you’re unsure whether you’re inside it, call or text and
-              we’ll tell you.
+              Kaysville and Ogden are included in our radius. If you’re unsure
+              whether you’re inside it, call or text and we’ll tell you.
             </p>
             <p>
               <Link href="/ice-machine-cleaning">What a cleaning includes</Link>.
@@ -364,9 +407,10 @@ export default function ServiceAreasPage() {
       <Sources
         links={[
           SOURCE_LINKS.mountainRegional,
-          SOURCE_LINKS.herriman,
-          SOURCE_LINKS.southJordan,
-          SOURCE_LINKS.slcDpu,
+          SOURCE_LINKS.slcDpu2025,
+          SOURCE_LINKS.ogden2025,
+          SOURCE_LINKS.weberBasin2024,
+          SOURCE_LINKS.jvwcd2025,
           {
             href: "https://orem.gov/wp-content/uploads/2026/04/CCR-2026-brochure-version-final.pdf",
             label: "City of Orem, 2026 Water Quality Report",
