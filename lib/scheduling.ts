@@ -62,6 +62,10 @@ export async function getOfferedSlots(
     // Only the month picker passes this (see getOfferedSlotsForMonth); omitted
     // = the function's own default of 30, i.e. exactly the legacy behavior.
     fallbackLimit?: number;
+    // Month picker only: return EVERY open day, with route matching reduced to
+    // an annotation (closest_miles / is_fallback) instead of a filter. Omitted
+    // = the function's legacy "prefer route-matched days, else all" behavior.
+    includeAllOpen?: boolean;
   }
 ): Promise<OfferedSlot[]> {
   const supabase = businessDb();
@@ -85,6 +89,7 @@ export async function getOfferedSlots(
     p_blocks_needed: blocksNeeded,
     ...(opts?.excludeJobId ? { exclude_job_id: opts.excludeJobId } : {}),
     ...(opts?.fallbackLimit ? { p_fallback_limit: opts.fallbackLimit } : {}),
+    ...(opts?.includeAllOpen ? { p_include_all_open: true } : {}),
   });
   if (error) throw new Error(`get_available_slots failed: ${error.message}`);
 
@@ -270,6 +275,9 @@ async function monthSlotsFor(
     fromDate: from,
     windowDays: diffISODays(from, to),
     fallbackLimit: 2000,
+    // A month view needs every open day. Route matching must not hide days
+    // (it used to: one nearby job in the month dropped all other open days).
+    includeAllOpen: true,
   });
   return result(slots);
 }
