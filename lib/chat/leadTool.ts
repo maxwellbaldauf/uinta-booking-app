@@ -205,7 +205,7 @@ export async function runCaptureLead(
       iceMakerBrand: "",
       iceMakerModel: "",
       message: composeLeadMessage(input, turns),
-    }, { alertKind: "chat" });
+    }, { channel: "ai_chat" });
     return { ok: true };
   } catch (err) {
     console.error("chat: runCaptureLead failed", err);

@@ -2,6 +2,7 @@ import { businessDb } from "@/lib/tenant/business";
 import { geocodeAddress } from "@/lib/geocode";
 import { matchOrCreateCustomer } from "@/lib/customers";
 import { sendLeadAlert } from "@/lib/email/leadAlert";
+import { recordLead } from "@/lib/leadRecord";
 import { isRealCustomer } from "@/lib/leads";
 
 export type ContactInput = {
@@ -20,8 +21,8 @@ export type ContactInput = {
 // best-effort — a submission is never dropped for it.
 export async function submitContact(
   input: ContactInput,
-  // The AI chat tool passes "chat"; the contact form leaves it unset.
-  opts?: { alertKind?: "chat" }
+  // The AI chat tool passes "ai_chat"; the contact form leaves it unset.
+  opts?: { channel?: "ai_chat" }
 ): Promise<{ customerId: string; propertyId: string | null }> {
   const supabase = businessDb();
 
@@ -74,23 +75,23 @@ export async function submitContact(
     }
   }
 
-  const { data: submission, error: submissionError } = await supabase
-    .from("contact_submissions")
-    .insert({
-      customer_id: customerId,
-      property_id: propertyId,
-      message: input.message.trim() || null,
-      handled: false,
-    })
-    .select("id")
-    .single();
+  const { error: submissionError } = await supabase.from("contact_submissions").insert({
+    customer_id: customerId,
+    property_id: propertyId,
+    message: input.message.trim() || null,
+    handled: false,
+  });
   if (submissionError) {
     throw new Error(`contact: submission insert failed: ${submissionError.message}`);
   }
 
-  // Owner alert. Never throws.
+  // Record the lead, then alert the owner. Neither throws: the submission is
+  // already saved, so a failed leads write or email never fails the visitor.
+  const channel = opts?.channel ?? "contact_form";
+  const leadId = await recordLead({ channel, customerId, propertyId, message: input.message });
   await sendLeadAlert({
-    kind: opts?.alertKind ?? "contact_form",
+    channel,
+    leadId,
     existingCustomer: () => isRealCustomer(matched),
     customerId,
     name: input.fullName,
@@ -99,7 +100,6 @@ export async function submitContact(
     address: input.address,
     city,
     message: input.message,
-    submissionId: (submission as { id: string } | null)?.id ?? null,
   });
 
   return { customerId, propertyId };

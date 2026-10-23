@@ -1,6 +1,7 @@
 import { businessDb } from "@/lib/tenant/business";
 import { matchOrCreateCustomer, normalizePhone, type MatchedCustomer } from "@/lib/customers";
 import { sendLeadAlert } from "@/lib/email/leadAlert";
+import { recordLead } from "@/lib/leadRecord";
 
 export type LeadDetails = {
   fullName: string;
@@ -78,10 +79,14 @@ export async function saveFlaggedLead(
     .single();
   if (error || !property) throw new Error(`lead: create property failed: ${error?.message}`);
 
-  // Owner alert for a NEW dead-end lead only; a repeat at a known address (the
-  // update branch above) was already alerted.
+  // Record the lead and alert the owner, for a NEW dead-end lead only; a repeat
+  // at a known address (the update branch above) is not recorded again.
+  const propertyId = (property as { id: string }).id;
+  const channel = flags.out_of_service_area ? "booking_out_of_area" : "booking_no_availability";
+  const leadId = await recordLead({ channel, customerId, propertyId });
   await sendLeadAlert({
-    kind: flags.out_of_service_area ? "out_of_area" : "no_availability",
+    channel,
+    leadId,
     existingCustomer: () => isRealCustomer(matched),
     customerId,
     name: details.fullName,
@@ -91,7 +96,7 @@ export async function saveFlaggedLead(
     city: coords?.city ?? null,
   });
 
-  return { customerId, propertyId: (property as { id: string }).id };
+  return { customerId, propertyId };
 }
 
 // ---- in-area "saw times, didn't book" leads ------------------------------
@@ -230,7 +235,7 @@ async function captureInAreaLead(
     createdCustomer = true;
   }
 
-  const { error } = await supabase.from("properties").insert({
+  const { data: inserted, error } = await supabase.from("properties").insert({
     customer_id: customerId,
     address: details.address,
     source: "booking",
@@ -245,7 +250,7 @@ async function captureInAreaLead(
     plan_status: "pending",
     needs_followup: true,
     notes: SAW_TIMES_NOTE,
-  });
+  }).select("id").single();
   if (error) {
     // Don't leave a bare customer behind that we just created for this lead.
     if (createdCustomer) {
@@ -254,11 +259,18 @@ async function captureInAreaLead(
     throw new Error(`lead: create property failed: ${error.message}`);
   }
 
-  // Sent via after() inside a request; the 300 ms cap only matters in the
-  // non-request fallback, inside this 1.5s best-effort window.
+  // Record the lead, then alert the owner. The alert is sent via after() inside
+  // a request; its 300 ms cap only matters in the non-request fallback, inside
+  // this 1.5s best-effort window.
+  const leadId = await recordLead({
+    channel: "booking_saw_times",
+    customerId,
+    propertyId: (inserted as { id: string } | null)?.id ?? null,
+  });
   await sendLeadAlert(
     {
-      kind: "saw_times",
+      channel: "booking_saw_times",
+      leadId,
       customerId,
       name: details.fullName,
       email: details.email,

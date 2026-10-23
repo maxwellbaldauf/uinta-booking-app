@@ -37,6 +37,7 @@ export const TENANT_TABLES = [
   "job_notes",
   "job_photos",
   "jobs",
+  "leads",
   "payments",
   "properties",
   "referral_partners",
