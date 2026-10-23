@@ -27,7 +27,7 @@ export async function saveFlaggedLead(
 ): Promise<{ customerId: string; propertyId: string }> {
   const supabase = businessDb();
 
-  const { id: customerId } = await matchOrCreateCustomer(
+  const { id: customerId, matched } = await matchOrCreateCustomer(
     { fullName: details.fullName, email: details.email, phone: details.phone },
     "booking"
   );
@@ -82,6 +82,7 @@ export async function saveFlaggedLead(
   // update branch above) was already alerted.
   await sendLeadAlert({
     kind: flags.out_of_service_area ? "out_of_area" : "no_availability",
+    existingCustomer: await isRealCustomer(matched),
     customerId,
     name: details.fullName,
     email: details.email,
@@ -169,6 +170,18 @@ export async function readLeadState(
   if (props.some((p) => !isLead(p))) return { real: true };
   if (props.some((p) => (p.jobs ?? []).length > 0)) return { real: true };
   return { real: false, addresses: props.map((p) => p.address) };
+}
+
+// True when a matched customer is a real one (paying, agreed, or archived), as
+// opposed to a bare lead or no match. Used only to word the owner alert, so any
+// error reads as "not a customer" rather than affecting the lead save.
+export async function isRealCustomer(matched: MatchedCustomer | null): Promise<boolean> {
+  if (!matched) return false;
+  try {
+    return (await readLeadState(matched)).real;
+  } catch {
+    return false;
+  }
 }
 
 // Returns true only when THIS call saved a new lead row, false when nothing was

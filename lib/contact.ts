@@ -2,6 +2,7 @@ import { businessDb } from "@/lib/tenant/business";
 import { geocodeAddress } from "@/lib/geocode";
 import { matchOrCreateCustomer } from "@/lib/customers";
 import { sendLeadAlert } from "@/lib/email/leadAlert";
+import { isRealCustomer } from "@/lib/leads";
 
 export type ContactInput = {
   fullName: string;
@@ -24,7 +25,7 @@ export async function submitContact(
 ): Promise<{ customerId: string; propertyId: string | null }> {
   const supabase = businessDb();
 
-  const { id: customerId } = await matchOrCreateCustomer(
+  const { id: customerId, matched } = await matchOrCreateCustomer(
     { fullName: input.fullName, email: input.email, phone: input.phone },
     "contact_form"
   );
@@ -90,6 +91,7 @@ export async function submitContact(
   // Owner alert. Never throws.
   await sendLeadAlert({
     kind: opts?.alertKind ?? "contact_form",
+    existingCustomer: await isRealCustomer(matched),
     customerId,
     name: input.fullName,
     email: input.email,

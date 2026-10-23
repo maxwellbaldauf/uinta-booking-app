@@ -1,3 +1,4 @@
+import { after } from "next/server";
 import { getEmailBrand } from "@/lib/email/brand";
 import { getResend } from "@/lib/email/resend";
 import { renderEmail, detailsTable, buttonRow, escapeHtml } from "@/lib/email/shell";
@@ -32,6 +33,9 @@ export type LeadAlertInput = {
   // The contact_submissions row that was just written, so the DB dedup check
   // doesn't count it as the earlier alert.
   submissionId?: string | null;
+  // True when the person already matched a real customer (a paying or archived
+  // record), so the owner isn't told "new lead" about a current customer.
+  existingCustomer?: boolean;
 };
 
 const MAX_MESSAGE = 1500;
@@ -110,9 +114,10 @@ async function deliver(input: LeadAlertInput): Promise<void> {
     { label: "Phone", value: input.phone?.trim() || "—" },
     { label: "Address", value: place || "—" },
     { label: "Lead type", value: label },
+    ...(input.existingCustomer ? [{ label: "Customer type", value: "Existing customer" }] : []),
   ];
 
-  const heading = "New lead";
+  const heading = input.existingCustomer ? "Existing customer reached out" : "New lead";
   const html = renderEmail({
     brand,
     title: heading,
@@ -131,7 +136,7 @@ async function deliver(input: LeadAlertInput): Promise<void> {
   });
 
   const text = [
-    `NEW LEAD`,
+    heading.toUpperCase(),
     `${who} just reached out. Details below.`,
     ``,
     ...rows.map((r) => `${(r.label + ":").padEnd(12)}${r.value}`),
@@ -144,19 +149,19 @@ async function deliver(input: LeadAlertInput): Promise<void> {
   const { error } = await resend.client.emails.send({
     from: resend.from,
     to,
-    subject: `New lead (${label}): ${who}`,
+    subject: `${input.existingCustomer ? "Existing customer" : "New lead"} (${label}): ${who}`,
     html,
     text,
   });
   if (error) throw new Error(`Resend send failed: ${JSON.stringify(error)}`);
 }
 
-// Tells the owner a lead just came in. Never throws and waits at most `capMs`,
-// so a slow or failing email can't fail or noticeably delay lead capture; the
-// send keeps running on a warm instance after the cap. Skips a customer already
-// alerted within the dedup window.
+// Tells the owner a lead just came in. Never throws, and a slow or failing
+// email can't fail or delay lead capture: inside a request it runs via after()
+// (after the response); outside one it waits at most `capMs`. Skips a customer
+// already alerted within the dedup window.
 export async function sendLeadAlert(input: LeadAlertInput, capMs = 1000): Promise<void> {
-  const work = (async () => {
+  const run = async () => {
     let key: string | null = null;
     try {
       // Message leads (form, chat) and booking leads dedup separately, so a
@@ -176,7 +181,18 @@ export async function sendLeadAlert(input: LeadAlertInput, capMs = 1000): Promis
       if (key) recent.delete(key); // nothing was sent, so a retry may alert
       console.error("sendLeadAlert: failed", err, { customerId: input.customerId, kind: input.kind });
     }
-  })();
+  };
+
+  // Preferred: schedule after the response is sent, so the platform keeps the
+  // function alive until the email is out and the caller never waits on it.
+  try {
+    after(run);
+    return;
+  } catch {
+    // Not inside a request (scripts, tests): fall back to a capped wait below.
+  }
+
+  const work = run();
   let timer: ReturnType<typeof setTimeout> | undefined;
   try {
     await Promise.race([
