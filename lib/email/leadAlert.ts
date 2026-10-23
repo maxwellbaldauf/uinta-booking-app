@@ -70,6 +70,7 @@ async function hasEarlierSubmission(customerId: string, exceptId: string | null 
       .select("id, created_at")
       .eq("customer_id", customerId)
       .gte("created_at", since)
+      .order("created_at", { ascending: false })
       .limit(20);
     if (error) {
       console.error("sendLeadAlert: dedup check failed", error);
@@ -200,14 +201,20 @@ export async function sendLeadAlert(input: LeadAlertInput, capMs = 1000): Promis
       const claimKey = `${currentBusinessId()}|${group}|${input.customerId}`;
       if (!claim(claimKey)) return;
       key = claimKey;
+      // Without this lead's own submission id the check could count the row
+      // just written as an earlier alert and suppress every alert, so skip it.
       if (
         (input.kind === "contact_form" || input.kind === "chat") &&
+        input.submissionId &&
         (await hasEarlierSubmission(input.customerId, input.submissionId))
       ) {
         return;
       }
-      if (ip && !allowLeadWrite(ip, "alert")) {
+      // "unknown" is the shared no-header bucket; capping it would throttle
+      // every genuine lead, so only a real client IP is budgeted.
+      if (ip && ip !== "unknown" && !allowLeadWrite(ip, "alert")) {
         console.warn("sendLeadAlert: per-IP alert budget exceeded, email skipped", { kind: input.kind });
+        recent.delete(claimKey); // nothing was sent, so this customer isn't "alerted"
         return;
       }
       await deliver(input);
