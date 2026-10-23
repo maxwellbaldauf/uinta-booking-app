@@ -91,7 +91,7 @@ export async function submitContact(
   // Owner alert. Never throws.
   await sendLeadAlert({
     kind: opts?.alertKind ?? "contact_form",
-    existingCustomer: await isRealCustomer(matched),
+    existingCustomer: () => isRealCustomer(matched),
     customerId,
     name: input.fullName,
     email: input.email,

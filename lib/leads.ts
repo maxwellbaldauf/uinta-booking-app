@@ -82,7 +82,7 @@ export async function saveFlaggedLead(
   // update branch above) was already alerted.
   await sendLeadAlert({
     kind: flags.out_of_service_area ? "out_of_area" : "no_availability",
-    existingCustomer: await isRealCustomer(matched),
+    existingCustomer: () => isRealCustomer(matched),
     customerId,
     name: details.fullName,
     email: details.email,
@@ -178,7 +178,9 @@ export async function readLeadState(
 export async function isRealCustomer(matched: MatchedCustomer | null): Promise<boolean> {
   if (!matched) return false;
   try {
-    return (await readLeadState(matched)).real;
+    // ignoreStripeId: the payment step stamps a Stripe id on a lead before any
+    // booking exists, so it alone doesn't make someone a customer.
+    return (await readLeadState(matched, { ignoreStripeId: true })).real;
   } catch {
     return false;
   }
@@ -252,8 +254,8 @@ async function captureInAreaLead(
     throw new Error(`lead: create property failed: ${error.message}`);
   }
 
-  // Very short cap: this runs inside the 1.5s best-effort window of the
-  // availability check, and a slow email must not make a saved lead read as unsaved.
+  // Sent via after() inside a request; the 300 ms cap only matters in the
+  // non-request fallback, inside this 1.5s best-effort window.
   await sendLeadAlert(
     {
       kind: "saw_times",

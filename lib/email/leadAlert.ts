@@ -33,9 +33,11 @@ export type LeadAlertInput = {
   // The contact_submissions row that was just written, so the DB dedup check
   // doesn't count it as the earlier alert.
   submissionId?: string | null;
-  // True when the person already matched a real customer (a paying or archived
-  // record), so the owner isn't told "new lead" about a current customer.
-  existingCustomer?: boolean;
+  // True (or a function resolving to true) when the person already matched a
+  // real customer (a paying or archived record), so the owner isn't told "new
+  // lead" about a current customer. A function runs only after the dedup check,
+  // so a suppressed alert costs no extra lookup.
+  existingCustomer?: boolean | (() => Promise<boolean>);
 };
 
 const MAX_MESSAGE = 1500;
@@ -63,15 +65,24 @@ async function hasEarlierSubmission(customerId: string, exceptId: string | null 
     const since = new Date(Date.now() - LEAD_DEDUP_WINDOW_MS).toISOString();
     const { data, error } = await businessDb()
       .from("contact_submissions")
-      .select("id")
+      .select("id, created_at")
       .eq("customer_id", customerId)
       .gte("created_at", since)
-      .limit(2);
+      .limit(20);
     if (error) {
       console.error("sendLeadAlert: dedup check failed", error);
       return false;
     }
-    return (data ?? []).some((r) => (r as { id: string }).id !== exceptId);
+    const rows = (data ?? []) as { id: string; created_at: string }[];
+    const mine = rows.find((r) => r.id === exceptId);
+    // Only a row that came BEFORE this one counts, with the id breaking exact
+    // ties. Two near-simultaneous submissions then pick one winner instead of
+    // each suppressing the other.
+    return rows.some(
+      (r) =>
+        r.id !== exceptId &&
+        (!mine || r.created_at < mine.created_at || (r.created_at === mine.created_at && r.id < mine.id))
+    );
   } catch (err) {
     console.error("sendLeadAlert: dedup check threw", err);
     return false;
@@ -88,17 +99,22 @@ async function deliver(input: LeadAlertInput): Promise<void> {
   const to = settings.business_email;
   const resend = await getResend();
   if (!to || !resend) {
-    console.error("sendLeadAlert: no recipient (settings.business_email) or Resend not configured", {
-      customerId: input.customerId,
-      hasRecipient: !!to,
-      hasResend: !!resend,
-    });
-    return;
+    // Throw (the caller logs it and releases the dedup claim) so a later lead
+    // can still alert once the configuration is fixed.
+    throw new Error(
+      `no recipient (settings.business_email) or Resend not configured (hasRecipient=${!!to}, hasResend=${!!resend})`
+    );
   }
 
   const brand = await getEmailBrand();
   const label = KIND_LABEL[input.kind];
+  const existing =
+    typeof input.existingCustomer === "function"
+      ? await input.existingCustomer().catch(() => false)
+      : !!input.existingCustomer;
   const who = input.name?.trim() || input.email?.trim() || input.phone?.trim() || "unknown";
+  // The subject carries visitor text: strip control characters and cap the length.
+  const subjectWho = who.replace(/\p{Cc}/gu, " ").replace(/\s+/g, " ").trim().slice(0, 100) || "unknown";
   const address = input.address?.trim() ?? "";
   const city = input.city?.trim() ?? "";
   // The address usually already names the city; only append it when it doesn't.
@@ -114,10 +130,10 @@ async function deliver(input: LeadAlertInput): Promise<void> {
     { label: "Phone", value: input.phone?.trim() || "—" },
     { label: "Address", value: place || "—" },
     { label: "Lead type", value: label },
-    ...(input.existingCustomer ? [{ label: "Customer type", value: "Existing customer" }] : []),
+    ...(existing ? [{ label: "Customer type", value: "Existing customer" }] : []),
   ];
 
-  const heading = input.existingCustomer ? "Existing customer reached out" : "New lead";
+  const heading = existing ? "Existing customer reached out" : "New lead";
   const html = renderEmail({
     brand,
     title: heading,
@@ -149,7 +165,7 @@ async function deliver(input: LeadAlertInput): Promise<void> {
   const { error } = await resend.client.emails.send({
     from: resend.from,
     to,
-    subject: `${input.existingCustomer ? "Existing customer" : "New lead"} (${label}): ${who}`,
+    subject: `${existing ? "Existing customer" : "New lead"} (${label}): ${subjectWho}`,
     html,
     text,
   });
