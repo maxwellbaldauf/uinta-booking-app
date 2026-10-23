@@ -1,0 +1,191 @@
+import { getEmailBrand } from "@/lib/email/brand";
+import { getResend } from "@/lib/email/resend";
+import { renderEmail, detailsTable, buttonRow, escapeHtml } from "@/lib/email/shell";
+import { getSettings } from "@/lib/settings";
+import { businessDb, currentBusinessId } from "@/lib/tenant/business";
+import { LEAD_DEDUP_WINDOW_MS } from "@/lib/chat/config";
+
+export type LeadAlertKind =
+  | "contact_form"
+  | "chat"
+  | "out_of_area"
+  | "no_availability"
+  | "saw_times";
+
+const KIND_LABEL: Record<LeadAlertKind, string> = {
+  contact_form: "contact form",
+  chat: "AI chat",
+  out_of_area: "booking, outside service area",
+  no_availability: "booking, no open times",
+  saw_times: "booking, saw open times",
+};
+
+export type LeadAlertInput = {
+  kind: LeadAlertKind;
+  customerId: string;
+  name: string | null;
+  email: string | null;
+  phone: string | null;
+  address?: string | null;
+  city?: string | null;
+  message?: string | null;
+  // The contact_submissions row that was just written, so the DB dedup check
+  // doesn't count it as the earlier alert.
+  submissionId?: string | null;
+};
+
+const MAX_MESSAGE = 1500;
+
+// Per-instance record of customers alerted inside the dedup window. Covers the
+// booking leads, which write no contact_submissions row to look back at.
+// Best-effort across serverless instances, like the chat rate limiter.
+const STORE = Symbol.for("uinta.leadAlert.recent");
+const g = globalThis as typeof globalThis & { [STORE]?: Map<string, number> };
+const recent: Map<string, number> = (g[STORE] ??= new Map());
+
+function claim(key: string): boolean {
+  const now = Date.now();
+  for (const [k, at] of recent) if (now - at >= LEAD_DEDUP_WINDOW_MS) recent.delete(k);
+  if (recent.has(key)) return false;
+  recent.set(key, now);
+  return true;
+}
+
+// True when another contact submission for this customer exists inside the
+// window, i.e. the owner was already told. Fails open: a missed dedup is better
+// than a dropped alert.
+async function hasEarlierSubmission(customerId: string, exceptId: string | null | undefined): Promise<boolean> {
+  try {
+    const since = new Date(Date.now() - LEAD_DEDUP_WINDOW_MS).toISOString();
+    const { data, error } = await businessDb()
+      .from("contact_submissions")
+      .select("id")
+      .eq("customer_id", customerId)
+      .gte("created_at", since)
+      .limit(2);
+    if (error) {
+      console.error("sendLeadAlert: dedup check failed", error);
+      return false;
+    }
+    return (data ?? []).some((r) => (r as { id: string }).id !== exceptId);
+  } catch (err) {
+    console.error("sendLeadAlert: dedup check threw", err);
+    return false;
+  }
+}
+
+function fieldAppLink(customerId: string): string | null {
+  const base = (process.env.FIELD_APP_BASE_URL ?? "").trim().replace(/\/+$/, "");
+  return base ? `${base}/customers/${customerId}` : null;
+}
+
+async function deliver(input: LeadAlertInput): Promise<void> {
+  const settings = await getSettings();
+  const to = settings.business_email;
+  const resend = await getResend();
+  if (!to || !resend) {
+    console.error("sendLeadAlert: no recipient (settings.business_email) or Resend not configured", {
+      customerId: input.customerId,
+      hasRecipient: !!to,
+      hasResend: !!resend,
+    });
+    return;
+  }
+
+  const brand = await getEmailBrand();
+  const label = KIND_LABEL[input.kind];
+  const who = input.name?.trim() || input.email?.trim() || input.phone?.trim() || "unknown";
+  const address = input.address?.trim() ?? "";
+  const city = input.city?.trim() ?? "";
+  // The address usually already names the city; only append it when it doesn't.
+  const place = [address, city && !address.toLowerCase().includes(city.toLowerCase()) ? city : ""]
+    .filter(Boolean)
+    .join(", ");
+  const message = (input.message ?? "").trim().slice(0, MAX_MESSAGE);
+  const link = fieldAppLink(input.customerId);
+
+  const rows = [
+    { label: "Name", value: input.name?.trim() || "—" },
+    { label: "Email", value: input.email?.trim() || "—" },
+    { label: "Phone", value: input.phone?.trim() || "—" },
+    { label: "Address", value: place || "—" },
+    { label: "Lead type", value: label },
+  ];
+
+  const heading = "New lead";
+  const html = renderEmail({
+    brand,
+    title: heading,
+    preheader: `${label}: ${who}`,
+    inner: `
+      <p style="margin:0 0 4px;font-size:16px;font-weight:700;">${escapeHtml(heading)}</p>
+      <p style="margin:0 0 12px;color:#5b6470;">${escapeHtml(who)} just reached out. Details below.</p>
+      ${detailsTable(rows)}
+      ${
+        message
+          ? `<p style="margin:16px 0 4px;font-weight:700;">Message</p><p style="margin:0;white-space:pre-wrap;">${escapeHtml(message)}</p>`
+          : ""
+      }
+      ${link ? buttonRow(link, "Open in the field app", brand.accent) : ""}
+    `,
+  });
+
+  const text = [
+    `NEW LEAD`,
+    `${who} just reached out. Details below.`,
+    ``,
+    ...rows.map((r) => `${(r.label + ":").padEnd(12)}${r.value}`),
+    ...(message ? [``, `Message:`, message] : []),
+    ...(link ? [``, `Open in the field app: ${link}`] : []),
+    ``,
+    `— ${brand.name} booking site`,
+  ].join("\n");
+
+  const { error } = await resend.client.emails.send({
+    from: resend.from,
+    to,
+    subject: `New lead (${label}): ${who}`,
+    html,
+    text,
+  });
+  if (error) throw new Error(`Resend send failed: ${JSON.stringify(error)}`);
+}
+
+// Tells the owner a lead just came in. Never throws and waits at most `capMs`,
+// so a slow or failing email can't fail or noticeably delay lead capture; the
+// send keeps running on a warm instance after the cap. Skips a customer already
+// alerted within the dedup window.
+export async function sendLeadAlert(input: LeadAlertInput, capMs = 1000): Promise<void> {
+  const work = (async () => {
+    let key: string | null = null;
+    try {
+      // Message leads (form, chat) and booking leads dedup separately, so a
+      // booking-funnel alert never swallows a later message from the same person.
+      const group = input.kind === "contact_form" || input.kind === "chat" ? "message" : "booking";
+      const claimKey = `${currentBusinessId()}|${group}|${input.customerId}`;
+      if (!claim(claimKey)) return;
+      key = claimKey;
+      if (
+        (input.kind === "contact_form" || input.kind === "chat") &&
+        (await hasEarlierSubmission(input.customerId, input.submissionId))
+      ) {
+        return;
+      }
+      await deliver(input);
+    } catch (err) {
+      if (key) recent.delete(key); // nothing was sent, so a retry may alert
+      console.error("sendLeadAlert: failed", err, { customerId: input.customerId, kind: input.kind });
+    }
+  })();
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    await Promise.race([
+      work,
+      new Promise<void>((resolve) => {
+        timer = setTimeout(resolve, capMs);
+      }),
+    ]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}

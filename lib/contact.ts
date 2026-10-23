@@ -1,6 +1,7 @@
 import { businessDb } from "@/lib/tenant/business";
 import { geocodeAddress } from "@/lib/geocode";
 import { matchOrCreateCustomer } from "@/lib/customers";
+import { sendLeadAlert } from "@/lib/email/leadAlert";
 
 export type ContactInput = {
   fullName: string;
@@ -17,7 +18,9 @@ export type ContactInput = {
 // needs_followup with NO job, and record the submission. Geocoding is
 // best-effort — a submission is never dropped for it.
 export async function submitContact(
-  input: ContactInput
+  input: ContactInput,
+  // The AI chat tool passes "chat"; the contact form leaves it unset.
+  opts?: { alertKind?: "chat" }
 ): Promise<{ customerId: string; propertyId: string | null }> {
   const supabase = businessDb();
 
@@ -27,8 +30,10 @@ export async function submitContact(
   );
 
   let propertyId: string | null = null;
+  let city: string | null = null;
   if (input.address.trim()) {
     const geo = await geocodeAddress(input.address).catch(() => null);
+    city = geo?.city ?? null;
     const patch = {
       ice_maker_brand: input.iceMakerBrand || null,
       ice_maker_model: input.iceMakerModel || null,
@@ -68,15 +73,32 @@ export async function submitContact(
     }
   }
 
-  const { error: submissionError } = await supabase.from("contact_submissions").insert({
-    customer_id: customerId,
-    property_id: propertyId,
-    message: input.message.trim() || null,
-    handled: false,
-  });
+  const { data: submission, error: submissionError } = await supabase
+    .from("contact_submissions")
+    .insert({
+      customer_id: customerId,
+      property_id: propertyId,
+      message: input.message.trim() || null,
+      handled: false,
+    })
+    .select("id")
+    .single();
   if (submissionError) {
     throw new Error(`contact: submission insert failed: ${submissionError.message}`);
   }
+
+  // Owner alert. Never throws.
+  await sendLeadAlert({
+    kind: opts?.alertKind ?? "contact_form",
+    customerId,
+    name: input.fullName,
+    email: input.email,
+    phone: input.phone,
+    address: input.address,
+    city,
+    message: input.message,
+    submissionId: (submission as { id: string } | null)?.id ?? null,
+  });
 
   return { customerId, propertyId };
 }

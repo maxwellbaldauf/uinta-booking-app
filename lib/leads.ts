@@ -1,5 +1,6 @@
 import { businessDb } from "@/lib/tenant/business";
 import { matchOrCreateCustomer, normalizePhone, type MatchedCustomer } from "@/lib/customers";
+import { sendLeadAlert } from "@/lib/email/leadAlert";
 
 export type LeadDetails = {
   fullName: string;
@@ -76,6 +77,18 @@ export async function saveFlaggedLead(
     .select("id")
     .single();
   if (error || !property) throw new Error(`lead: create property failed: ${error?.message}`);
+
+  // Owner alert for a NEW dead-end lead only; a repeat at a known address (the
+  // update branch above) was already alerted.
+  await sendLeadAlert({
+    kind: flags.out_of_service_area ? "out_of_area" : "no_availability",
+    customerId,
+    name: details.fullName,
+    email: details.email,
+    phone: details.phone,
+    address: details.address,
+    city: coords?.city ?? null,
+  });
 
   return { customerId, propertyId: (property as { id: string }).id };
 }
@@ -225,6 +238,21 @@ async function captureInAreaLead(
     }
     throw new Error(`lead: create property failed: ${error.message}`);
   }
+
+  // Very short cap: this runs inside the 1.5s best-effort window of the
+  // availability check, and a slow email must not make a saved lead read as unsaved.
+  await sendLeadAlert(
+    {
+      kind: "saw_times",
+      customerId,
+      name: details.fullName,
+      email: details.email,
+      phone: details.phone,
+      address: details.address,
+      city: coords.city ?? null,
+    },
+    300
+  );
   return true;
 }
 
