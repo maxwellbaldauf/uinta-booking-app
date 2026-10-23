@@ -18,9 +18,17 @@ const CHANNEL_LABEL: Record<LeadChannel, string> = {
 };
 
 // Message leads (form, chat) and booking-funnel leads dedup separately, so a
-// booking alert never swallows a later message from the same person.
-const MESSAGE_CHANNELS: LeadChannel[] = ["contact_form", "ai_chat"];
-const BOOKING_CHANNELS: LeadChannel[] = ["booking_out_of_area", "booking_no_availability", "booking_saw_times"];
+// booking alert never swallows a later message from the same person. One Record
+// keyed by channel, so adding a channel fails to compile until it is grouped.
+const CHANNEL_GROUP: Record<LeadChannel, "message" | "booking"> = {
+  contact_form: "message",
+  ai_chat: "message",
+  booking_out_of_area: "booking",
+  booking_no_availability: "booking",
+  booking_saw_times: "booking",
+};
+const channelsInGroup = (channel: LeadChannel): LeadChannel[] =>
+  (Object.keys(CHANNEL_GROUP) as LeadChannel[]).filter((c) => CHANNEL_GROUP[c] === CHANNEL_GROUP[channel]);
 
 export type LeadAlertInput = {
   channel: LeadChannel;
@@ -50,7 +58,7 @@ const MAX_MESSAGE = 1500;
 async function alertedRecently(input: LeadAlertInput & { leadId: string }): Promise<boolean> {
   try {
     const since = new Date(Date.now() - LEAD_DEDUP_WINDOW_MS).toISOString();
-    const group = MESSAGE_CHANNELS.includes(input.channel) ? MESSAGE_CHANNELS : BOOKING_CHANNELS;
+    const group = channelsInGroup(input.channel);
     const { data, error } = await businessDb()
       .from("leads")
       .select("id")
@@ -76,14 +84,18 @@ async function alertedRecently(input: LeadAlertInput & { leadId: string }): Prom
 // WAS told, so it must not count as an alert failure; the cost is that the next
 // lead inside the hour may alert again.
 async function markAlertSent(leadId: string): Promise<void> {
-  try {
-    const { error } = await businessDb()
-      .from("leads")
-      .update({ alert_sent_at: new Date().toISOString() })
-      .eq("id", leadId);
-    if (error) console.error("sendLeadAlert: could not record alert_sent_at", error.message, { leadId });
-  } catch (err) {
-    console.error("sendLeadAlert: could not record alert_sent_at", err, { leadId });
+  // One retry: a failed stamp makes the dedup miss an alert that did go out.
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    try {
+      const { error } = await businessDb()
+        .from("leads")
+        .update({ alert_sent_at: new Date().toISOString() })
+        .eq("id", leadId);
+      if (!error) return;
+      console.error("sendLeadAlert: could not record alert_sent_at", error.message, { leadId, attempt });
+    } catch (err) {
+      console.error("sendLeadAlert: could not record alert_sent_at", err, { leadId, attempt });
+    }
   }
 }
 
