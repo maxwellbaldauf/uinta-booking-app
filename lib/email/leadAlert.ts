@@ -1,3 +1,4 @@
+import { headers } from "next/headers";
 import { after } from "next/server";
 import { getEmailBrand } from "@/lib/email/brand";
 import { getResend } from "@/lib/email/resend";
@@ -5,6 +6,7 @@ import { renderEmail, detailsTable, buttonRow, escapeHtml } from "@/lib/email/sh
 import { getSettings } from "@/lib/settings";
 import { businessDb, currentBusinessId } from "@/lib/tenant/business";
 import { LEAD_DEDUP_WINDOW_MS } from "@/lib/chat/config";
+import { allowLeadWrite, clientIpFromHeaders } from "@/lib/chat/rateLimit";
 
 export type LeadAlertKind =
   | "contact_form"
@@ -177,6 +179,18 @@ async function deliver(input: LeadAlertInput): Promise<void> {
 // (after the response); outside one it waits at most `capMs`. Skips a customer
 // already alerted within the dedup window.
 export async function sendLeadAlert(input: LeadAlertInput, capMs = 1000): Promise<void> {
+  // Per-IP alert budget (5/hour, own scope), so a script posting fresh emails
+  // can't flood the owner's inbox or burn the shared Resend quota. The lead is
+  // still saved; only the email is skipped. Read the IP here, not inside
+  // after(), where request headers aren't reliably available. Outside a
+  // request there is no IP and no cap.
+  let ip: string | null = null;
+  try {
+    ip = clientIpFromHeaders(await headers());
+  } catch {
+    ip = null;
+  }
+
   const run = async () => {
     let key: string | null = null;
     try {
@@ -190,6 +204,10 @@ export async function sendLeadAlert(input: LeadAlertInput, capMs = 1000): Promis
         (input.kind === "contact_form" || input.kind === "chat") &&
         (await hasEarlierSubmission(input.customerId, input.submissionId))
       ) {
+        return;
+      }
+      if (ip && !allowLeadWrite(ip, "alert")) {
+        console.warn("sendLeadAlert: per-IP alert budget exceeded, email skipped", { kind: input.kind });
         return;
       }
       await deliver(input);
