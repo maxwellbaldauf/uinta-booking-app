@@ -128,7 +128,13 @@ export default async function HomePage({
       </section>
 
       {/* Trust bar. Link-only Google badge (no API call) first, then the copy. */}
-      <TrustBar items={[<GoogleBadge key="google" />, ...TRUST_BAR]} />
+      <TrustBar
+        items={[
+          <GoogleBadge key="google" />,
+          ...TRUST_BAR,
+          <SocialLinks key="social" className="mkt-trustbar__social" />,
+        ]}
+      />
 
       <div className="mkt-wrap mkt-prose">
         {/* SECTION 2 — THE RECOGNITION MOMENT */}

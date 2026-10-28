@@ -518,7 +518,7 @@
 }
 /* Mobile: a clean vertical list. Desktop/tablet: wrapping rows with dot
    separators (see the min-width block below). */
-.mkt-trustbar ul {
+.mkt-trustbar > ul {
   display: flex;
   flex-direction: column;
   gap: var(--space-2xs);
@@ -530,7 +530,7 @@
   line-height: 1.4;
   color: var(--ink-soft);
 }
-.mkt-trustbar li {
+.mkt-trustbar > ul > li {
   display: block;
 }
 /* Desktop/tablet: centered wrapping rows. TrustBar.tsx marks each item that
@@ -539,7 +539,7 @@
    items that render nothing, and caps the list's width so the wrap is even.
    Without JS the items simply sit spaced apart with no dots. */
 @media (min-width: 48rem) {
-  .mkt-trustbar ul {
+  .mkt-trustbar > ul {
     flex-direction: row;
     flex-wrap: wrap;
     justify-content: center;
@@ -548,14 +548,14 @@
     width: min(100% - 2 * var(--space-xl), var(--width-wide) - 2 * var(--space-xl));
     padding: var(--space-md) 0;
   }
-  .mkt-trustbar li {
+  .mkt-trustbar > ul > li {
     position: relative;
     text-align: center;
   }
-  .mkt-trustbar li[hidden] {
+  .mkt-trustbar > ul > li[hidden] {
     display: none;
   }
-  .mkt-trustbar li[data-sep]::before {
+  .mkt-trustbar > ul > li[data-sep]::before {
     content: "·";
     content: "·" / ""; /* decorative: no alt text where supported */
     position: absolute;
@@ -1454,6 +1454,18 @@
 }
 .mkt-social svg {
   display: block;
+}
+
+/* In the home trust strip: no top margin, tighter vertical footprint so the
+   44px tap targets don't fatten the strip. */
+.mkt-trustbar .mkt-social {
+  flex-wrap: nowrap;
+  margin: calc(-1 * var(--space-3xs)) 0 calc(-1 * var(--space-3xs)) -10px;
+}
+@media (min-width: 48rem) {
+  .mkt-trustbar .mkt-social {
+    margin: calc(-1 * var(--space-3xs)) 0;
+  }
 }
 
 /* ---- Mobile bottom CTA bar ------------------------------------- */
