@@ -20,6 +20,7 @@ import { JsonLd } from "@/components/marketing/JsonLd";
 import { JOB_PHOTOS } from "@/lib/jobPhotos";
 import { SOURCE_LINKS } from "@/lib/sources";
 import { GoogleBadge } from "@/components/marketing/GoogleBadge";
+import { TrustBar } from "@/components/marketing/TrustBar";
 import { LazyGoogleReviews } from "@/components/marketing/LazyGoogleReviews";
 import { ReviewsView } from "@/components/marketing/ReviewsView";
 import { previewReviews } from "@/lib/googleReviews.preview";
@@ -126,18 +127,8 @@ export default async function HomePage({
         </div>
       </section>
 
-      {/* Trust bar */}
-      <div className="mkt-trustbar">
-        <ul>
-          <li>
-            {/* Link-only Google badge (no API call) */}
-            <GoogleBadge />
-          </li>
-          {TRUST_BAR.map((item) => (
-            <li key={item}>{item}</li>
-          ))}
-        </ul>
-      </div>
+      {/* Trust bar. Link-only Google badge (no API call) first, then the copy. */}
+      <TrustBar items={[<GoogleBadge key="google" />, ...TRUST_BAR]} />
 
       <div className="mkt-wrap mkt-prose">
         {/* SECTION 2 — THE RECOGNITION MOMENT */}
