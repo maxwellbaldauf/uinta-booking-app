@@ -9,6 +9,7 @@ import { arrivalBlockLabel } from "@/lib/schedule/blocks";
 import type { InvoiceJob } from "@/lib/invoicePayment";
 import { AgreementStep } from "@/components/booking/AgreementStep";
 import { agreementIsCurrent, SERVICE_AGREEMENT_VERSION } from "@/lib/agreement";
+import { OneTimeInvoicePay } from "@/components/payment/OneTimeInvoicePay";
 
 type Step = "review" | "agreement" | "charging" | "failed" | "done";
 
@@ -49,6 +50,12 @@ function wasAccepted(token: string): boolean {
 // button is offered. The server re-checks and records it (timestamp +
 // version) before charging; the client flag alone is never trusted.
 export function InvoiceApproval({ token, job }: { token: string; job: InvoiceJob }) {
+  // One-time payment link: a different page entirely (no card on file, none saved).
+  if (job.paymentMode === "one_time_link") return <OneTimeInvoicePay token={token} job={job} />;
+  return <CardOnFileInvoiceApproval token={token} job={job} />;
+}
+
+function CardOnFileInvoiceApproval({ token, job }: { token: string; job: InvoiceJob }) {
   const agreementCurrent = agreementIsCurrent(job.serviceAgreementVersion);
   const [step, setStep] = useState<Step>("review");
   const [accepted, setAccepted] = useState(agreementCurrent);

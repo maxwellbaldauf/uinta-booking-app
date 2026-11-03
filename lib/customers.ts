@@ -24,12 +24,15 @@ export async function findCustomerByPaymentSetupToken(
   const { data, error } = await supabase
     .from("customers")
     .select(
-      "id, full_name, email, phone, stripe_customer_id, payment_display, payment_setup_token_expires_at, service_agreement_accepted_at, service_agreement_version"
+      "id, full_name, email, phone, stripe_customer_id, payment_display, payment_mode, payment_setup_token_expires_at, service_agreement_accepted_at, service_agreement_version"
     )
     .eq("payment_setup_token", token)
     .maybeSingle();
 
   if (error || !data) return null;
+  // One-time-payment-link customers never save a card, so a card-setup token
+  // is never valid for them (the field app also clears it when switching mode).
+  if (data.payment_mode === "one_time_link") return null;
 
   const expiresAt = data.payment_setup_token_expires_at as string | null;
   if (expiresAt && new Date(expiresAt).getTime() < Date.now()) return null;
@@ -63,12 +66,13 @@ export type MatchedCustomer = {
   grandfathered_price_cents: number | null;
   archived_at: string | null;
   heard_about_source: string | null;
+  payment_mode: string | null;
 };
 
 const MATCH_COLS =
   "id, full_name, email, phone, stripe_customer_id, default_payment_method_id, " +
   "default_payment_method_type, payment_display, service_agreement_accepted_at, " +
-  "service_agreement_version, grandfathered_price_cents, archived_at, heard_about_source";
+  "service_agreement_version, grandfathered_price_cents, archived_at, heard_about_source, payment_mode";
 
 // ILIKE treats %, _, and \ as pattern metacharacters — escaping them makes a
 // raw string behave as an exact (case-insensitive) match instead of a
@@ -142,4 +146,28 @@ export async function matchOrCreateCustomer(
     .single();
   if (error || !data) throw new Error(`create customer failed: ${error?.message}`);
   return { id: (data as { id: string }).id, matched: null };
+}
+
+export type AgreementCustomer = {
+  id: string;
+  full_name: string | null;
+  service_agreement_version: string | null;
+};
+
+// Resolve the customer behind an agreement_token (the agreement-only page used
+// by one-time-payment-link customers, who have no card step to sign in).
+// Unknown / expired tokens and customers who are NOT one-time-link return null;
+// the caller shows a calm "link isn't valid" page.
+export async function findCustomerByAgreementToken(token: string): Promise<AgreementCustomer | null> {
+  if (!token || token.length < 16) return null;
+  const { data, error } = await businessDb()
+    .from("customers")
+    .select("id, full_name, payment_mode, service_agreement_version, agreement_token_expires_at")
+    .eq("agreement_token", token)
+    .maybeSingle();
+  if (error || !data) return null;
+  if (data.payment_mode !== "one_time_link") return null;
+  const expiresAt = data.agreement_token_expires_at as string | null;
+  if (expiresAt && new Date(expiresAt).getTime() < Date.now()) return null;
+  return { id: data.id, full_name: data.full_name, service_agreement_version: data.service_agreement_version };
 }

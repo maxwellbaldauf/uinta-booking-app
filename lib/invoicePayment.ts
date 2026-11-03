@@ -13,6 +13,8 @@ export type InvoiceJob = {
   stripeCustomerId: string | null;
   paymentDisplay: string | null;
   hasDefaultPaymentMethod: boolean;
+  // "one_time_link": pays on this page with a single-use card, nothing is saved.
+  paymentMode: "card_on_file" | "one_time_link";
   // The version of the Service Agreement this customer last accepted (null =
   // never). Manually-entered customers first reach a payment page here, after
   // their first visit, so this page is where they accept it.
@@ -46,6 +48,7 @@ type CustomerRow = {
   default_payment_method_id: string | null;
   payment_display: string | null;
   service_agreement_version: string | null;
+  payment_mode: string | null;
 };
 
 function flatten<T>(v: T | T[] | null | undefined): T | null {
@@ -67,7 +70,7 @@ export async function findJobByInvoiceToken(token: string): Promise<InvoiceJob |
   const { data, error } = await supabase
     .from("jobs")
     .select(
-      "id, status, scheduled_date, arrival_block, blocks_needed, final_price_cents, property:properties(nickname, address, customer:customers(id, full_name, stripe_customer_id, default_payment_method_id, payment_display, service_agreement_version))"
+      "id, status, scheduled_date, arrival_block, blocks_needed, final_price_cents, property:properties(nickname, address, customer:customers(id, full_name, stripe_customer_id, default_payment_method_id, payment_display, service_agreement_version, payment_mode))"
     )
     .eq("invoice_token", token)
     .maybeSingle();
@@ -100,6 +103,7 @@ export async function findJobByInvoiceToken(token: string): Promise<InvoiceJob |
     stripeCustomerId: customer.stripe_customer_id,
     paymentDisplay: customer.payment_display,
     hasDefaultPaymentMethod: customer.default_payment_method_id != null,
+    paymentMode: customer.payment_mode === "one_time_link" ? "one_time_link" : "card_on_file",
     serviceAgreementVersion: customer.service_agreement_version,
   };
 }
@@ -159,5 +163,36 @@ export async function chargeInvoiceJob(jobId: string): Promise<ChargeInvoiceResu
   } catch (err) {
     console.error("chargeInvoiceJob: charge-job request failed", jobId, err);
     return { ok: false, error: "Could not reach the charging service" };
+  }
+}
+
+export type PayLinkIntentResult =
+  | { ok: true; state: "ready"; clientSecret: string; amountCents: number }
+  | { ok: true; state: "paid" | "processing" }
+  | { ok: false; error: string };
+
+// Asks the field app (which owns this business's Stripe account) for the
+// single-use PaymentIntent behind a one-time-link customer's invoice. The amount
+// is decided there from the job's locked final price - never sent from here or
+// from the browser.
+export async function requestPayLinkIntent(jobId: string): Promise<PayLinkIntentResult> {
+  const baseUrl = (process.env.FIELD_APP_BASE_URL ?? "").trim().replace(/\/+$/, "");
+  const secret = process.env.CHARGE_JOB_API_SECRET;
+  if (!baseUrl || !secret) {
+    console.error("requestPayLinkIntent: FIELD_APP_BASE_URL or CHARGE_JOB_API_SECRET not configured");
+    return { ok: false, error: "Payment isn't configured yet" };
+  }
+  try {
+    const res = await fetch(`${baseUrl}/api/internal/pay-link-intent`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${secret}` },
+      body: JSON.stringify({ jobId }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.state) return { ok: false, error: data?.error ?? "Could not start payment" };
+    return { ok: true, ...data };
+  } catch (err) {
+    console.error("requestPayLinkIntent: request failed", jobId, err);
+    return { ok: false, error: "Could not reach the payment service" };
   }
 }

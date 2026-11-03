@@ -43,10 +43,14 @@ export async function ensureStripeCustomerForRow(customerId: string): Promise<{
   const supabase = businessDb();
   const { data: row, error } = await supabase
     .from("customers")
-    .select("id, full_name, email, phone, stripe_customer_id")
+    .select("id, full_name, email, phone, stripe_customer_id, payment_mode")
     .eq("id", customerId)
     .single();
   if (error || !row) throw new Error("Customer not found");
+  // A one-time-payment-link customer never gets a Stripe Customer or a saved card.
+  if (row.payment_mode === "one_time_link") {
+    throw new Error("This account pays by one-time link; no card can be saved.");
+  }
 
   if (row.stripe_customer_id) {
     return { stripeCustomerId: row.stripe_customer_id, email: row.email };

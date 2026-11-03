@@ -30,7 +30,7 @@ type Availability = {
   slots: OfferedSlotView[];
   // Set when the business has a booking horizon: month picker + its signed context.
   monthly?: { ctx: string; month: string; minMonth: string; maxMonth: string };
-  matchedCustomer: { hasPaymentMethod: boolean; paymentDisplay: string | null } | null;
+  matchedCustomer: { hasPaymentMethod: boolean; paymentDisplay: string | null; payByLink?: boolean } | null;
   agreementRequired: boolean;
   agreementStale: boolean;
   sourceRequired: boolean;
@@ -218,7 +218,8 @@ export function BookingFlow({ basePriceCents }: { basePriceCents: number | null 
   function handleSlotContinue(choice: { slot: OfferedSlotView; useExistingCard: boolean }) {
     if (!details) return;
     setChosen(choice);
-    if (choice.useExistingCard) {
+    // One-time payment link customers skip the card step entirely.
+    if (choice.useExistingCard || availability?.matchedCustomer?.payByLink) {
       void runCreateBooking(details, choice, null);
     } else {
       setStep("payment");

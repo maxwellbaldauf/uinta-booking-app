@@ -43,7 +43,7 @@ export async function POST(req: Request) {
   const supabase = businessDb();
   const { data: customer, error } = await supabase
     .from("customers")
-    .select("id, email, default_payment_method_id")
+    .select("id, email, default_payment_method_id, payment_mode")
     .eq("id", body.customerId)
     .single();
 
@@ -52,6 +52,9 @@ export async function POST(req: Request) {
   }
   if (!customer.email) {
     return NextResponse.json({ error: "Customer has no email" }, { status: 422 });
+  }
+  if (customer.payment_mode === "one_time_link") {
+    return NextResponse.json({ ok: true, skipped: "customer pays by one-time link (no card setup)" });
   }
   if (customer.default_payment_method_id) {
     return NextResponse.json({ ok: true, skipped: "customer already has a card on file" });

@@ -81,7 +81,7 @@ export type AvailabilityResult =
       // Present only when the business has a booking horizon set: the month
       // picker's signed context + the month `slots` belongs to + its range.
       monthly?: { ctx: string; month: string; minMonth: string; maxMonth: string };
-      matchedCustomer: { hasPaymentMethod: boolean; paymentDisplay: string | null } | null;
+      matchedCustomer: { hasPaymentMethod: boolean; paymentDisplay: string | null; payByLink: boolean } | null;
       // true = show the service-agreement step. Once-per-customer: false only for
       // a matched customer who has already accepted the current version.
       agreementRequired: boolean;
@@ -184,6 +184,8 @@ export async function checkAvailability(
       ? {
           hasPaymentMethod: !!matched.default_payment_method_id,
           paymentDisplay: matched.payment_display,
+          // One-time payment link: no card step, ever. They pay each visit by link.
+          payByLink: matched.payment_mode === "one_time_link",
         }
       : null,
     agreementRequired,
@@ -326,7 +328,12 @@ export async function createBookingRecord(
   let resolvedCard: { paymentMethodId: string; displayLabel: string } | null = null;
   let stripeCustomerId: string | null = null;
 
-  if (input.useExistingCard) {
+  if (matched?.payment_mode === "one_time_link") {
+    // No card is collected or saved for this customer. Any card the client sent
+    // is ignored (and never touched) rather than trusted.
+    resolvedCard = null;
+    stripeCustomerId = matched.stripe_customer_id;
+  } else if (input.useExistingCard) {
     if (!matched?.default_payment_method_id || !matched.stripe_customer_id) {
       throw new Error("No card on file for that account.");
     }

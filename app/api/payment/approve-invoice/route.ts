@@ -33,6 +33,10 @@ export async function POST(req: Request) {
     );
   }
 
+  if (job.paymentMode === "one_time_link") {
+    return NextResponse.json({ error: "This account pays by one-time link, so no card can be saved." }, { status: 400 });
+  }
+
   if (!job.hasDefaultPaymentMethod) {
     return NextResponse.json(
       { error: "No card on file yet — add one to continue.", noCardOnFile: true },

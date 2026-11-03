@@ -51,6 +51,9 @@ export async function POST(req: Request) {
         );
       }
       const matched = await matchCustomerByEmailOrPhone(body.email, body.phone);
+      if (matched?.payment_mode === "one_time_link") {
+        return NextResponse.json({ error: "This account pays by one-time link, so no card can be saved." }, { status: 400 });
+      }
       if (matched?.stripe_customer_id) {
         stripeCustomerId = matched.stripe_customer_id;
       } else if (matched) {
@@ -78,6 +81,9 @@ export async function POST(req: Request) {
           { error: "This invoice link has expired, is invalid, or is already settled." },
           { status: 404 }
         );
+      }
+      if (job.paymentMode === "one_time_link") {
+        return NextResponse.json({ error: "This account pays by one-time link, so no card can be saved." }, { status: 400 });
       }
       ({ stripeCustomerId } = await ensureStripeCustomerForRow(job.customerId));
     } else {

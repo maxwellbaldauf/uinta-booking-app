@@ -11,17 +11,27 @@ const CONSENT_LABEL =
   "recurring semi-annual service, charges to my card on file after each visit, " +
   "and the $50 fee if we can't safely get in.";
 
+// One-time payment link customers never have a card on file, so the consent line
+// must not say they do.
+const CONSENT_LABEL_PAY_BY_LINK =
+  "I have read and agree to the Uinta Ice Co. Service Agreement, including " +
+  "recurring semi-annual service, paying for each visit by card through the payment link " +
+  "emailed to me after the visit, and the $50 fee if we cannot safely get in.";
+
 export function AgreementStep({
   staleAcceptance,
   error,
   onBack,
   onContinue,
+  payByLink = false,
 }: {
   // true = a matched customer who accepted an older version and must re-accept.
   staleAcceptance: boolean;
   error: string | null;
   onBack: () => void;
   onContinue: () => void;
+  // One-time payment link customer: no card on file, so different consent wording.
+  payByLink?: boolean;
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
   // Latched: set once the user has actually scrolled the text to the bottom.
@@ -125,7 +135,7 @@ export function AgreementStep({
             onChange={(e) => setAgreed(e.target.checked)}
             style={{ marginTop: 3, width: 18, height: 18, flexShrink: 0 }}
           />
-          <span>{CONSENT_LABEL}</span>
+          <span>{payByLink ? CONSENT_LABEL_PAY_BY_LINK : CONSENT_LABEL}</span>
         </label>
         {!canConsent && (
           <p style={{ margin: "0 0 0 28px", fontSize: 13, color: "var(--color-fg-muted)" }}>
