@@ -41,6 +41,8 @@ const nextConfig = {
   // /book server bundle (that route hosts the createBooking server action).
   outputFileTracingIncludes: {
     "/book": ["./content/service-agreement-*.pdf"],
+    // The agreement-only page (one-time payment link customers) sends the same email.
+    "/api/agreement/accept": ["./content/service-agreement-*.pdf"],
   },
   // Evaluated at build/deploy time, not per-request, so this doesn't force
   // any of the static marketing pages dynamic. HSTS is left alone — Netlify

@@ -14,7 +14,7 @@ import { signBookingContext } from "@/lib/bookingContext";
 import { matchCustomerByEmailOrPhone, normalizePhone, type MatchedCustomer } from "@/lib/customers";
 import { parseHeardAbout, type HeardAboutAnswer } from "@/lib/heardAbout";
 import { getEffectivePriceCents } from "@/lib/pricing";
-import { agreementIsCurrent, SERVICE_AGREEMENT_VERSION } from "@/lib/agreement";
+import { agreementIsCurrentFor, agreementVersionFor } from "@/lib/agreement";
 import { firstContactError } from "@/lib/contactValidation";
 import {
   captureInAreaLeadBestEffort,
@@ -156,11 +156,11 @@ export async function checkAvailability(
   // one whose stored version isn't the current text. Compared by version string,
   // not just "has a timestamp" — a wording change re-prompts everyone.
   const agreementRequired =
-    !matched || !agreementIsCurrent(matched.service_agreement_version);
+    !matched || !agreementIsCurrentFor(matched.service_agreement_version, matched.payment_mode);
   const agreementStale =
     !!matched &&
     matched.service_agreement_accepted_at != null &&
-    !agreementIsCurrent(matched.service_agreement_version);
+    !agreementIsCurrentFor(matched.service_agreement_version, matched.payment_mode);
 
   // If the lookup itself hiccups, ask anyway: the server re-decides at booking
   // and ignores an answer it doesn't need, so over-asking is the safe default.
@@ -298,11 +298,14 @@ export async function createBookingRecord(
   // --- service agreement (spec: once per customer, re-prompted on a version
   // change; mirrors payment_authorized_at) --------------------------------
   const priorAgreementAcceptedAt = matched?.service_agreement_accepted_at ?? null;
+  // The version required follows the matched customer's payment mode (one-time link
+  // customers accept the variant text); a brand-new booker always gets the standard one.
   const agreementNeeded =
-    !matched || !agreementIsCurrent(matched.service_agreement_version);
+    !matched || !agreementIsCurrentFor(matched.service_agreement_version, matched.payment_mode);
+  const requiredAgreementVersion = agreementVersionFor(matched?.payment_mode);
   if (
     agreementNeeded &&
-    !(input.agreement?.accepted && input.agreement.version === SERVICE_AGREEMENT_VERSION)
+    !(input.agreement?.accepted && input.agreement.version === requiredAgreementVersion)
   ) {
     // Wrong / missing version can also mean the agreement was updated after this
     // page loaded — the "refresh" hint covers that case.
@@ -319,7 +322,7 @@ export async function createBookingRecord(
   const agreementStamp = agreementNeeded
     ? {
         service_agreement_accepted_at: new Date().toISOString(),
-        service_agreement_version: SERVICE_AGREEMENT_VERSION,
+        service_agreement_version: requiredAgreementVersion,
       }
     : null;
 

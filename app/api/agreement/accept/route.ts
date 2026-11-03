@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { businessDb } from "@/lib/tenant/business";
 import { findCustomerByAgreementToken } from "@/lib/customers";
-import { SERVICE_AGREEMENT_VERSION, agreementIsCurrent } from "@/lib/agreement";
+import { ONE_TIME_AGREEMENT_VERSION, agreementIsCurrentFor } from "@/lib/agreement";
 import { sendBookingConfirmationEmail } from "@/lib/email/bookingConfirmation";
 
 export const runtime = "nodejs";
@@ -28,18 +28,18 @@ export async function POST(req: Request) {
   if (!customer) {
     return NextResponse.json({ error: "This agreement link has expired or is invalid." }, { status: 404 });
   }
-  if (body.version !== SERVICE_AGREEMENT_VERSION) {
+  if (body.version !== ONE_TIME_AGREEMENT_VERSION) {
     return NextResponse.json({ error: "Please review and accept the current Service Agreement." }, { status: 400 });
   }
 
   const db = businessDb();
-  const alreadyCurrent = agreementIsCurrent(customer.service_agreement_version);
+  const alreadyCurrent = agreementIsCurrentFor(customer.service_agreement_version, "one_time_link");
   if (!alreadyCurrent) {
     const { error } = await db
       .from("customers")
       .update({
         service_agreement_accepted_at: new Date().toISOString(),
-        service_agreement_version: SERVICE_AGREEMENT_VERSION,
+        service_agreement_version: ONE_TIME_AGREEMENT_VERSION,
       })
       .eq("id", customer.id);
     if (error) {

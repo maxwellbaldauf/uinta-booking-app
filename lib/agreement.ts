@@ -22,6 +22,7 @@
 // ---------------------------------------------------------------------------
 
 import agreementData from "./agreement.data.json";
+import oneTimeData from "./agreement.one-time.data.json";
 
 export type AgreementBlock =
   | { kind: "title"; text: string }
@@ -52,4 +53,41 @@ export function agreementIsCurrent(
   storedVersion: string | null | undefined
 ): boolean {
   return storedVersion === SERVICE_AGREEMENT_VERSION;
+}
+
+// ---------------------------------------------------------------------------
+// One-time payment link variant: the SAME agreement except Sections 5 and 6, which
+// drop the card-on-file authorization. Shown only to customers whose
+// customers.payment_mode is 'one_time_link' (decided on the server). Its own
+// version string (ending "-link") is what gets stored on the customer, so the
+// record shows which text they accepted. Edit lib/agreement.one-time.data.json,
+// bump its version, and run `npm run agreement:pdf`.
+// ---------------------------------------------------------------------------
+export type AgreementMode = "card_on_file" | "one_time_link";
+
+export const ONE_TIME_AGREEMENT_VERSION: string = oneTimeData.version;
+export const ONE_TIME_AGREEMENT_BLOCKS: readonly AgreementBlock[] =
+  oneTimeData.blocks as readonly AgreementBlock[];
+export const ONE_TIME_AGREEMENT_PDF_FILENAME = `service-agreement-${ONE_TIME_AGREEMENT_VERSION}.pdf`;
+
+function modeOf(mode: string | null | undefined): AgreementMode {
+  return mode === "one_time_link" ? "one_time_link" : "card_on_file";
+}
+export function agreementVersionFor(mode: string | null | undefined): string {
+  return modeOf(mode) === "one_time_link" ? ONE_TIME_AGREEMENT_VERSION : SERVICE_AGREEMENT_VERSION;
+}
+export function agreementBlocksFor(mode: string | null | undefined): readonly AgreementBlock[] {
+  return modeOf(mode) === "one_time_link" ? ONE_TIME_AGREEMENT_BLOCKS : SERVICE_AGREEMENT_BLOCKS;
+}
+export function agreementPdfFilenameFor(mode: string | null | undefined): string {
+  return modeOf(mode) === "one_time_link" ? ONE_TIME_AGREEMENT_PDF_FILENAME : SERVICE_AGREEMENT_PDF_FILENAME;
+}
+// A customer's acceptance is current only for the text THEIR mode shows. Someone who
+// accepted the card-on-file text and is later switched to one-time link (or back) is
+// asked to accept the other text; their earlier record is kept as is.
+export function agreementIsCurrentFor(
+  storedVersion: string | null | undefined,
+  mode: string | null | undefined
+): boolean {
+  return storedVersion === agreementVersionFor(mode);
 }

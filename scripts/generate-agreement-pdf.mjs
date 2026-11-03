@@ -20,8 +20,11 @@ import { fileURLToPath } from "node:url";
 import PDFDocument from "pdfkit";
 
 const root = fileURLToPath(new URL("..", import.meta.url));
+// Usage: node scripts/generate-agreement-pdf.mjs [data-file]  (default agreement.data.json;
+// the one-time-link variant is agreement.one-time.data.json - `npm run agreement:pdf` runs both).
+const dataFile = process.argv[2] ?? "agreement.data.json";
 const { version, blocks } = JSON.parse(
-  fs.readFileSync(path.join(root, "lib", "agreement.data.json"), "utf8")
+  fs.readFileSync(path.join(root, "lib", dataFile), "utf8")
 );
 const pdfFilename = `service-agreement-${version}.pdf`;
 const outPath = path.join(root, "content", pdfFilename);
@@ -38,7 +41,7 @@ const doc = new PDFDocument({
     Subject: `Service Agreement, version ${version}`,
     // Pin to the version date so re-running the generator on unchanged text
     // produces a byte-identical PDF (no spurious git diffs).
-    CreationDate: new Date(`${version}T00:00:00Z`),
+    CreationDate: new Date(`${version.slice(0, 10)}T00:00:00Z`),
   },
 });
 

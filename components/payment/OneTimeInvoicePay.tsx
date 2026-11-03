@@ -6,7 +6,7 @@ import { loadStripe, type Stripe } from "@stripe/stripe-js";
 import { Elements, PaymentElement, useElements, useStripe } from "@stripe/react-stripe-js";
 import { ErrorBanner, buttonStyle } from "@/components/ui/form";
 import { AgreementStep } from "@/components/booking/AgreementStep";
-import { agreementIsCurrent, SERVICE_AGREEMENT_VERSION } from "@/lib/agreement";
+import { agreementIsCurrentFor, ONE_TIME_AGREEMENT_VERSION } from "@/lib/agreement";
 import { formatUsd } from "@/lib/settings";
 import { formatVisitDate } from "@/lib/format";
 import { arrivalBlockLabel } from "@/lib/schedule/blocks";
@@ -31,7 +31,7 @@ type Phase = "agreement" | "loading" | "form" | "paid" | "processing" | "error";
 
 export function OneTimeInvoicePay({ token, job }: { token: string; job: InvoiceJob }) {
   const router = useRouter();
-  const agreementCurrent = agreementIsCurrent(job.serviceAgreementVersion);
+  const agreementCurrent = agreementIsCurrentFor(job.serviceAgreementVersion, "one_time_link");
   const [accepted, setAccepted] = useState(agreementCurrent);
   const [phase, setPhase] = useState<Phase>(agreementCurrent ? "loading" : "agreement");
   const [clientSecret, setClientSecret] = useState<string | null>(null);
@@ -51,7 +51,7 @@ export function OneTimeInvoicePay({ token, job }: { token: string; job: InvoiceJ
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             token,
-            ...(!agreementCurrent ? { agreement: { accepted: true, version: SERVICE_AGREEMENT_VERSION } } : {}),
+            ...(!agreementCurrent ? { agreement: { accepted: true, version: ONE_TIME_AGREEMENT_VERSION } } : {}),
           }),
         });
         const data = await res.json().catch(() => ({}));

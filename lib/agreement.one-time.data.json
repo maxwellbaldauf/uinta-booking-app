@@ -1,0 +1,125 @@
+{
+  "version": "2026-11-03-link",
+  "blocks": [
+    {
+      "kind": "title",
+      "text": "UINTA ICE CO."
+    },
+    {
+      "kind": "subtitle",
+      "text": "Ice Machine Cleaning Service Agreement"
+    },
+    {
+      "kind": "intro",
+      "text": "This Service Agreement (\"Agreement\") is between Uinta Ice Co., LLC (\"Uinta Ice,\" \"we,\" \"us\") and the customer identified on the signature page (\"Customer,\" \"you\"), for recurring ice machine cleaning service — residential or commercial — at the property address listed below."
+    },
+    {
+      "kind": "heading",
+      "text": "1. Services Provided"
+    },
+    {
+      "kind": "paragraph",
+      "text": "Uinta Ice provides cleaning, descaling, and sanitizing of the removable, detachable components of your ice machine, whether a residential under-counter unit or a commercial-grade unit. This includes the ice bin, water distribution components, and other parts designed to be removed for cleaning."
+    },
+    {
+      "kind": "paragraph",
+      "text": "Commercial-grade units are generally larger, contain more components, and involve a more extensive cleaning process than residential units — commercial visits typically take longer as a result."
+    },
+    {
+      "kind": "paragraph",
+      "text": "Uinta Ice does not open the machine's sealed refrigerant system, perform electrical repairs, or perform any repair work. If a component is not designed to be removed for routine cleaning, it is outside the scope of this Agreement."
+    },
+    {
+      "kind": "heading",
+      "text": "2. Recurring Service & Term"
+    },
+    {
+      "kind": "paragraph",
+      "text": "Service is provided on a recurring basis, approximately every six (6) months, for as long as this Agreement remains in effect. The exact date and time window of each visit is scheduled by Uinta Ice based on routing and availability, within that approximate window."
+    },
+    {
+      "kind": "paragraph",
+      "text": "This Agreement continues automatically from visit to visit until cancelled by either party as described in Section 4."
+    },
+    {
+      "kind": "heading",
+      "text": "3. Scheduling & Notice"
+    },
+    {
+      "kind": "paragraph",
+      "text": "Uinta Ice will contact you by email multiple times in the week leading up to your scheduled visit to confirm the appointment. Text message reminders are available in addition to email upon request."
+    },
+    {
+      "kind": "heading",
+      "text": "4. Cancellation"
+    },
+    {
+      "kind": "paragraph",
+      "text": "You may cancel this Agreement at any time, free of charge, effective immediately. Cancellation stops all future scheduled visits; it does not entitle you to a refund of any service already completed."
+    },
+    {
+      "kind": "paragraph",
+      "text": "Uinta Ice may decline to continue service to any property for reasonable business reasons, including but not limited to safety concerns, access issues, or non-payment, with reasonable notice where practical."
+    },
+    {
+      "kind": "heading",
+      "text": "5. Access & Missed Appointments"
+    },
+    {
+      "kind": "paragraph",
+      "text": "You are responsible for providing safe, working access to the property and the ice machine at the scheduled appointment time. If our technician arrives at the scheduled time and is unable to complete the service — whether because the property is locked and no one is present, or because conditions at the property are unsafe (including but not limited to an unrestrained animal or a hazardous condition) — a $50 fee will apply, which we will invoice to you with a payment link in the same way as a regular visit, and the visit will need to be rescheduled once the issue is resolved."
+    },
+    {
+      "kind": "heading",
+      "text": "6. Payment"
+    },
+    {
+      "kind": "paragraph",
+      "text": "We do not keep a payment card on file for you. After each visit, we will email you an invoice showing the amount due and a link to review your visit and pay by card. Your card is used for that one payment only; we do not save it for future visits. Nothing is charged until you submit payment on that page."
+    },
+    {
+      "kind": "paragraph",
+      "text": "Payment is due when you receive the invoice. If your card is declined, you can try a different card on the same page. If an invoice isn't paid, we will follow up by email for several days; unresolved balances may be followed up on directly. Your next visit is scheduled after you pay an invoice, so an unpaid invoice may delay it, and Section 4 applies to continued non-payment."
+    },
+    {
+      "kind": "paragraph",
+      "text": "Uinta Ice may change its pricing for future visits with at least 7 days' notice before the new price takes effect. Notice will be sent to the email address on file."
+    },
+    {
+      "kind": "heading",
+      "text": "7. What We Are Not Responsible For"
+    },
+    {
+      "kind": "paragraph",
+      "text": "Uinta Ice is not responsible for pre-existing conditions of your ice machine, including but not limited to wear from age, prior lack of maintenance, or component failure that existed before our visit. If we observe a condition of concern during a visit (such as a failing part or a leak), we will report it to you, but repair of any such condition is outside the scope of this Agreement and is your responsibility to address."
+    },
+    {
+      "kind": "paragraph",
+      "text": "This Agreement is for cleaning service only and is not a warranty on your ice machine, its parts, or its continued operation."
+    },
+    {
+      "kind": "heading",
+      "text": "8. Limitation of Liability"
+    },
+    {
+      "kind": "paragraph",
+      "text": "Uinta Ice is not liable for any machine failure, damage, or malfunction that results from a pre-existing condition or that is not caused by our work. To the extent any liability is found to arise from a service we performed, our total liability for that visit is limited to the amount you paid for that specific service."
+    },
+    {
+      "kind": "heading",
+      "text": "9. Photos"
+    },
+    {
+      "kind": "paragraph",
+      "text": "Uinta Ice may take before-and-after photos of your ice machine during service and may use those photos for marketing purposes. Photos used this way will not include your address or other identifying information."
+    },
+    {
+      "kind": "heading",
+      "text": "10. General"
+    },
+    {
+      "kind": "paragraph",
+      "text": "This Agreement is governed by the laws of the State of Utah. This document represents the entire agreement between you and Uinta Ice regarding recurring ice machine cleaning service and supersedes any prior discussions on this subject."
+    }
+  ]
+}

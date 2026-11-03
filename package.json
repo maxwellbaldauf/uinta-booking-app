@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "agreement:pdf": "node scripts/generate-agreement-pdf.mjs",
+    "agreement:pdf": "node scripts/generate-agreement-pdf.mjs && node scripts/generate-agreement-pdf.mjs agreement.one-time.data.json",
     "prepare": "git config core.hooksPath .githooks || exit 0"
   },
   "dependencies": {

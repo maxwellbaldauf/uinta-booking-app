@@ -1,5 +1,5 @@
 import { businessDb } from "@/lib/tenant/business";
-import { agreementIsCurrent, SERVICE_AGREEMENT_VERSION } from "@/lib/agreement";
+import { agreementIsCurrentFor, agreementVersionFor } from "@/lib/agreement";
 
 export type InvoiceJob = {
   id: string;
@@ -118,11 +118,13 @@ export function agreementFieldsToRecord(
   job: InvoiceJob,
   agreement: { accepted?: boolean; version?: string } | undefined
 ): Record<string, string> | null {
-  if (agreementIsCurrent(job.serviceAgreementVersion)) return {};
-  if (!(agreement?.accepted && agreement.version === SERVICE_AGREEMENT_VERSION)) return null;
+  // The text shown (and the version that must be accepted) follows the customer's payment mode.
+  const required = agreementVersionFor(job.paymentMode);
+  if (agreementIsCurrentFor(job.serviceAgreementVersion, job.paymentMode)) return {};
+  if (!(agreement?.accepted && agreement.version === required)) return null;
   return {
     service_agreement_accepted_at: new Date().toISOString(),
-    service_agreement_version: SERVICE_AGREEMENT_VERSION,
+    service_agreement_version: required,
   };
 }
 

@@ -113,7 +113,7 @@ export function AgreementStep({
           background: "var(--color-bg)",
         }}
       >
-        <AgreementText />
+        <AgreementText mode={payByLink ? "one_time_link" : "card_on_file"} />
       </div>
 
       <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>

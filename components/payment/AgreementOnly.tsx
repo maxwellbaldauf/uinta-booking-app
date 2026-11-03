@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { AgreementStep } from "@/components/booking/AgreementStep";
-import { SERVICE_AGREEMENT_VERSION } from "@/lib/agreement";
+import { ONE_TIME_AGREEMENT_VERSION } from "@/lib/agreement";
 
 // One-time-payment-link customers sign here: the same AgreementStep, then a plain
 // confirmation. No card form anywhere on this page.
@@ -28,7 +28,7 @@ export function AgreementOnly({
       const res = await fetch("/api/agreement/accept", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token, version: SERVICE_AGREEMENT_VERSION }),
+        body: JSON.stringify({ token, version: ONE_TIME_AGREEMENT_VERSION }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data.ok) {

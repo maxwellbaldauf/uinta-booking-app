@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { findCustomerByAgreementToken } from "@/lib/customers";
-import { agreementIsCurrent } from "@/lib/agreement";
+import { agreementIsCurrentFor } from "@/lib/agreement";
 import { AgreementOnly } from "@/components/payment/AgreementOnly";
 
 export const dynamic = "force-dynamic";
@@ -35,7 +35,7 @@ export default async function AgreementPage({ params }: { params: Promise<{ toke
       <AgreementOnly
         token={token}
         customerName={customer.full_name}
-        alreadyAccepted={agreementIsCurrent(customer.service_agreement_version)}
+        alreadyAccepted={agreementIsCurrentFor(customer.service_agreement_version, "one_time_link")}
         hadOlderVersion={customer.service_agreement_version != null}
       />
     </main>

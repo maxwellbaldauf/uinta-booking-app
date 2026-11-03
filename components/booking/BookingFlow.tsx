@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { PaymentSetup, type PaymentSetupResult } from "@/components/payment/PaymentSetup";
 import { createBooking, type CreateBookingResponse } from "@/app/book/actions";
 import { ErrorBanner, secondaryButtonStyle } from "@/components/ui/form";
@@ -11,7 +11,7 @@ import type { HeardAboutAnswer } from "@/lib/heardAbout";
 import { SlotStep, type OfferedSlotView } from "./SlotStep";
 import { DeadEndNotice, type DeadEndKind } from "./DeadEndNotice";
 import { BookedConfirmation } from "./BookedConfirmation";
-import { SERVICE_AGREEMENT_VERSION } from "@/lib/agreement";
+import { agreementVersionFor } from "@/lib/agreement";
 
 // New public bookings are residential, one block - the server enforces the same.
 const SERVICE_TYPE = "residential" as const;
@@ -48,6 +48,8 @@ export function BookingFlow({ basePriceCents }: { basePriceCents: number | null 
   // Set true when the customer accepts on the agreement step this session. The
   // server re-derives whether acceptance was required and enforces it.
   const [agreementAccepted, setAgreementAccepted] = useState(false);
+  // Mirrors availability.matchedCustomer.payByLink for use inside the memoized booking callback.
+  const payByLinkRef = useRef(false);
   // "How did you hear about us?" - only asked of first-time bookers; the server
   // decides (sourceRequired) and re-validates on submit.
   const [heardAbout, setHeardAbout] = useState<HeardAboutAnswer | null>(null);
@@ -129,6 +131,10 @@ export function BookingFlow({ basePriceCents }: { basePriceCents: number | null 
     }
   }
 
+  useEffect(() => {
+    payByLinkRef.current = !!availability?.matchedCustomer?.payByLink;
+  }, [availability]);
+
   const runCreateBooking = useCallback(
     async (
       d: BookingDetails,
@@ -153,7 +159,7 @@ export function BookingFlow({ basePriceCents }: { basePriceCents: number | null 
         useExistingCard: choice.useExistingCard,
         payment: pay ? { setupIntentId: pay.setupIntentId, stripeCustomerId: pay.stripeCustomerId } : undefined,
         agreement: agreementAccepted
-          ? { accepted: true, version: SERVICE_AGREEMENT_VERSION }
+          ? { accepted: true, version: agreementVersionFor(payByLinkRef.current ? "one_time_link" : "card_on_file") }
           : undefined,
         quotesOptIn: d.quotesOptIn,
         heardAbout: answerOverride ?? heardAbout ?? undefined,
@@ -309,6 +315,7 @@ export function BookingFlow({ basePriceCents }: { basePriceCents: number | null 
   if (step === "agreement" && availability) {
     return (
       <AgreementStep
+        payByLink={!!availability.matchedCustomer?.payByLink}
         staleAcceptance={availability.agreementStale}
         error={error}
         onBack={() => {
