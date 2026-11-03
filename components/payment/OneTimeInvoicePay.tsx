@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { loadStripe, type Stripe } from "@stripe/stripe-js";
-import { Elements, PaymentElement, useElements, useStripe } from "@stripe/react-stripe-js";
+import { CardElement, Elements, ExpressCheckoutElement, useElements, useStripe } from "@stripe/react-stripe-js";
 import { ErrorBanner, buttonStyle } from "@/components/ui/form";
 import { AgreementStep } from "@/components/booking/AgreementStep";
 import { agreementIsCurrentFor, ONE_TIME_AGREEMENT_VERSION } from "@/lib/agreement";
@@ -14,10 +14,11 @@ import type { InvoiceJob } from "@/lib/invoicePayment";
 
 // One-time payment link customers: review the invoice and pay with a card on one
 // page. The card is used for this payment only. It is never attached to a Stripe
-// Customer and never saved. The PaymentIntent behind this form lists "card" as its
-// only method (so Link, bank transfers and buy-now-pay-later are not offered;
-// Apple Pay / Google Pay appear as wallet forms of card where the device and
-// domain support them).
+// Customer and never saved. The PaymentIntent lists "card" as its only method, and
+// the form is a CardElement (not the multi-method PaymentElement, which still
+// rendered Link / bank / Klarna tabs in testing) plus an Express Checkout Element
+// limited to Apple Pay and Google Pay. Link, bank transfers and buy-now-pay-later
+// are never offered.
 
 const PUBLISHABLE_KEY = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
 let stripePromise: Promise<Stripe | null> | null = null;
@@ -175,12 +176,12 @@ function PayForm({
   }
   return (
     <Elements stripe={stripe} options={options}>
-      <CardForm amountCents={amountCents} onPaid={onPaid} />
+      <CardForm clientSecret={clientSecret} amountCents={amountCents} onPaid={onPaid} />
     </Elements>
   );
 }
 
-function CardForm({ amountCents, onPaid }: { amountCents: number; onPaid: () => void }) {
+function CardForm({ clientSecret, amountCents, onPaid }: { clientSecret: string; amountCents: number; onPaid: () => void }) {
   const stripe = useStripe();
   const elements = useElements();
   const [busy, setBusy] = useState(false);
@@ -197,10 +198,14 @@ function CardForm({ amountCents, onPaid }: { amountCents: number; onPaid: () => 
     setBusy(true);
     setError(null);
 
-    const { error: confirmError, paymentIntent } = await stripe.confirmPayment({
-      elements,
-      confirmParams: { return_url: window.location.href },
-      redirect: "if_required",
+    const card = elements.getElement(CardElement);
+    if (!card) {
+      submittedRef.current = false;
+      setBusy(false);
+      return;
+    }
+    const { error: confirmError, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
+      payment_method: { card },
     });
 
     if (confirmError) {
@@ -224,7 +229,32 @@ function CardForm({ amountCents, onPaid }: { amountCents: number; onPaid: () => 
 
   return (
     <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
-      <PaymentElement onReady={() => setReady(true)} options={{ layout: "tabs" }} />
+      <ExpressCheckoutElement
+        onConfirm={async () => {
+          if (!stripe || !elements || submittedRef.current) return;
+          submittedRef.current = true;
+          const { error: walletError, paymentIntent } = await stripe.confirmPayment({
+            elements,
+            clientSecret,
+            confirmParams: { return_url: window.location.href },
+            redirect: "if_required",
+          });
+          if (walletError) {
+            submittedRef.current = false;
+            setError(walletError.message ?? "We couldn't complete the payment. Nothing was charged.");
+          } else if (paymentIntent && (paymentIntent.status === "succeeded" || paymentIntent.status === "processing")) {
+            onPaid();
+          } else {
+            submittedRef.current = false;
+          }
+        }}
+        options={{
+          paymentMethods: { link: "never", amazonPay: "never", paypal: "never", klarna: "never", applePay: "auto", googlePay: "auto" },
+        }}
+      />
+      <div style={{ padding: "12px 14px", border: "1px solid var(--color-border, #d0d5dd)", borderRadius: 8, background: "#fff" }}>
+        <CardElement onReady={() => setReady(true)} options={{ hidePostalCode: false, disableLink: true }} />
+      </div>
       <p style={{ margin: 0, fontSize: 14, color: "var(--color-fg-muted)" }}>
         Your card is used for this payment only. We won&apos;t save it for future visits.
       </p>
