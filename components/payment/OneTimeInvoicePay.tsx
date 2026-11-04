@@ -249,7 +249,7 @@ function CardForm({ clientSecret, amountCents, onPaid }: { clientSecret: string;
           }
         }}
         options={{
-          paymentMethods: { link: "never", amazonPay: "never", paypal: "never", klarna: "never", applePay: "auto", googlePay: "auto" },
+          paymentMethods: { link: "never", amazonPay: "never", paypal: "never", klarna: "never", applePay: "never", googlePay: "auto" },
         }}
       />
       <div style={{ padding: "12px 14px", border: "1px solid var(--color-border, #d0d5dd)", borderRadius: 8, background: "#fff" }}>
