@@ -36,6 +36,22 @@ export async function loadRecipients(
   mainEmail: string | null | undefined,
   opts: { mainOnly?: boolean } = {}
 ): Promise<Recipient[]> {
+  try {
+    return await loadRecipientsUnsafe(supabase, customerId, mainEmail, opts);
+  } catch (err) {
+    // The extras lookup must never stop the main email.
+    console.error("loadRecipients: failed (sending to the main email only)", err);
+    const main = mainEmail?.trim();
+    return main ? [{ email: main, isMain: true }] : [];
+  }
+}
+
+async function loadRecipientsUnsafe(
+  supabase: ScopedAdmin,
+  customerId: string,
+  mainEmail: string | null | undefined,
+  opts: { mainOnly?: boolean }
+): Promise<Recipient[]> {
   const out: Recipient[] = [];
   const main = mainEmail?.trim();
   if (main) out.push({ email: main, isMain: true });
@@ -66,8 +82,13 @@ export async function loadRecipients(
 
 export type SendOutcome = { ok: true; id?: string | null } | { ok: false; error: string };
 // Maps a Resend SDK response ({ data, error }) to a SendOutcome — the one shared wrapper.
-export function toOutcome(res: { data?: { id?: string | null } | null; error?: { message?: string } | null }): SendOutcome {
-  return res.error ? { ok: false, error: res.error.message ?? "Resend send failed" } : { ok: true, id: res.data?.id ?? null };
+export function toOutcome(res: {
+  data?: { id?: string | null } | null;
+  error?: { message?: string; name?: string; statusCode?: number | null } | null;
+}): SendOutcome {
+  if (!res.error) return { ok: true, id: res.data?.id ?? null };
+  const limited = res.error.statusCode === 429 || res.error.name === "rate_limit_exceeded";
+  return { ok: false, error: (limited ? RATE_LIMIT_TAG : "") + (res.error.message ?? "Resend send failed") };
 }
 
 export type DeliveryResult = {
@@ -91,10 +112,15 @@ let nextSlot = 0;
 async function throttle() {
   const now = Date.now();
   const at = Math.max(now, nextSlot);
+  // Never queue for long (the sweep has a function time cap): past ~8s of backlog just send — a 429 is
+  // retried and not counted against the address.
+  if (at - now > 8000) return;
   nextSlot = at + SEND_GAP_MS;
   if (at > now) await sleep(at - now);
 }
-const isRateLimited = (msg: string) => /rate.?limit|too many|429/i.test(msg);
+// toOutcome tags Resend's rate-limit errors (HTTP 429 / rate_limit_exceeded) with this prefix.
+const RATE_LIMIT_TAG = "rate_limit_exceeded: ";
+const isRateLimited = (msg: string) => msg.startsWith(RATE_LIMIT_TAG);
 
 // Sends one separate email per recipient. `refId` identifies the thing being emailed (job id,
 // payment id) and `kind` the email type; (business, kind, ref, recipient) is the log's unique key.
@@ -159,8 +185,8 @@ export async function deliverToRecipients(opts: {
     // Being rate-limited is not the address's fault: it must not count toward MAX_ATTEMPTS.
     const rateLimited = !outcome.ok && isRateLimited(outcome.error);
     if (claim.id) {
-      try {
-        await supabase
+      const record = () =>
+        supabase
           .from("email_deliveries")
           .update({
             status: outcome.ok ? "sent" : "failed",
@@ -169,7 +195,11 @@ export async function deliverToRecipients(opts: {
             ...(rateLimited ? { attempts: Math.max(0, claim.attempts - 1) } : {}),
             updated_at: new Date().toISOString(),
           })
-          .eq("id", claim.id);
+          .eq("id", claim.id as string);
+      try {
+        let { error: recErr } = await record();
+        if (recErr) ({ error: recErr } = await record()); // one retry: a stuck 'sending' row would cause a duplicate later
+        if (recErr) console.error("deliverToRecipients: could not record the outcome", kind, refId, recErr.message);
       } catch (err) {
         console.error("deliverToRecipients: could not record the outcome", kind, refId, err);
       }

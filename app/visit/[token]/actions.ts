@@ -109,7 +109,7 @@ export async function rescheduleVisit(
     }
 
     // The reminders restart for the new date: forget the old reminders' delivery log.
-    await supabase.from("email_deliveries").delete().eq("ref_id", visit.jobId).like("kind", "reminder_%");
+    await supabase.from("email_deliveries").delete().eq("ref_id", visit.jobId).like("kind", "reminder\\_%");
 
     // Updated confirmation + .ics, plus an owner alert (same-day flagged in
     // it). Independent of each other, so sent together.

@@ -248,7 +248,7 @@ export async function sendBookingConfirmationEmail(
         subject: built.subject,
         html: built.html,
         text: built.text,
-        attachments: isMain ? built.attachments : (built.attachments ?? []).filter((a) => !/.pdf$/i.test(a.filename)),
+        attachments: isMain ? built.attachments : (built.attachments ?? []).filter((a) => !/\.pdf$/i.test(a.filename)),
       });
       return toOutcome(res);
     };

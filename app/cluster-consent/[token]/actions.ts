@@ -128,7 +128,7 @@ export async function acceptClusterSuggestion(token: string): Promise<ClusterCon
     }
 
     // The reminders restart for the new date: forget the old reminders' delivery log.
-    await supabase.from("email_deliveries").delete().eq("ref_id", consent.jobId).like("kind", "reminder_%");
+    await supabase.from("email_deliveries").delete().eq("ref_id", consent.jobId).like("kind", "reminder\\_%");
 
     await supabase
       .from("cluster_suggestion_jobs")
