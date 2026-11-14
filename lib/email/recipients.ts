@@ -41,13 +41,11 @@ export async function loadRecipients(
   if (main) out.push({ email: main, isMain: true });
   if (opts.mainOnly || !customerId) return out;
 
-  const { data: cust } = await supabase.from("customers").select("archived_at").eq("id", customerId).maybeSingle();
+  const [{ data: cust }, { data: extras, error }] = await Promise.all([
+    supabase.from("customers").select("archived_at").eq("id", customerId).maybeSingle(),
+    supabase.from("customer_extra_emails").select("email").eq("customer_id", customerId).order("created_at", { ascending: true }),
+  ]);
   if (cust?.archived_at) return out;
-  const { data: extras, error } = await supabase
-    .from("customer_extra_emails")
-    .select("email")
-    .eq("customer_id", customerId)
-    .order("created_at", { ascending: true });
   if (error) {
     console.error("loadRecipients: could not read additional emails (sending to the main email only)", error.message);
     return out;
@@ -64,11 +62,14 @@ export async function loadRecipients(
 }
 
 export type SendOutcome = { ok: true; id?: string | null } | { ok: false; error: string };
+// Maps a Resend SDK response ({ data, error }) to a SendOutcome — the one shared wrapper.
+export function toOutcome(res: { data?: { id?: string | null } | null; error?: { message?: string } | null }): SendOutcome {
+  return res.error ? { ok: false, error: res.error.message ?? "Resend send failed" } : { ok: true, id: res.data?.id ?? null };
+}
+
 export type DeliveryResult = {
   // The main email went out (now, or on an earlier attempt).
   mainOk: boolean;
-  // Every recipient is delivered (now or earlier).
-  allOk: boolean;
   // The caller may stamp its sent-at marker: the main email is delivered AND every additional address
   // is either delivered or has been tried MAX_ATTEMPTS times (a permanently failing extra must never
   // stall the main customer's reminder sequence; its failure stays recorded and visible).
@@ -78,7 +79,7 @@ export type DeliveryResult = {
 
 export const MAX_ATTEMPTS = 3;
 // Resend allows ~2 requests/second: space the per-address sends out and retry a rate-limited one once.
-const SEND_GAP_MS = 600;
+const SEND_GAP_MS = 520;
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 const isRateLimited = (msg: string) => /rate.?limit|too many|429/i.test(msg);
 
@@ -104,7 +105,6 @@ export async function deliverToRecipients(opts: {
   const { supabase, refId } = opts;
   const kind = opts.logKey ? `${opts.kind}:${opts.logKey}` : opts.kind;
   let mainOk = false;
-  let allOk = opts.recipients.length > 0;
   let settled = opts.recipients.length > 0;
   const failed: string[] = [];
   let sentSomething = false;
@@ -123,15 +123,16 @@ export async function deliverToRecipients(opts: {
       if (r.isMain) mainOk = true;
       continue;
     }
+    if (claim.kind === "capped") {
+      // An additional address that already failed MAX_ATTEMPTS times: skipped (recorded failure stays
+      // visible; the owner's Retry button resets the count).
+      failed.push(to);
+      continue;
+    }
     if (claim.kind === "inflight") {
-      // Another sender is delivering this right now. A duplicate trigger (fresh) counts as handled; for a
-      // retry/sweep it does NOT, so the caller doesn't stamp on the strength of someone else's attempt.
-      if (opts.fresh) {
-        if (r.isMain) mainOk = true;
-      } else {
-        allOk = false;
-        settled = false;
-      }
+      // Another sender is still delivering this (after waiting briefly for it). It never counts as delivered
+      // here, so the caller doesn't stamp or report success on the strength of someone else's attempt.
+      settled = false;
       continue;
     }
 
@@ -164,7 +165,6 @@ export async function deliverToRecipients(opts: {
     if (outcome.ok) {
       if (r.isMain) mainOk = true;
     } else {
-      allOk = false;
       failed.push(to);
       // A failing additional address stops blocking once it has been tried MAX_ATTEMPTS times.
       if (r.isMain || claim.attempts < MAX_ATTEMPTS) settled = false;
@@ -172,14 +172,15 @@ export async function deliverToRecipients(opts: {
     }
   }
   if (!mainOk) settled = false;
-  return { mainOk, allOk, settled, failed };
+  return { mainOk, settled, failed };
 }
 
-type Claim = { kind: "send"; id: string | null; attempts: number } | { kind: "done" } | { kind: "inflight" };
+type Claim = { kind: "send"; id: string | null; attempts: number } | { kind: "done" } | { kind: "inflight" } | { kind: "capped" };
 
 // Claims the (kind, ref, recipient) row before sending.
 //   "done"     — already delivered; nothing to send
 //   "inflight" — another sender is delivering it right now
+//   "capped"   — an additional address that already failed MAX_ATTEMPTS times (automatic runs stop)
 //   "send"     — go ahead (id null = the log could not be written, send unlogged)
 async function claimDelivery(
   supabase: ScopedAdmin,
@@ -209,22 +210,34 @@ async function claimDelivery(
     return { kind: "send", id: data.id as string, attempts: 1 };
   }
 
-  const age = Date.now() - new Date(existing.updated_at as string).getTime();
+  let row = existing;
+  let age = Date.now() - new Date(row.updated_at as string).getTime();
+  if (p.fresh && row.status === "sending" && age < 60 * 1000) {
+    // A double click / racing duplicate trigger: wait briefly for the other sender's outcome.
+    for (let i = 0; i < 8 && row.status === "sending"; i++) {
+      await sleep(750);
+      const { data: again } = await supabase.from("email_deliveries").select("id, status, attempts, updated_at").eq("id", row.id as string).maybeSingle();
+      if (!again) break;
+      row = again;
+    }
+    if (row.status === "sent") return { kind: "done" };
+    age = Date.now() - new Date(row.updated_at as string).getTime();
+    if (row.status === "sending" && age < 60 * 1000) return { kind: "inflight" };
+  }
   if (!p.fresh) {
-    if (existing.status === "sent") return { kind: "done" };
-    if (existing.status === "sending" && age < STALE_MS) return { kind: "inflight" };
-  } else if (existing.status === "sending" && age < 60 * 1000) {
-    return { kind: "inflight" }; // a double click / racing duplicate trigger
+    if (row.status === "sent") return { kind: "done" };
+    if (row.status === "sending" && age < STALE_MS) return { kind: "inflight" };
+    if (!p.isMain && row.status === "failed" && (row.attempts as number) >= MAX_ATTEMPTS) return { kind: "capped" };
   }
   // Take over: only if the row is still in the state we read (atomic claim).
-  const attempts = (existing.attempts as number) + 1;
+  const attempts = (row.attempts as number) + 1;
   const { data: taken, error: takeError } = await supabase
     .from("email_deliveries")
     .update({ status: "sending", error: null, attempts, updated_at: new Date().toISOString() })
-    .eq("id", existing.id as string)
-    .eq("status", existing.status as string)
-    .eq("updated_at", existing.updated_at as string)
+    .eq("id", row.id as string)
+    .eq("status", row.status as string)
+    .eq("updated_at", row.updated_at as string)
     .select("id");
   if (takeError) throw new Error(`delivery log claim failed: ${takeError.message}`);
-  return taken && taken.length > 0 ? { kind: "send", id: existing.id as string, attempts } : { kind: "inflight" };
+  return taken && taken.length > 0 ? { kind: "send", id: row.id as string, attempts } : { kind: "inflight" };
 }

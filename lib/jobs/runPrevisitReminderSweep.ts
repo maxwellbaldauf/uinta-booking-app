@@ -29,7 +29,7 @@ import { arrivalBlockLabel } from "../schedule/blocks";
 import { formatVisitDate } from "../format";
 import { renderEmail, detailsTable, buttonRow, escapeHtml } from "../email/shell";
 import { getResend } from "../email/resend";
-import { loadRecipients, deliverToRecipients } from "../email/recipients";
+import { loadRecipients, deliverToRecipients, toOutcome } from "../email/recipients";
 
 type ReminderJobRow = {
   id: string;
@@ -158,7 +158,7 @@ async function sendReminder(params: {
     recipients,
     fresh: false,
     send: async (r) => {
-      const { data, error } = await resend.client.emails.send({
+      const res = await resend.client.emails.send({
       from: resend.from,
         ...(replyTo ? { replyTo } : {}),
         to: r.email,
@@ -169,13 +169,11 @@ async function sendReminder(params: {
         html,
         text,
         });
-      return error
-        ? ({ ok: false, error: error.message ?? "Resend send failed" } as const)
-        : ({ ok: true, id: data?.id ?? null } as const);
+      return toOutcome(res);
     },
   });
   if (!result.settled) {
-    console.error("pre-visit-reminders: not every address was delivered", { jobId: params.job.id, kind: params.kind, failed: result.failed });
+    console.error("pre-visit-reminders: the main address was not delivered or a send is still pending", { jobId: params.job.id, kind: params.kind, failed: result.failed });
   }
   return result.settled;
 }

@@ -4,7 +4,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { getSettings, formatUsd } from "@/lib/settings";
 import { getResend } from "@/lib/email/resend";
-import { loadRecipients, deliverToRecipients } from "@/lib/email/recipients";
+import { loadRecipients, deliverToRecipients, toOutcome } from "@/lib/email/recipients";
 import { renderEmail, detailsTable, buttonRow, escapeHtml } from "@/lib/email/shell";
 import { buildBookingIcs } from "@/lib/ics";
 import { agreementPdfFilenameFor } from "@/lib/agreement";
@@ -240,7 +240,7 @@ export async function sendBookingConfirmationEmail(
       return false;
     }
     const sendOne = async (to: string) => {
-      const { data, error } = await resend.client.emails.send({
+      const res = await resend.client.emails.send({
         from: resend.from,
         to,
         ...(built.replyTo ? { replyTo: built.replyTo } : {}),
@@ -249,9 +249,7 @@ export async function sendBookingConfirmationEmail(
         text: built.text,
         attachments: built.attachments,
       });
-      return error
-        ? ({ ok: false, error: error.message ?? "Resend send failed" } as const)
-        : ({ ok: true, id: data?.id ?? null } as const);
+      return toOutcome(res);
     };
     // Dev/preview override: one address, no log, no additional emails.
     if (opts?.overrideTo) {

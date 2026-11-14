@@ -2,7 +2,7 @@ import { businessDb, businessTz } from "@/lib/tenant/business";
 import { getEmailBrand, type EmailBrand } from "@/lib/email/brand";
 import { getSettings } from "@/lib/settings";
 import { getResend } from "@/lib/email/resend";
-import { loadRecipients, deliverToRecipients } from "@/lib/email/recipients";
+import { loadRecipients, deliverToRecipients, toOutcome } from "@/lib/email/recipients";
 import { renderEmail, detailsTable, escapeHtml } from "@/lib/email/shell";
 import { buildBookingIcs } from "@/lib/ics";
 import { arrivalBlockLabel, ARRIVAL_BLOCKS } from "@/lib/schedule/blocks";
@@ -138,7 +138,7 @@ export async function sendCancellationEmail(
       return false;
     }
     const sendOne = async (to: string) => {
-      const { data, error } = await resend.client.emails.send({
+      const res = await resend.client.emails.send({
         from: resend.from,
         to,
         ...(built.replyTo ? { replyTo: built.replyTo } : {}),
@@ -147,9 +147,7 @@ export async function sendCancellationEmail(
         text: built.text,
         attachments: built.attachments,
       });
-      return error
-        ? ({ ok: false, error: error.message ?? "Resend send failed" } as const)
-        : ({ ok: true, id: data?.id ?? null } as const);
+      return toOutcome(res);
     };
     // Dev/preview override: one address, no log, no additional emails.
     if (opts.overrideTo) {
