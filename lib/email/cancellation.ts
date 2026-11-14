@@ -2,6 +2,7 @@ import { businessDb, businessTz } from "@/lib/tenant/business";
 import { getEmailBrand, type EmailBrand } from "@/lib/email/brand";
 import { getSettings } from "@/lib/settings";
 import { getResend } from "@/lib/email/resend";
+import { loadRecipients, deliverToRecipients } from "@/lib/email/recipients";
 import { renderEmail, detailsTable, escapeHtml } from "@/lib/email/shell";
 import { buildBookingIcs } from "@/lib/ics";
 import { arrivalBlockLabel, ARRIVAL_BLOCKS } from "@/lib/schedule/blocks";
@@ -18,7 +19,7 @@ type JobRow = {
     | { address: string; customer: Cust | null }[]
     | null;
 };
-type Cust = { full_name: string | null; email: string | null };
+type Cust = { id: string; full_name: string | null; email: string | null };
 
 function flatten<T>(v: T | T[] | null | undefined): T | null {
   return Array.isArray(v) ? v[0] ?? null : v ?? null;
@@ -40,7 +41,7 @@ export async function buildCancellationEmail(
   const supabase = businessDb();
   const { data, error } = await supabase
     .from("jobs")
-    .select("id, scheduled_date, arrival_block, property:properties(address, customer:customers(full_name, email))")
+    .select("id, scheduled_date, arrival_block, property:properties(address, customer:customers(id, full_name, email))")
     .eq("id", jobId)
     .single();
   if (error || !data) return { error: `job not found: ${error?.message ?? jobId}` };
@@ -112,6 +113,7 @@ export async function buildCancellationEmail(
 
   return {
     to: customer.email,
+    customerId: customer.id,
     replyTo: brand.replyTo ?? settings.business_email ?? undefined,
     subject: `Your ${brand.name} visit was cancelled — ${formatVisitDate(job.scheduled_date)}`,
     html,
@@ -135,17 +137,43 @@ export async function sendCancellationEmail(
       console.error("sendCancellationEmail:", built.error, { jobId });
       return false;
     }
-    const { error } = await resend.client.emails.send({
-      from: resend.from,
-      to: opts.overrideTo ?? built.to,
-      ...(built.replyTo ? { replyTo: built.replyTo } : {}),
-      subject: built.subject,
-      html: built.html,
-      text: built.text,
-      attachments: built.attachments,
+    const sendOne = async (to: string) => {
+      const { data, error } = await resend.client.emails.send({
+        from: resend.from,
+        to,
+        ...(built.replyTo ? { replyTo: built.replyTo } : {}),
+        subject: built.subject,
+        html: built.html,
+        text: built.text,
+        attachments: built.attachments,
+      });
+      return error
+        ? ({ ok: false, error: error.message ?? "Resend send failed" } as const)
+        : ({ ok: true, id: data?.id ?? null } as const);
+    };
+    // Dev/preview override: one address, no log, no additional emails.
+    if (opts.overrideTo) {
+      const r = await sendOne(opts.overrideTo);
+      if (!r.ok) {
+        console.error("sendCancellationEmail: Resend send failed", r.error, { jobId });
+        return false;
+      }
+      return true;
+    }
+    // One SEPARATE email per address: the main email + the customer's additional emails
+    // (lib/email/recipients.ts). A failed extra is logged, never blocks the others or the main.
+    const supabase = businessDb();
+    const recipients = await loadRecipients(supabase, built.customerId ?? "", built.to);
+    const result = await deliverToRecipients({
+      supabase,
+      kind: "cancellation",
+      refId: jobId,
+      recipients,
+      fresh: true,
+      send: (r) => sendOne(r.email),
     });
-    if (error) {
-      console.error("sendCancellationEmail: Resend send failed", error, { jobId });
+    if (!result.mainOk) {
+      console.error("sendCancellationEmail: main-address send failed", { jobId });
       return false;
     }
     return true;

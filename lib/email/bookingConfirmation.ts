@@ -4,6 +4,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { getSettings, formatUsd } from "@/lib/settings";
 import { getResend } from "@/lib/email/resend";
+import { loadRecipients, deliverToRecipients } from "@/lib/email/recipients";
 import { renderEmail, detailsTable, buttonRow, escapeHtml } from "@/lib/email/shell";
 import { buildBookingIcs } from "@/lib/ics";
 import { agreementPdfFilenameFor } from "@/lib/agreement";
@@ -25,7 +26,7 @@ type JobRow = {
     | { address: string; customer: Cust | null }[]
     | null;
 };
-type Cust = { full_name: string | null; email: string | null; payment_mode: string | null };
+type Cust = { id: string; full_name: string | null; email: string | null; payment_mode: string | null };
 
 function flatten<T>(v: T | T[] | null | undefined): T | null {
   return Array.isArray(v) ? v[0] ?? null : v ?? null;
@@ -85,7 +86,7 @@ export async function buildBookingConfirmationEmail(
     .from("jobs")
     .select(
       "id, scheduled_date, arrival_block, blocks_needed, quoted_price_cents, access_token, " +
-        "property:properties(address, customer:customers(full_name, email, payment_mode))"
+        "property:properties(address, customer:customers(id, full_name, email, payment_mode))"
     )
     .eq("id", jobId)
     .single();
@@ -202,6 +203,7 @@ export async function buildBookingConfirmationEmail(
 
   return {
     to: customer.email,
+    customerId: customer.id,
     replyTo: brand.replyTo ?? settings.business_email ?? undefined,
     subject:
       variant === "rescheduled"
@@ -237,17 +239,43 @@ export async function sendBookingConfirmationEmail(
       console.error("sendBookingConfirmationEmail:", built.error, { jobId });
       return false;
     }
-    const { error } = await resend.client.emails.send({
-      from: resend.from,
-      to: opts?.overrideTo ?? built.to,
-      ...(built.replyTo ? { replyTo: built.replyTo } : {}),
-      subject: built.subject,
-      html: built.html,
-      text: built.text,
-      attachments: built.attachments,
+    const sendOne = async (to: string) => {
+      const { data, error } = await resend.client.emails.send({
+        from: resend.from,
+        to,
+        ...(built.replyTo ? { replyTo: built.replyTo } : {}),
+        subject: built.subject,
+        html: built.html,
+        text: built.text,
+        attachments: built.attachments,
+      });
+      return error
+        ? ({ ok: false, error: error.message ?? "Resend send failed" } as const)
+        : ({ ok: true, id: data?.id ?? null } as const);
+    };
+    // Dev/preview override: one address, no log, no additional emails.
+    if (opts?.overrideTo) {
+      const r = await sendOne(opts?.overrideTo);
+      if (!r.ok) {
+        console.error("sendBookingConfirmationEmail: Resend send failed", r.error, { jobId });
+        return false;
+      }
+      return true;
+    }
+    // One SEPARATE email per address: the main email + the customer's additional emails
+    // (lib/email/recipients.ts). A failed extra is logged, never blocks the others or the main.
+    const supabase = businessDb();
+    const recipients = await loadRecipients(supabase, built.customerId ?? "", built.to);
+    const result = await deliverToRecipients({
+      supabase,
+      kind: "booking_confirmation",
+      refId: jobId,
+      recipients,
+      fresh: true,
+      send: (r) => sendOne(r.email),
     });
-    if (error) {
-      console.error("sendBookingConfirmationEmail: Resend send failed", error, { jobId });
+    if (!result.mainOk) {
+      console.error("sendBookingConfirmationEmail: main-address send failed", { jobId });
       return false;
     }
     return true;

@@ -29,6 +29,7 @@ import { arrivalBlockLabel } from "../schedule/blocks";
 import { formatVisitDate } from "../format";
 import { renderEmail, detailsTable, buttonRow, escapeHtml } from "../email/shell";
 import { getResend } from "../email/resend";
+import { loadRecipients, deliverToRecipients } from "../email/recipients";
 
 type ReminderJobRow = {
   id: string;
@@ -42,11 +43,12 @@ type ReminderJobRow = {
     | ReminderProperty[]
     | null;
 };
+type SweepCustomer = { id: string; full_name: string | null; email: string | null };
 type ReminderProperty = {
   address: string;
   service_type: "residential" | "commercial";
   custom_price_cents: number | null;
-  customer: { full_name: string | null; email: string | null } | { full_name: string | null; email: string | null }[] | null;
+  customer: SweepCustomer | SweepCustomer[] | null;
 };
 
 function flatten<T>(v: T | T[] | null | undefined): T | null {
@@ -54,7 +56,7 @@ function flatten<T>(v: T | T[] | null | undefined): T | null {
 }
 
 const JOB_COLUMNS =
-  "id, scheduled_date, arrival_block, blocks_needed, access_token, quoted_price_cents, property:properties(address, service_type, custom_price_cents, customer:customers(full_name, email))";
+  "id, scheduled_date, arrival_block, blocks_needed, access_token, quoted_price_cents, property:properties(address, service_type, custom_price_cents, customer:customers(id, full_name, email))";
 
 type ReminderKind = "7day" | "24hr";
 
@@ -142,23 +144,38 @@ async function sendReminder(params: {
   // hiccup must not stop the reminder.
   const replyTo = brand.replyTo ?? (await getSettings().catch(() => null))?.business_email ?? null;
 
-  const { error } = await resend.client.emails.send({
-    from: resend.from,
-    ...(replyTo ? { replyTo } : {}),
-    to: customer.email,
-    subject:
-      params.kind === "7day"
-        ? `Reminder: your visit is ${dateLong}`
-        : `Reminder: your visit is tomorrow — ${dateLong}`,
-    html,
-    text,
+  // One SEPARATE reminder per address (main + additional emails). The job's sent-at stamp is
+  // written only when EVERY address is delivered; a retry skips addresses already delivered
+  // (email_deliveries), so nobody gets a duplicate.
+  const supabase = businessDb();
+  const recipients = await loadRecipients(supabase, customer.id, customer.email);
+  const result = await deliverToRecipients({
+    supabase,
+    kind: params.kind === "7day" ? "reminder_7day" : "reminder_24hr",
+    refId: params.job.id,
+    recipients,
+    fresh: false,
+    send: async (r) => {
+      const { data, error } = await resend.client.emails.send({
+      from: resend.from,
+      ...(replyTo ? { replyTo } : {}),
+      to: r.email,
+      subject:
+        params.kind === "7day"
+          ? `Reminder: your visit is ${dateLong}`
+          : `Reminder: your visit is tomorrow — ${dateLong}`,
+      html,
+      text,
+      });
+      return error
+        ? ({ ok: false, error: error.message ?? "Resend send failed" } as const)
+        : ({ ok: true, id: data?.id ?? null } as const);
+    },
   });
-
-  if (error) {
-    console.error("pre-visit-reminders: Resend send failed", error, { jobId: params.job.id, kind: params.kind });
-    return false;
+  if (!result.allOk) {
+    console.error("pre-visit-reminders: not every address was delivered", { jobId: params.job.id, kind: params.kind, failed: result.failed });
   }
-  return true;
+  return result.allOk;
 }
 
 export type PrevisitReminderSweepResult = {
