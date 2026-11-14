@@ -127,6 +127,9 @@ export async function acceptClusterSuggestion(token: string): Promise<ClusterCon
       return { ok: false, error: "We couldn't save that change. Please try again." };
     }
 
+    // The reminders restart for the new date: forget the old reminders' delivery log.
+    await supabase.from("email_deliveries").delete().eq("ref_id", consent.jobId).like("kind", "reminder_%");
+
     await supabase
       .from("cluster_suggestion_jobs")
       .update({ applied_at: new Date().toISOString() })

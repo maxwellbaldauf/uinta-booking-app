@@ -239,7 +239,8 @@ export async function sendBookingConfirmationEmail(
       console.error("sendBookingConfirmationEmail:", built.error, { jobId });
       return false;
     }
-    const sendOne = async (to: string) => {
+    // The agreement PDF is for the customer only (main email); additional addresses get the .ics.
+    const sendOne = async (to: string, isMain = true) => {
       const res = await resend.client.emails.send({
         from: resend.from,
         to,
@@ -247,7 +248,7 @@ export async function sendBookingConfirmationEmail(
         subject: built.subject,
         html: built.html,
         text: built.text,
-        attachments: built.attachments,
+        attachments: isMain ? built.attachments : (built.attachments ?? []).filter((a) => !/.pdf$/i.test(a.filename)),
       });
       return toOutcome(res);
     };
@@ -268,9 +269,11 @@ export async function sendBookingConfirmationEmail(
       supabase,
       kind: "booking_confirmation",
       refId: jobId,
+      // A different confirmation (new / rescheduled / cluster-matched…) is a different email: never "already sent".
+      logKey: opts?.variant ?? "default",
       recipients,
       fresh: true,
-      send: (r) => sendOne(r.email),
+      send: (r) => sendOne(r.email, r.isMain),
     });
     if (!result.mainOk) {
       console.error("sendBookingConfirmationEmail: main-address send failed", { jobId });

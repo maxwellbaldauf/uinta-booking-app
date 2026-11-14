@@ -159,7 +159,7 @@ async function sendReminder(params: {
     fresh: false,
     send: async (r) => {
       const res = await resend.client.emails.send({
-      from: resend.from,
+        from: resend.from,
         ...(replyTo ? { replyTo } : {}),
         to: r.email,
         subject:
@@ -168,7 +168,7 @@ async function sendReminder(params: {
             : `Reminder: your visit is tomorrow — ${dateLong}`,
         html,
         text,
-        });
+      });
       return toOutcome(res);
     },
   });

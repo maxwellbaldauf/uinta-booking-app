@@ -108,6 +108,9 @@ export async function rescheduleVisit(
       return { ok: false, error: "We couldn't save that change. Please try again." };
     }
 
+    // The reminders restart for the new date: forget the old reminders' delivery log.
+    await supabase.from("email_deliveries").delete().eq("ref_id", visit.jobId).like("kind", "reminder_%");
+
     // Updated confirmation + .ics, plus an owner alert (same-day flagged in
     // it). Independent of each other, so sent together.
     await Promise.all([

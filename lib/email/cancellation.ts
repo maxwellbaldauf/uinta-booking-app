@@ -166,6 +166,7 @@ export async function sendCancellationEmail(
       supabase,
       kind: "cancellation",
       refId: jobId,
+      logKey: opts.planCancelled ? "plan" : "visit",
       recipients,
       fresh: true,
       send: (r) => sendOne(r.email),

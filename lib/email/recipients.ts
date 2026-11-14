@@ -41,11 +41,14 @@ export async function loadRecipients(
   if (main) out.push({ email: main, isMain: true });
   if (opts.mainOnly || !customerId) return out;
 
-  const [{ data: cust }, { data: extras, error }] = await Promise.all([
+  const [{ data: cust, error: custError }, { data: extras, error }] = await Promise.all([
     supabase.from("customers").select("archived_at").eq("id", customerId).maybeSingle(),
     supabase.from("customer_extra_emails").select("email").eq("customer_id", customerId).order("created_at", { ascending: true }),
   ]);
-  if (cust?.archived_at) return out;
+  if (custError || cust?.archived_at) {
+    if (custError) console.error("loadRecipients: could not check the customer (sending to the main email only)", custError.message);
+    return out;
+  }
   if (error) {
     console.error("loadRecipients: could not read additional emails (sending to the main email only)", error.message);
     return out;
@@ -81,6 +84,16 @@ export const MAX_ATTEMPTS = 3;
 // Resend allows ~2 requests/second: space the per-address sends out and retry a rate-limited one once.
 const SEND_GAP_MS = 520;
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+// One shared pacing queue for ADDITIONAL-address sends across everything running in this process (the
+// reminder sweep runs many jobs at once): each extra send takes the next free slot. Main sends are not
+// delayed.
+let nextSlot = 0;
+async function throttle() {
+  const now = Date.now();
+  const at = Math.max(now, nextSlot);
+  nextSlot = at + SEND_GAP_MS;
+  if (at > now) await sleep(at - now);
+}
 const isRateLimited = (msg: string) => /rate.?limit|too many|429/i.test(msg);
 
 // Sends one separate email per recipient. `refId` identifies the thing being emailed (job id,
@@ -107,7 +120,6 @@ export async function deliverToRecipients(opts: {
   let mainOk = false;
   let settled = opts.recipients.length > 0;
   const failed: string[] = [];
-  let sentSomething = false;
 
   for (const r of opts.recipients) {
     const to = clean(r.email);
@@ -136,17 +148,16 @@ export async function deliverToRecipients(opts: {
       continue;
     }
 
-    if (sentSomething) await sleep(SEND_GAP_MS);
-    try {
-      outcome = await opts.send(r).catch((e): SendOutcome => ({ ok: false, error: e instanceof Error ? e.message : String(e) }));
-      if (!outcome.ok && isRateLimited(outcome.error)) {
-        await sleep(SEND_GAP_MS * 2);
-        outcome = await opts.send(r).catch((e): SendOutcome => ({ ok: false, error: e instanceof Error ? e.message : String(e) }));
-      }
-    } catch (err) {
-      outcome = { ok: false, error: err instanceof Error ? err.message : String(err) };
+    const attempt = () => opts.send(r).catch((e): SendOutcome => ({ ok: false, error: e instanceof Error ? e.message : String(e) }));
+    if (!r.isMain) await throttle();
+    outcome = await attempt();
+    if (!outcome.ok && isRateLimited(outcome.error)) {
+      await sleep(SEND_GAP_MS * 2);
+      if (!r.isMain) await throttle();
+      outcome = await attempt();
     }
-    sentSomething = true;
+    // Being rate-limited is not the address's fault: it must not count toward MAX_ATTEMPTS.
+    const rateLimited = !outcome.ok && isRateLimited(outcome.error);
     if (claim.id) {
       try {
         await supabase
@@ -155,6 +166,7 @@ export async function deliverToRecipients(opts: {
             status: outcome.ok ? "sent" : "failed",
             provider_id: outcome.ok ? outcome.id ?? null : null,
             error: outcome.ok ? null : outcome.error.slice(0, 500),
+            ...(rateLimited ? { attempts: Math.max(0, claim.attempts - 1) } : {}),
             updated_at: new Date().toISOString(),
           })
           .eq("id", claim.id);
@@ -167,7 +179,8 @@ export async function deliverToRecipients(opts: {
     } else {
       failed.push(to);
       // A failing additional address stops blocking once it has been tried MAX_ATTEMPTS times.
-      if (r.isMain || claim.attempts < MAX_ATTEMPTS) settled = false;
+      // (An unlogged send — the log is down — can't be counted, so it never blocks either.)
+      if (r.isMain || (claim.id && (rateLimited || claim.attempts < MAX_ATTEMPTS))) settled = false;
       console.error(`deliverToRecipients: ${kind} to ${r.isMain ? "main" : "additional"} address failed (attempt ${claim.attempts})`, outcome.error, { refId });
     }
   }
@@ -184,7 +197,8 @@ type Claim = { kind: "send"; id: string | null; attempts: number } | { kind: "do
 //   "send"     — go ahead (id null = the log could not be written, send unlogged)
 async function claimDelivery(
   supabase: ScopedAdmin,
-  p: { kind: string; refId: string; recipient: string; isMain: boolean; fresh: boolean }
+  p: { kind: string; refId: string; recipient: string; isMain: boolean; fresh: boolean },
+  raced = false
 ): Promise<Claim> {
   const STALE_MS = 10 * 60 * 1000;
   const { data: existing, error: readError } = await supabase
@@ -204,7 +218,8 @@ async function claimDelivery(
       .single();
     if (error || !data) {
       // 23505 = a parallel sender created the row first: it is delivering this one.
-      if ((error as { code?: string } | null)?.code === "23505") return { kind: "inflight" };
+      // Re-read once and take the normal path (wait for its outcome on a fresh send).
+      if ((error as { code?: string } | null)?.code === "23505") return raced ? { kind: "inflight" } : claimDelivery(supabase, p, true);
       throw new Error(`delivery log insert failed: ${error?.message ?? "no row"}`);
     }
     return { kind: "send", id: data.id as string, attempts: 1 };
@@ -230,7 +245,8 @@ async function claimDelivery(
     if (!p.isMain && row.status === "failed" && (row.attempts as number) >= MAX_ATTEMPTS) return { kind: "capped" };
   }
   // Take over: only if the row is still in the state we read (atomic claim).
-  const attempts = (row.attempts as number) + 1;
+  // A fresh send is a new event: its failures are counted from 1 again.
+  const attempts = p.fresh ? 1 : (row.attempts as number) + 1;
   const { data: taken, error: takeError } = await supabase
     .from("email_deliveries")
     .update({ status: "sending", error: null, attempts, updated_at: new Date().toISOString() })
