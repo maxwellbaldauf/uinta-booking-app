@@ -153,20 +153,22 @@ async function sendReminder(params: {
     supabase,
     kind: params.kind === "7day" ? "reminder_7day" : "reminder_24hr",
     refId: params.job.id,
+    // Keyed by the visit date: a reschedule resets the sent-at stamps and must get fresh reminders.
+    logKey: params.job.scheduled_date,
     recipients,
     fresh: false,
     send: async (r) => {
       const { data, error } = await resend.client.emails.send({
       from: resend.from,
-      ...(replyTo ? { replyTo } : {}),
-      to: r.email,
-      subject:
-        params.kind === "7day"
-          ? `Reminder: your visit is ${dateLong}`
-          : `Reminder: your visit is tomorrow — ${dateLong}`,
-      html,
-      text,
-      });
+        ...(replyTo ? { replyTo } : {}),
+        to: r.email,
+        subject:
+          params.kind === "7day"
+            ? `Reminder: your visit is ${dateLong}`
+            : `Reminder: your visit is tomorrow — ${dateLong}`,
+        html,
+        text,
+        });
       return error
         ? ({ ok: false, error: error.message ?? "Resend send failed" } as const)
         : ({ ok: true, id: data?.id ?? null } as const);
