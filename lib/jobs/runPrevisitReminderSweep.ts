@@ -172,10 +172,10 @@ async function sendReminder(params: {
         : ({ ok: true, id: data?.id ?? null } as const);
     },
   });
-  if (!result.allOk) {
+  if (!result.settled) {
     console.error("pre-visit-reminders: not every address was delivered", { jobId: params.job.id, kind: params.kind, failed: result.failed });
   }
-  return result.allOk;
+  return result.settled;
 }
 
 export type PrevisitReminderSweepResult = {

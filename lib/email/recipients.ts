@@ -69,16 +69,28 @@ export type DeliveryResult = {
   mainOk: boolean;
   // Every recipient is delivered (now or earlier).
   allOk: boolean;
+  // The caller may stamp its sent-at marker: the main email is delivered AND every additional address
+  // is either delivered or has been tried MAX_ATTEMPTS times (a permanently failing extra must never
+  // stall the main customer's reminder sequence; its failure stays recorded and visible).
+  settled: boolean;
   failed: string[];
 };
 
-// Sends one separate email per recipient. `refKey` identifies the thing being emailed (job id,
+export const MAX_ATTEMPTS = 3;
+// Resend allows ~2 requests/second: space the per-address sends out and retry a rate-limited one once.
+const SEND_GAP_MS = 600;
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+const isRateLimited = (msg: string) => /rate.?limit|too many|429/i.test(msg);
+
+// Sends one separate email per recipient. `refId` identifies the thing being emailed (job id,
 // payment id) and `kind` the email type; (business, kind, ref, recipient) is the log's unique key.
 //   fresh: true  — a brand-new send event (owner clicked Resend, customer rescheduled…): every
 //                  recipient is sent again.
 //   fresh: false — a retry/sweep: recipients already logged `sent` are skipped, so nobody gets a
 //                  duplicate.
-// A failure for one address never stops the others. Never throws.
+// A failure for one address never stops the others. If the delivery log itself is unavailable the
+// email is still SENT (just unlogged) — the log must never be the reason an email is not sent.
+// Never throws.
 export async function deliverToRecipients(opts: {
   supabase: ScopedAdmin;
   kind: DeliveryKind | string;
@@ -93,56 +105,95 @@ export async function deliverToRecipients(opts: {
   const kind = opts.logKey ? `${opts.kind}:${opts.logKey}` : opts.kind;
   let mainOk = false;
   let allOk = opts.recipients.length > 0;
+  let settled = opts.recipients.length > 0;
   const failed: string[] = [];
+  let sentSomething = false;
 
   for (const r of opts.recipients) {
     const to = clean(r.email);
     let outcome: SendOutcome;
+    let claim: Claim = { kind: "send", id: null, attempts: 1 };
     try {
-      const claim = await claimDelivery(supabase, { kind, refId, recipient: to, isMain: r.isMain, fresh: opts.fresh });
-      if (claim === "skip") {
-        // Already delivered (or being delivered) — counts as done.
+      claim = await claimDelivery(supabase, { kind, refId, recipient: to, isMain: r.isMain, fresh: opts.fresh });
+    } catch (err) {
+      console.error("deliverToRecipients: delivery log unavailable — sending anyway", kind, refId, err);
+    }
+    if (claim.kind === "done") {
+      // Already delivered earlier.
+      if (r.isMain) mainOk = true;
+      continue;
+    }
+    if (claim.kind === "inflight") {
+      // Another sender is delivering this right now. A duplicate trigger (fresh) counts as handled; for a
+      // retry/sweep it does NOT, so the caller doesn't stamp on the strength of someone else's attempt.
+      if (opts.fresh) {
         if (r.isMain) mainOk = true;
-        continue;
+      } else {
+        allOk = false;
+        settled = false;
       }
+      continue;
+    }
+
+    if (sentSomething) await sleep(SEND_GAP_MS);
+    try {
       outcome = await opts.send(r).catch((e): SendOutcome => ({ ok: false, error: e instanceof Error ? e.message : String(e) }));
-      await supabase
-        .from("email_deliveries")
-        .update({
-          status: outcome.ok ? "sent" : "failed",
-          provider_id: outcome.ok ? outcome.id ?? null : null,
-          error: outcome.ok ? null : outcome.error.slice(0, 500),
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", claim.id);
+      if (!outcome.ok && isRateLimited(outcome.error)) {
+        await sleep(SEND_GAP_MS * 2);
+        outcome = await opts.send(r).catch((e): SendOutcome => ({ ok: false, error: e instanceof Error ? e.message : String(e) }));
+      }
     } catch (err) {
       outcome = { ok: false, error: err instanceof Error ? err.message : String(err) };
-      console.error("deliverToRecipients: unexpected error", kind, refId, err);
+    }
+    sentSomething = true;
+    if (claim.id) {
+      try {
+        await supabase
+          .from("email_deliveries")
+          .update({
+            status: outcome.ok ? "sent" : "failed",
+            provider_id: outcome.ok ? outcome.id ?? null : null,
+            error: outcome.ok ? null : outcome.error.slice(0, 500),
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", claim.id);
+      } catch (err) {
+        console.error("deliverToRecipients: could not record the outcome", kind, refId, err);
+      }
     }
     if (outcome.ok) {
       if (r.isMain) mainOk = true;
     } else {
       allOk = false;
       failed.push(to);
-      console.error(`deliverToRecipients: ${kind} to ${r.isMain ? "main" : "additional"} address failed`, outcome.error, { refId });
+      // A failing additional address stops blocking once it has been tried MAX_ATTEMPTS times.
+      if (r.isMain || claim.attempts < MAX_ATTEMPTS) settled = false;
+      console.error(`deliverToRecipients: ${kind} to ${r.isMain ? "main" : "additional"} address failed (attempt ${claim.attempts})`, outcome.error, { refId });
     }
   }
-  return { mainOk, allOk, failed };
+  if (!mainOk) settled = false;
+  return { mainOk, allOk, settled, failed };
 }
 
-// Claims the (kind, ref, recipient) row before sending. "skip" = leave it alone.
+type Claim = { kind: "send"; id: string | null; attempts: number } | { kind: "done" } | { kind: "inflight" };
+
+// Claims the (kind, ref, recipient) row before sending.
+//   "done"     — already delivered; nothing to send
+//   "inflight" — another sender is delivering it right now
+//   "send"     — go ahead (id null = the log could not be written, send unlogged)
 async function claimDelivery(
   supabase: ScopedAdmin,
   p: { kind: string; refId: string; recipient: string; isMain: boolean; fresh: boolean }
-): Promise<{ id: string } | "skip"> {
+): Promise<Claim> {
   const STALE_MS = 10 * 60 * 1000;
-  const { data: existing } = await supabase
+  const { data: existing, error: readError } = await supabase
     .from("email_deliveries")
     .select("id, status, attempts, updated_at")
     .eq("kind", p.kind)
     .eq("ref_id", p.refId)
     .eq("recipient", p.recipient)
     .maybeSingle();
+  if (readError) throw new Error(`delivery log read failed: ${readError.message}`);
 
   if (!existing) {
     const { data, error } = await supabase
@@ -150,24 +201,30 @@ async function claimDelivery(
       .insert({ kind: p.kind, ref_id: p.refId, recipient: p.recipient, is_main: p.isMain, status: "sending" })
       .select("id")
       .single();
-    if (error || !data) return "skip"; // lost a race to a parallel sender (unique key) — it will send
-    return { id: data.id as string };
+    if (error || !data) {
+      // 23505 = a parallel sender created the row first: it is delivering this one.
+      if ((error as { code?: string } | null)?.code === "23505") return { kind: "inflight" };
+      throw new Error(`delivery log insert failed: ${error?.message ?? "no row"}`);
+    }
+    return { kind: "send", id: data.id as string, attempts: 1 };
   }
 
   const age = Date.now() - new Date(existing.updated_at as string).getTime();
   if (!p.fresh) {
-    if (existing.status === "sent") return "skip";
-    if (existing.status === "sending" && age < STALE_MS) return "skip";
+    if (existing.status === "sent") return { kind: "done" };
+    if (existing.status === "sending" && age < STALE_MS) return { kind: "inflight" };
   } else if (existing.status === "sending" && age < 60 * 1000) {
-    return "skip"; // a double click / racing duplicate trigger
+    return { kind: "inflight" }; // a double click / racing duplicate trigger
   }
   // Take over: only if the row is still in the state we read (atomic claim).
-  const { data: taken } = await supabase
+  const attempts = (existing.attempts as number) + 1;
+  const { data: taken, error: takeError } = await supabase
     .from("email_deliveries")
-    .update({ status: "sending", error: null, attempts: (existing.attempts as number) + 1, updated_at: new Date().toISOString() })
+    .update({ status: "sending", error: null, attempts, updated_at: new Date().toISOString() })
     .eq("id", existing.id as string)
     .eq("status", existing.status as string)
     .eq("updated_at", existing.updated_at as string)
     .select("id");
-  return taken && taken.length > 0 ? { id: existing.id as string } : "skip";
+  if (takeError) throw new Error(`delivery log claim failed: ${takeError.message}`);
+  return taken && taken.length > 0 ? { kind: "send", id: existing.id as string, attempts } : { kind: "inflight" };
 }
