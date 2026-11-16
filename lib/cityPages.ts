@@ -53,6 +53,7 @@ async function loadRows(): Promise<Row[]> {
       )
       .in("status", ["completed", "charged"])
       .eq("is_fee_charge", false)
+      .order("id", { ascending: true }) // stable paging across range() calls
       .range(from, from + 999);
     if (error) throw new Error(`city pages query failed: ${error.message}`);
     const page = (data ?? []) as unknown as Row[];

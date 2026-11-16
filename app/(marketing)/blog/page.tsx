@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { pageMetadata } from "@/lib/seo";
 import { getPublishedBlogPosts } from "@/lib/blogPosts";
-import { monthLabel } from "@/lib/cityFacts";
+import { longDate } from "@/lib/cityFacts";
 import { breadcrumbSchema } from "@/lib/schema";
 import { JsonLd } from "@/components/marketing/JsonLd";
 
@@ -34,7 +34,7 @@ export default async function BlogIndex() {
             {posts.map((p) => (
               <li key={p.slug}>
                 <Link href={`/blog/${p.slug}`}>{p.title}</Link>
-                <span>Week of {monthLabel(p.date)}</span>
+                <span>Week of {longDate(p.date)}</span>
               </li>
             ))}
           </ul>

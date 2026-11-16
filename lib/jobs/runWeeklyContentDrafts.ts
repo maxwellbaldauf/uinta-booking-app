@@ -7,12 +7,11 @@
 //
 // Relative imports only (the function bundle doesn't resolve "@/" aliases).
 import Anthropic from "@anthropic-ai/sdk";
-import { businessDb, businessTz } from "../tenant/business";
+import { businessDb, businessTz, getBusiness } from "../tenant/business";
 import { todayISODate, addDaysToISODate } from "../time/zone";
-import { citySlug, machineLabel, monthLabel } from "../cityFacts";
+import { citySlug, longDate, machineLabel } from "../cityFacts";
 
 const MODEL = "claude-sonnet-5-5";
-const SITE = "https://uintaice.com";
 
 type Row = {
   scheduled_date: string | null;
@@ -75,26 +74,27 @@ export async function loadWeeklyFacts(start: string, end: string): Promise<Weekl
 
 const RULES = `Write for Uinta Ice Co., a residential ice machine cleaning service based in Lehi, Utah that travels to customers' homes.
 Use ONLY the facts provided below. Do not invent anything: no customer names or stories, no street addresses, no prices, no reviews or ratings, no quotes, no statistics, no results or claims about how machines performed, no promotions, no claim of an office or storefront anywhere. Do not name individual customers or describe any specific home.
+Never name a county, valley or region (only the exact cities given), never say "nearby" areas, never describe how a visit works or what the customer does or doesn't need to do, and never characterize the machines beyond the labels given (a "Residential ice machine" label means the brand wasn't recorded; just call it a residential ice machine). If you run out of facts, stop: a shorter post is better than filler.
 Tone: plain, understated, local. No emojis, no hashtags, no exclamation marks, no marketing hype.
 Do not add benefits, process details, counties, or any statement that is not directly in the facts. Mention the cities and months/machines only as given. Say "based in Lehi" if you mention where we're based.`;
 
-function factsBlock(f: WeeklyFacts): string {
+function factsBlock(f: WeeklyFacts, site: string): string {
   const lines = f.cities.map(
     (c) =>
       `- ${c.name}: ${c.count} ${c.count === 1 ? "cleaning" : "cleanings"} (${c.machines.join(", ")})`
   );
-  return `Week of ${longDate(f.weekStart)} (${f.weekStart} to ${f.weekEnd}). ${f.jobCount} completed residential cleanings:\n${lines.join("\n")}\nBooking page: ${SITE}/book`;
-}
-
-function longDate(iso: string): string {
-  const [y, , d] = iso.split("-").map(Number);
-  return `${monthLabel(iso).split(" ")[0]} ${d}, ${y}`;
+  return `Week of ${longDate(f.weekStart)} (${f.weekStart} to ${f.weekEnd}). ${f.jobCount} completed residential cleanings:\n${lines.join("\n")}\nBooking page: ${site}/book`;
 }
 
 async function generate(client: Anthropic, prompt: string, maxTokens: number): Promise<string> {
   const res = await client.messages.create({
     model: MODEL,
     max_tokens: maxTokens,
+    // Short factual copy: no extended thinking, so the call stays well inside
+    // the scheduled function's 30 s limit.
+    // This model turns thinking off with "between_tools" ("disabled" is rejected);
+    // the installed SDK (0.124) predates that value, hence the cast.
+    thinking: { type: "between_tools" } as unknown as Anthropic.Messages.ThinkingConfigParam,
     messages: [{ role: "user", content: prompt }],
   });
   const text = res.content
@@ -147,14 +147,15 @@ export async function buildDraftRows(
   have: Set<string> = new Set()
 ): Promise<Record<string, unknown>[]> {
   const start = facts.weekStart;
+  const site = (await getBusiness()).site_origin.replace(/\/+$/, "");
   const cityNames = facts.cities.map((c) => c.name);
   const rows: Record<string, unknown>[] = [];
 
   if (!have.has("blog_post")) {
     const raw = await generate(
       client,
-      `${RULES}\n\nTask: a short local blog post, 150-250 words, about the ice machine cleanings in the week given below, written for homeowners in those areas. It is published permanently, so refer to the week by its date ("the week of ..."), never "last week" or "this week". Do not mention these instructions or comment on what the post does or does not include. End with one sentence noting that homeowners in these areas can book a cleaning online. First line: the title only (no "Title:" prefix, no quotes), and it must include the week's date. Then a blank line, then the body in plain paragraphs. Output nothing else.\n\nFacts:\n${factsBlock(facts)}`,
-      4000
+      `${RULES}\n\nTask: a short local blog post, 100-180 words, about the ice machine cleanings in the week given below, written for homeowners in those areas. It is published permanently, so refer to the week by its date ("the week of ..."), never "last week" or "this week". Do not mention these instructions or comment on what the post does or does not include. End with one sentence noting that homeowners in these areas can book a cleaning online. First line: the title only (no "Title:" prefix, no quotes), and it must include the week's date. Then a blank line, then the body in plain paragraphs. Output nothing else.\n\nFacts:\n${factsBlock(facts, site)}`,
+      2000
     );
     const [title, ...rest] = raw.split("\n");
     rows.push({

@@ -16,15 +16,55 @@ export function citySlug(name: string): string {
     .replace(/^-+|-+$/g, "");
 }
 
-// Public machine label from the free-text brand. Anything odd falls back to a
-// generic label rather than publishing arbitrary text.
+// Public machine label from the free-text brand. The brand box is free text
+// customers fill in on /book, so only a KNOWN brand name ever reaches a public
+// page, post or prompt; anything else ("not sure", typos, junk) falls back to a
+// generic label. Matched as whole words, case/punctuation-insensitive.
+const KNOWN_BRANDS: [canonical: string, aliases: string[]][] = [
+  ["Scotsman", ["scotsman", "scottsman"]],
+  ["KitchenAid", ["kitchenaid", "kitchen aid", "kitchen aide"]],
+  ["U-Line", ["u line", "uline"]],
+  ["Hoshizaki", ["hoshizaki"]],
+  ["Manitowoc", ["manitowoc"]],
+  ["GE Profile", ["ge profile"]],
+  ["GE Monogram", ["monogram", "ge monogram"]],
+  ["GE", ["ge", "general electric"]],
+  ["Whirlpool", ["whirlpool"]],
+  ["Sub-Zero", ["sub zero", "subzero"]],
+  ["True", ["true residential", "true manufacturing"]],
+  ["Marvel", ["marvel"]],
+  ["Perlick", ["perlick"]],
+  ["Ice-O-Matic", ["ice o matic", "iceomatic"]],
+  ["Frigidaire", ["frigidaire"]],
+  ["Viking", ["viking"]],
+  ["Thermador", ["thermador"]],
+  ["JennAir", ["jennair", "jenn air"]],
+  ["Kenmore", ["kenmore"]],
+  ["Summit", ["summit"]],
+  ["Bosch", ["bosch"]],
+  ["Miele", ["miele"]],
+  ["Zephyr", ["zephyr"]],
+  ["Fisher & Paykel", ["fisher paykel", "fisher and paykel"]],
+  ["Electrolux", ["electrolux"]],
+  ["NewAir", ["newair", "new air"]],
+  ["EdgeStar", ["edgestar", "edge star"]],
+  ["Danby", ["danby"]],
+  ["Opal", ["opal"]],
+  ["Follett", ["follett"]],
+];
+
 export function machineLabel(brand: string | null): string {
-  const b = (brand ?? "").replace(/\s+/g, " ").trim();
-  if (!b || b.length > 30 || /^(unknown|n\/?a|none|\?+|-+)$/i.test(b)) {
-    return "Residential ice machine";
+  const text = ` ${(brand ?? "").toLowerCase().replace(/&/g, " and ").replace(/[^a-z0-9]+/g, " ").trim()} `;
+  for (const [canonical, aliases] of KNOWN_BRANDS) {
+    if (aliases.some((a) => text.includes(` ${a} `))) return `${canonical} ice machine`;
   }
-  if (!/^[\p{L}\p{N} &.\-/]+$/u.test(b)) return "Residential ice machine";
-  return `${b} ice machine`;
+  return "Residential ice machine";
+}
+
+// "2026-11-09" -> "November 9, 2026" (the date is already local).
+export function longDate(iso: string): string {
+  const [y, m, d] = iso.split("-").map(Number);
+  return `${MONTHS[m - 1]} ${d}, ${y}`;
 }
 
 // "2026-10-14" -> "October 2026" (no timezone math; the date is already local).

@@ -1,7 +1,7 @@
 // Daily per-cleaning GBP posts: for each (day, city) with real completed residential
 // cleanings in the last LOOKBACK_DAYS (at least 1 day old), write ONE Google Business
 // Profile post and queue it as 'scheduled' for today. lib/jobs/runGbpPosting.ts posts it.
-// Called from netlify/functions/gbp-post-queue.mts right before the posting run.
+// Called from netlify/functions/gbp-daily-posts.mts (30 min before the posting run).
 //
 // * Same job rules as the city pages: completed|charged, not a fee charge, residential,
 //   customer not archived.
@@ -22,6 +22,7 @@ import { gbpConfigured } from "../gbp";
 const MODEL = "claude-sonnet-5-5";
 const FIRST_DAY = "2026-11-16";
 const LOOKBACK_DAYS = 7;
+const MAX_NEW_PER_RUN = 4;
 
 type Row = {
   scheduled_date: string | null;
@@ -62,21 +63,27 @@ async function postText(client: Anthropic, f: DayCityFacts): Promise<string> {
   const facts = `City: ${f.name}, Utah\nResidential cleanings completed there recently (${monthLabel(f.date)}): ${f.count}\nMachines: ${f.machines.join(", ")}`;
   const res = await client.messages.create({
     model: MODEL,
-    max_tokens: 2000,
+    max_tokens: 1000,
+    // Short factual copy: no extended thinking, so each call stays a few seconds
+    // (scheduled functions have a 30 s limit).
+    // This model turns thinking off with "between_tools" ("disabled" is rejected);
+    // the installed SDK (0.124) predates that value, hence the cast.
+    thinking: { type: "between_tools" } as unknown as Anthropic.Messages.ThinkingConfigParam,
     messages: [{ role: "user", content: `${RULES}\n\nFacts:\n${facts}` }],
   });
   const text = res.content.map((b) => (b.type === "text" ? b.text : "")).join("").trim();
+  // Posted unreviewed, so never queue a cut-off or refused response.
   if (!text || res.stop_reason !== "end_turn") throw new Error(`unusable model response for ${f.name} (stop_reason: ${res.stop_reason})`);
   return text.slice(0, 1500);
 }
 
 // opts are for testing against staging data only; production calls it with none.
-export async function runDailyCityPosts(opts: { today?: string; firstDay?: string } = {}): Promise<{ status: string; queued: number }> {
-  if (!gbpConfigured()) return { status: "not-configured", queued: 0 };
+export async function runDailyCityPosts(opts: { today?: string; firstDay?: string } = {}): Promise<{ status: string; queued: number; failed: number; deferred: number }> {
+  if (!gbpConfigured()) return { status: "not-configured", queued: 0, failed: 0, deferred: 0 };
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
     console.error("daily-city-posts: ANTHROPIC_API_KEY is not set");
-    return { status: "no-api-key", queued: 0 };
+    return { status: "no-api-key", queued: 0, failed: 0, deferred: 0 };
   }
 
   const db = businessDb();
@@ -85,7 +92,7 @@ export async function runDailyCityPosts(opts: { today?: string; firstDay?: strin
   const to = addDaysToISODate(today, -1);
   const lookback = addDaysToISODate(today, -LOOKBACK_DAYS);
   const from = lookback > firstDay ? lookback : firstDay;
-  if (from > to) return { status: "nothing-due", queued: 0 };
+  if (from > to) return { status: "nothing-due", queued: 0, failed: 0, deferred: 0 };
 
   const { data, error } = await db
     .from("jobs")
@@ -105,25 +112,41 @@ export async function runDailyCityPosts(opts: { today?: string; firstDay?: strin
   if (exErr) throw new Error(`daily posts lookup failed: ${exErr.message}`);
   const done = new Set(((existing ?? []) as { week_start: string; city_slug: string }[]).map((r) => `${r.week_start}|${r.city_slug}`));
 
+  // Oldest first, a few per run (in parallel) to stay well inside the 30 s
+  // limit; the rest are picked up by the next day's run (7-day lookback).
   const todo = groupByDayCity((data ?? []) as unknown as Row[]).filter((f) => !done.has(`${f.date}|${f.slug}`));
+  const batch = todo.slice(0, MAX_NEW_PER_RUN);
   const client = new Anthropic({ apiKey });
+  const results = await Promise.allSettled(batch.map((f) => postText(client, f)));
+
   let queued = 0;
-  for (const f of todo) {
-    const body = await postText(client, f);
+  let failed = 0;
+  for (let i = 0; i < batch.length; i++) {
+    const f = batch[i];
+    const r = results[i];
+    if (r.status === "rejected") {
+      // One bad response never blocks the others; it is retried tomorrow.
+      failed++;
+      console.error("daily-city-posts: text failed", f.date, f.slug, r.reason instanceof Error ? r.reason.message : r.reason);
+      continue;
+    }
     const { error: insErr } = await db.from("content_drafts").insert({
       week_start: f.date,
       kind: "gbp_daily_post",
       city_slug: f.slug,
       title: f.name,
-      body,
+      body: r.value,
       cities: [f.name],
       source_job_count: f.count,
       status: "scheduled",
       scheduled_for: today,
     });
-    if (insErr && insErr.code !== "23505") throw new Error(`daily post insert failed for ${f.name}: ${insErr.message}`);
-    if (!insErr) queued++;
+    if (insErr && insErr.code !== "23505") {
+      failed++;
+      console.error("daily-city-posts: insert failed", f.date, f.slug, insErr.message);
+    } else if (!insErr) queued++;
   }
-  console.log("daily-city-posts: complete", { from, to, queued });
-  return { status: "ok", queued };
+  const deferred = todo.length - batch.length;
+  console.log("daily-city-posts: complete", { from, to, queued, failed, deferred });
+  return { status: "ok", queued, failed, deferred };
 }
