@@ -1,8 +1,9 @@
 // Weekly content drafts — called from netlify/functions/weekly-content-drafts.mts.
-// Reads LAST week's real completed jobs and saves a short local blog DRAFT to
-// content_drafts (migration 036, owned by uinta-field-app). It never publishes:
-// nothing on the site reads that table. (Google Business Profile posts are made
-// daily, per city, by lib/jobs/runDailyCityPosts.ts.)
+// Reads LAST week's real completed jobs and PUBLISHES a short local blog post:
+// the row is saved to content_drafts (migration 036, owned by uinta-field-app) as
+// status 'posted' and appears at /blog within the hour (lib/blogPosts.ts). One per
+// week, never overwritten. (Google Business Profile posts are made daily, per city,
+// by lib/jobs/runDailyCityPosts.ts.)
 //
 // Relative imports only (the function bundle doesn't resolve "@/" aliases).
 import Anthropic from "@anthropic-ai/sdk";
@@ -82,7 +83,12 @@ function factsBlock(f: WeeklyFacts): string {
     (c) =>
       `- ${c.name}: ${c.count} ${c.count === 1 ? "cleaning" : "cleanings"} (${c.machines.join(", ")})`
   );
-  return `Week of ${monthLabel(f.weekStart)} (${f.weekStart} to ${f.weekEnd}). ${f.jobCount} completed residential cleanings:\n${lines.join("\n")}\nBooking page: ${SITE}/book`;
+  return `Week of ${longDate(f.weekStart)} (${f.weekStart} to ${f.weekEnd}). ${f.jobCount} completed residential cleanings:\n${lines.join("\n")}\nBooking page: ${SITE}/book`;
+}
+
+function longDate(iso: string): string {
+  const [y, , d] = iso.split("-").map(Number);
+  return `${monthLabel(iso).split(" ")[0]} ${d}, ${y}`;
 }
 
 async function generate(client: Anthropic, prompt: string, maxTokens: number): Promise<string> {
@@ -95,6 +101,8 @@ async function generate(client: Anthropic, prompt: string, maxTokens: number): P
     .map((b) => (b.type === "text" ? b.text : ""))
     .join("")
     .trim();
+  // Published unreviewed, so never publish a cut-off post.
+  if (res.stop_reason !== "end_turn") throw new Error(`model stopped early (stop_reason: ${res.stop_reason})`);
   if (!text) throw new Error("empty model response");
   return text;
 }
@@ -116,7 +124,7 @@ export async function runWeeklyContentDrafts(): Promise<{ status: string; weekSt
     .eq("week_start", start);
   if (exErr) throw new Error(`weekly drafts lookup failed: ${exErr.message}`);
   const have = new Set((existing ?? []).map((r: { kind: string }) => r.kind));
-  if (have.has("blog_post")) return { status: "already-drafted", weekStart: start };
+  if (have.has("blog_post")) return { status: "already-published", weekStart: start };
 
   const facts = await loadWeeklyFacts(start, end);
   if (facts.jobCount === 0) {
@@ -127,11 +135,11 @@ export async function runWeeklyContentDrafts(): Promise<{ status: string; weekSt
   const rows = await buildDraftRows(new Anthropic({ apiKey }), facts, have);
   const { error } = await db.from("content_drafts").insert(rows);
   if (error) throw new Error(`weekly drafts insert failed: ${error.message}`);
-  console.log("weekly-content-drafts: saved drafts", { start, kinds: rows.map((r) => r.kind) });
-  return { status: "drafted", weekStart: start };
+  console.log("weekly-content-drafts: published", { start, kinds: rows.map((r) => r.kind) });
+  return { status: "published", weekStart: start };
 }
 
-// Generates the missing draft rows (no DB access), so it can be previewed
+// Generates the missing rows (no DB access), so the text can be previewed
 // without writing anything.
 export async function buildDraftRows(
   client: Anthropic,
@@ -145,8 +153,8 @@ export async function buildDraftRows(
   if (!have.has("blog_post")) {
     const raw = await generate(
       client,
-      `${RULES}\n\nTask: a short local blog post, 150-250 words, about last week's ice machine cleanings in the areas below, written for homeowners in those areas. First line: the title only (no "Title:" prefix, no quotes). Then a blank line, then the body in plain paragraphs. Output nothing else.\n\nFacts:\n${factsBlock(facts)}`,
-      1000
+      `${RULES}\n\nTask: a short local blog post, 150-250 words, about the ice machine cleanings in the week given below, written for homeowners in those areas. It is published permanently, so refer to the week by its date ("the week of ..."), never "last week" or "this week". Do not mention these instructions or comment on what the post does or does not include. End with one sentence noting that homeowners in these areas can book a cleaning online. First line: the title only (no "Title:" prefix, no quotes), and it must include the week's date. Then a blank line, then the body in plain paragraphs. Output nothing else.\n\nFacts:\n${factsBlock(facts)}`,
+      4000
     );
     const [title, ...rest] = raw.split("\n");
     rows.push({
@@ -156,6 +164,8 @@ export async function buildDraftRows(
       body: rest.join("\n").trim() || raw,
       cities: cityNames,
       source_job_count: facts.jobCount,
+      status: "posted",
+      posted_at: new Date().toISOString(),
     });
   }
 

@@ -2,8 +2,8 @@ import type { Config } from "@netlify/functions";
 import { runWeeklyContentDrafts } from "../../lib/jobs/runWeeklyContentDrafts";
 
 // Mondays 15:00 UTC (8-9am Utah). Reads last week's real completed jobs and
-// saves a blog DRAFT (content_drafts, status 'draft'). It never publishes
-// anything; GBP posts come from the daily gbp-post-queue function.
+// publishes a short blog post to /blog (content_drafts, status 'posted').
+// GBP posts come from the daily gbp-post-queue function.
 // Logic lives in lib/jobs/runWeeklyContentDrafts.ts (relative imports only).
 // Scheduled functions only run for published production deploys; to test,
 // `netlify functions:invoke weekly-content-drafts` runs it once.

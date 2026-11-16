@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
 import { getPublishedCityPages } from "@/lib/cityPages";
+import { getPublishedBlogPosts } from "@/lib/blogPosts";
 import { absoluteUrl, PAGE_UPDATED } from "@/lib/site";
 
 // The public, indexable pages. The token pages (/visit, /pay) and dev routes
@@ -17,6 +18,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { path: "/about", priority: 0.6, dateKey: "about" },
     { path: "/reviews", priority: 0.6, dateKey: "reviews" },
     { path: "/book", priority: 0.7 },
+    { path: "/blog", priority: 0.5 },
     { path: "/contact", priority: 0.5 },
     { path: "/terms", priority: 0.2, dateKey: "terms" },
     { path: "/privacy", priority: 0.2, dateKey: "privacy" },
@@ -25,6 +27,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Only city pages that actually publish (real jobs or supplied local info).
   // If the lookup fails, drop them rather than fail the whole sitemap.
   const cities = await getPublishedCityPages().catch(() => []);
+  const posts = await getPublishedBlogPosts().catch(() => []);
 
   const entries: MetadataRoute.Sitemap = pages.map(({ path, priority, dateKey }) => ({
     url: absoluteUrl(path),
@@ -40,6 +43,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       ...(c.lastModified ? { lastModified: c.lastModified } : {}),
       changeFrequency: "monthly" as const,
       priority: 0.6,
+    })),
+    ...posts.map((p) => ({
+      url: absoluteUrl(`/blog/${p.slug}`),
+      lastModified: p.publishedAt,
+      changeFrequency: "yearly" as const,
+      priority: 0.4,
     })),
   ];
 }

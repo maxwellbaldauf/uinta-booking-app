@@ -66,7 +66,7 @@ async function postText(client: Anthropic, f: DayCityFacts): Promise<string> {
     messages: [{ role: "user", content: `${RULES}\n\nFacts:\n${facts}` }],
   });
   const text = res.content.map((b) => (b.type === "text" ? b.text : "")).join("").trim();
-  if (!text) throw new Error(`empty model response for ${f.name} (stop_reason: ${res.stop_reason})`);
+  if (!text || res.stop_reason !== "end_turn") throw new Error(`unusable model response for ${f.name} (stop_reason: ${res.stop_reason})`);
   return text.slice(0, 1500);
 }
 

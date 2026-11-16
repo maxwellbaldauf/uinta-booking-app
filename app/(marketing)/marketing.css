@@ -1595,3 +1595,23 @@
   color: var(--ink-faint);
   margin-top: var(--space-2xs);
 }
+
+/* /blog index */
+.mkt-blog-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--line);
+}
+.mkt-blog-list li {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--space-xs, 4px) var(--space-md);
+  padding: var(--space-sm) 0;
+  border-bottom: 1px solid var(--line);
+}
+.mkt-blog-list span {
+  font-size: var(--text-sm);
+  color: var(--ink-faint);
+}
