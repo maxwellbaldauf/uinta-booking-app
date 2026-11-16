@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getPublishedCityPages } from "@/lib/cityPages";
 import { NAP, PAGE_UPDATED, SERVICE_CITIES } from "@/lib/site";
 import { pageMetadata } from "@/lib/seo";
 import { breadcrumbSchema, webPageSchema } from "@/lib/schema";
@@ -91,7 +92,8 @@ const schema = [
   }),
 ];
 
-export default function ServiceAreasPage() {
+export default async function ServiceAreasPage() {
+  const cityPages = await getPublishedCityPages().catch(() => []);
   return (
     <div className="mkt-wrap mkt-prose">
       <JsonLd graph={schema} />
@@ -115,6 +117,21 @@ export default function ServiceAreasPage() {
           </a>
         </div>
       </header>
+
+      {cityPages.length > 0 && (
+        <section className="mkt-section" aria-label="City pages">
+          <h2>Cities we’ve worked in</h2>
+          <p>
+            {cityPages.map((c, i) => (
+              <span key={c.slug}>
+                {i > 0 && ", "}
+                <Link href={`/service-areas/${c.slug}`}>{c.name}</Link>
+              </span>
+            ))}
+            .
+          </p>
+        </section>
+      )}
 
       <nav id="contents" className="mkt-jump" aria-label="On this page">
         <p className="mkt-jump__label">On this page</p>

@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { getPublishedCityPages } from "@/lib/cityPages";
 import Link from "next/link";
 import { getSettings, formatUsdWhole } from "@/lib/settings";
 import { NAP, PAGE_UPDATED } from "@/lib/site";
@@ -68,8 +69,18 @@ export default async function HomePage({
     price = null;
   }
 
+  let cityNames: string[] = [];
+  try {
+    cityNames = (await getPublishedCityPages()).map((c) => c.name);
+  } catch {
+    cityNames = [];
+  }
+
   const schema = [
-    localBusinessSchema(priceCents != null ? { priceCents } : undefined),
+    localBusinessSchema({
+      ...(priceCents != null ? { priceCents } : {}),
+      extraCities: cityNames,
+    }),
     websiteSchema(),
     breadcrumbSchema([{ name: "Home", path: "/" }]),
     faqPageSchema(HOME_FAQ),

@@ -1,4 +1,5 @@
 import type { MetadataRoute } from "next";
+import { getPublishedCityPages } from "@/lib/cityPages";
 import { absoluteUrl, PAGE_UPDATED } from "@/lib/site";
 
 // The public, indexable pages. The token pages (/visit, /pay) and dev routes
@@ -6,7 +7,7 @@ import { absoluteUrl, PAGE_UPDATED } from "@/lib/site";
 // comes from PAGE_UPDATED (lib/site.ts) for pages with a tracked editorial
 // date; pages without one (no content-date to report) omit lastModified
 // rather than stamp a build timestamp.
-export default function sitemap(): MetadataRoute.Sitemap {
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const pages: { path: string; priority: number; dateKey?: keyof typeof PAGE_UPDATED }[] = [
     { path: "/", priority: 1, dateKey: "home" },
     { path: "/ice-machine-cleaning", priority: 0.9, dateKey: "iceMachineCleaning" },
@@ -21,10 +22,24 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { path: "/privacy", priority: 0.2, dateKey: "privacy" },
   ];
 
-  return pages.map(({ path, priority, dateKey }) => ({
+  // Only city pages that actually publish (real jobs or supplied local info).
+  // If the lookup fails, drop them rather than fail the whole sitemap.
+  const cities = await getPublishedCityPages().catch(() => []);
+
+  const entries: MetadataRoute.Sitemap = pages.map(({ path, priority, dateKey }) => ({
     url: absoluteUrl(path),
     ...(dateKey ? { lastModified: PAGE_UPDATED[dateKey].iso } : {}),
     changeFrequency: "monthly",
     priority,
   }));
+
+  return [
+    ...entries,
+    ...cities.map((c) => ({
+      url: absoluteUrl(`/service-areas/${c.slug}`),
+      ...(c.lastModified ? { lastModified: c.lastModified } : {}),
+      changeFrequency: "monthly" as const,
+      priority: 0.6,
+    })),
+  ];
 }

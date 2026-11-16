@@ -32,6 +32,7 @@ export const TENANT_TABLES = [
   "cluster_suggestion_jobs",
   "cluster_suggestions",
   "contact_submissions",
+  "content_drafts",
   "customer_extra_emails",
   "customers",
   "email_deliveries",

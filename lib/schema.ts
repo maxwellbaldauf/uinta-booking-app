@@ -36,6 +36,9 @@ export function localBusinessSchema(opts?: {
   // Live-sourced, like serviceSchema()'s offer — never a literal, so this
   // can't drift from the actual price the way a hardcoded range could.
   priceCents?: number;
+  // Cities with a published /service-areas/[city] page (real jobs behind
+  // them), merged into areaServed on top of SERVICE_CITIES.
+  extraCities?: string[];
 }): Record<string, unknown> {
   return {
     "@type": "LocalBusiness",
@@ -64,7 +67,9 @@ export function localBusinessSchema(opts?: {
       latitude: LEHI_CITY_CENTER_GEO.lat,
       longitude: LEHI_CITY_CENTER_GEO.lng,
     },
-    areaServed: SERVICE_CITIES.map((city) => ({ "@type": "City", name: city })),
+    areaServed: Array.from(new Set([...SERVICE_CITIES, ...(opts?.extraCities ?? [])])).map(
+      (city) => ({ "@type": "City", name: city })
+    ),
     openingHoursSpecification: OPENING_HOURS_SPECIFICATION,
     sameAs: SAME_AS,
   };
