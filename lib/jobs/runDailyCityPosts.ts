@@ -9,7 +9,7 @@
 //   a re-run or a job marked complete late never duplicates a post.
 // * Jobs before FIRST_DAY are covered by the one-time per-city backfill (posted by hand
 //   in the GBP UI on 2026-11-16), so they are never posted again here.
-// * Does nothing until the GBP API is configured, so posts don't pile up and flood the
+// * Does nothing until posting is configured (MAKE_GBP_WEBHOOK_URL), so posts don't pile up and flood the
 //   profile the day it's connected.
 //
 // Relative imports only (the function bundle doesn't resolve "@/" aliases).

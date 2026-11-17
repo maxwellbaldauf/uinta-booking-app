@@ -1,5 +1,5 @@
 // Posts due content_drafts rows (status 'scheduled', scheduled_for <= today) to the
-// Google Business Profile — called daily from netlify/functions/gbp-post-queue.mts.
+// Google Business Profile (via Make, lib/gbp.ts) — called daily from netlify/functions/gbp-post-queue.mts.
 // Only rows explicitly queued as 'scheduled' are ever posted; 'draft' rows never are.
 //
 // * At most MAX_PER_RUN per run so a backlog can't flood the profile.
@@ -19,7 +19,7 @@ type DueRow = { id: string; body: string; scheduled_for: string; created_at: str
 
 export async function runGbpPosting(): Promise<{ status: string; posted: number }> {
   if (!gbpConfigured()) {
-    console.log("gbp-post-queue: GBP_* env vars not set; nothing posted");
+    console.log("gbp-post-queue: MAKE_GBP_WEBHOOK_URL not set; nothing posted");
     return { status: "not-configured", posted: 0 };
   }
   const db = businessDb();
