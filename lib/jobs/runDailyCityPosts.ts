@@ -18,6 +18,7 @@ import { businessDb, businessTz } from "../tenant/business";
 import { todayISODate, addDaysToISODate } from "../time/zone";
 import { citySlug, machineLabel, monthLabel } from "../cityFacts";
 import { gbpConfigured } from "../gbp";
+import { sendContentAlert } from "../email/contentAlert";
 
 const MODEL = "claude-sonnet-5-5";
 const FIRST_DAY = "2026-11-16";
@@ -121,13 +122,16 @@ export async function runDailyCityPosts(opts: { today?: string; firstDay?: strin
 
   let queued = 0;
   let failed = 0;
+  const errors: string[] = [];
   for (let i = 0; i < batch.length; i++) {
     const f = batch[i];
     const r = results[i];
     if (r.status === "rejected") {
       // One bad response never blocks the others; it is retried tomorrow.
       failed++;
-      console.error("daily-city-posts: text failed", f.date, f.slug, r.reason instanceof Error ? r.reason.message : r.reason);
+      const why = r.reason instanceof Error ? r.reason.message : String(r.reason);
+      errors.push(`${f.name} (${f.date}): ${why}`);
+      console.error("daily-city-posts: text failed", f.date, f.slug, why);
       continue;
     }
     const { error: insErr } = await db.from("content_drafts").insert({
@@ -143,10 +147,23 @@ export async function runDailyCityPosts(opts: { today?: string; firstDay?: strin
     });
     if (insErr && insErr.code !== "23505") {
       failed++;
+      errors.push(`${f.name} (${f.date}): ${insErr.message}`);
       console.error("daily-city-posts: insert failed", f.date, f.slug, insErr.message);
     } else if (!insErr) queued++;
   }
   const deferred = todo.length - batch.length;
   console.log("daily-city-posts: complete", { from, to, queued, failed, deferred });
+  if (failed > 0) {
+    await sendContentAlert({
+      subject: "Google post writing failed",
+      what: `${failed} of today's Google Business Profile posts couldn't be written. They're retried automatically tomorrow (for up to 7 days after the cleaning).`,
+      rows: [
+        { label: "Written", value: String(queued) },
+        { label: "Failed", value: String(failed) },
+        { label: "Errors", value: errors.join(" | ") },
+      ],
+      fix: "Usually temporary (the AI writing service). If this email repeats for several days, check that ANTHROPIC_API_KEY is still valid in Netlify.",
+    });
+  }
   return { status: "ok", queued, failed, deferred };
 }

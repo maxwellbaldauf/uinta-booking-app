@@ -11,6 +11,7 @@
 import { businessDb, businessTz, getBusiness } from "../tenant/business";
 import { todayISODate, addDaysToISODate } from "../time/zone";
 import { createGbpPost, gbpConfigured } from "../gbp";
+import { sendContentAlert, GBP_FIX } from "../email/contentAlert";
 
 const MAX_PER_RUN = 5;
 const RETRY_DAYS = 3;
@@ -69,6 +70,19 @@ export async function runGbpPosting(): Promise<{ status: string; posted: number 
         )
         .eq("id", row.id);
       if (undoErr) console.error("gbp-post-queue: could not record the failure", row.id, undoErr.message);
+      // One email per run (the run stops here), so a broken setup sends at most one a day.
+      await sendContentAlert({
+        subject: giveUp ? "Google post gave up after 3 days" : "Google post failed (will retry tomorrow)",
+        what: giveUp
+          ? "A Google Business Profile post kept failing for 3 days and won't be retried. Later posts are still attempted."
+          : "Today's Google Business Profile post didn't go out. It's queued to retry tomorrow automatically.",
+        rows: [
+          { label: "Posted today", value: String(posted) },
+          { label: "Post", value: row.body.slice(0, 160) + (row.body.length > 160 ? "…" : "") },
+          { label: "Error", value: message },
+        ],
+        fix: GBP_FIX,
+      });
       return { status: "failed", posted };
     }
   }
