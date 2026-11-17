@@ -49,14 +49,18 @@ export async function submitContact(
 
     const { data: existing } = await supabase
       .from("properties")
-      .select("id")
+      .select("id, plan_status, source")
       .eq("customer_id", customerId)
       .eq("address", input.address.trim())
       .limit(1);
 
     if (existing && existing[0]) {
-      propertyId = (existing[0] as { id: string }).id;
-      await supabase.from("properties").update(patch).eq("id", propertyId);
+      const row = existing[0] as { id: string; plan_status: string; source: string };
+      propertyId = row.id;
+      // An existing CLIENT property writing in needs a human (field app: needs_attention); the lead flag
+      // only means anything while the property is still a lead (pending + booking/contact_form).
+      const isLead = row.plan_status === "pending" && (row.source === "booking" || row.source === "contact_form");
+      await supabase.from("properties").update(isLead ? patch : { ...patch, needs_followup: false, needs_attention: true }).eq("id", propertyId);
     } else {
       const { data: prop } = await supabase
         .from("properties")
