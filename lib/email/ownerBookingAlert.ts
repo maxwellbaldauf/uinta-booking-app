@@ -255,9 +255,9 @@ async function flagNeedsFollowup(propertyId: string | null): Promise<void> {
   try {
     await businessDb()
       .from("properties")
-      .update({ needs_followup: true })
+      .update({ needs_attention: true })
       .eq("id", propertyId);
   } catch (err) {
-    console.error("sendOwnerBookingAlert: failed to set needs_followup backstop", err, { propertyId });
+    console.error("sendOwnerBookingAlert: failed to set needs_attention backstop", err, { propertyId });
   }
 }
