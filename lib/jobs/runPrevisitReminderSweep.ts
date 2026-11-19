@@ -33,7 +33,7 @@ import { loadRecipients, deliverToRecipients, toOutcome } from "../email/recipie
 import { getStripe } from "../stripe/client";
 import { newPaymentSetupToken, expiresInDays } from "../tokens";
 
-type ReminderJobRow = {
+export type ReminderJobRow = {
   id: string;
   scheduled_date: string;
   arrival_block: number;
@@ -45,7 +45,7 @@ type ReminderJobRow = {
     | ReminderProperty[]
     | null;
 };
-type SweepCustomer = {
+export type SweepCustomer = {
   id: string;
   full_name: string | null;
   email: string | null;
@@ -70,15 +70,26 @@ function flatten<T>(v: T | T[] | null | undefined): T | null {
 const JOB_COLUMNS =
   "id, scheduled_date, arrival_block, blocks_needed, access_token, quoted_price_cents, property:properties(address, service_interval_months, service_type, custom_price_cents, customer:customers(id, full_name, email, payment_mode, stripe_customer_id, default_payment_method_id, payment_setup_token, payment_setup_token_expires_at))";
 
-type ReminderKind = "30day" | "7day" | "24hr";
+// The 30-day heads-up is for annual service only: a property on the 12-month interval.
+export function selectAnnualJobs(jobs: ReminderJobRow[]): ReminderJobRow[] {
+  return jobs.filter((j) => flatten(j.property)?.service_interval_months === 12);
+}
+
+export type ReminderKind = "30day" | "7day" | "24hr";
 
 // Annual service: the 30-day heads-up. If the saved card will have expired by the visit date,
 // returns a link to update it (the existing /pay/[token] card page, with a token minted or
 // reused here); null when no link is needed (or Stripe could not be read - the email still goes).
-async function expiringCardUpdateLink(customer: SweepCustomer, visitDate: string, appBaseUrl: string): Promise<{ link: string; label: string } | null> {
+export async function expiringCardUpdateLink(
+  customer: SweepCustomer,
+  visitDate: string,
+  appBaseUrl: string,
+  // Injectable so the expiry rule can be checked without a Stripe call.
+  retrieve?: (id: string) => Promise<{ card?: { exp_year: number; exp_month: number; brand: string; last4: string } | null }>
+): Promise<{ link: string; label: string } | null> {
   if (customer.payment_mode === "one_time_link" || !customer.default_payment_method_id) return null;
   try {
-    const pm = await getStripe().paymentMethods.retrieve(customer.default_payment_method_id);
+    const pm = await (retrieve ? retrieve(customer.default_payment_method_id) : getStripe().paymentMethods.retrieve(customer.default_payment_method_id));
     const card = pm.card;
     if (!card) return null;
     const validThrough = `${card.exp_year}-${String(card.exp_month).padStart(2, "0")}`; // good through the end of this month
@@ -100,23 +111,19 @@ async function expiringCardUpdateLink(customer: SweepCustomer, visitDate: string
   }
 }
 
-async function sendReminder(params: {
+// The email's content, separate from sending so it can be checked without sending anything.
+export function buildReminderContent(params: {
   kind: ReminderKind;
   job: ReminderJobRow;
   appBaseUrl: string;
   tiers: { basePriceCents: number; commercialPriceCents: number };
-}): Promise<boolean> {
-  let brand: EmailBrand;
-  try {
-    brand = await getEmailBrand();
-  } catch (err) {
-    // Same log-and-return-false contract as every other failure here.
-    console.error("pre-visit-reminders sendReminder: business lookup failed", err);
-    return false;
-  }
+  brand: EmailBrand;
+  cardUpdate: { link: string; label: string } | null;
+}): { subject: string; html: string; text: string } | null {
+  const { brand, cardUpdate } = params;
   const property = flatten(params.job.property);
   const customer = flatten(property?.customer);
-  if (!customer?.email || !property) return false;
+  if (!customer || !property) return null;
 
   const name = customer.full_name?.trim() || "there";
   const dateLong = formatVisitDate(params.job.scheduled_date, { withYear: true });
@@ -140,7 +147,6 @@ async function sendReminder(params: {
       : params.kind === "7day"
         ? "Your cleaning is coming up next week."
         : "Your cleaning is tomorrow.";
-  const cardUpdate = params.kind === "30day" ? await expiringCardUpdateLink(customer, params.job.scheduled_date, params.appBaseUrl) : null;
 
   const inner = `
     <p style="margin:0 0 12px;">Hi ${escapeHtml(name)},</p>
@@ -183,6 +189,37 @@ async function sendReminder(params: {
     ``,
     `— ${brand.name}`,
   ].join("\n");
+  const subject =
+    params.kind === "30day"
+      ? `Heads-up: your annual visit is ${dateLong}`
+      : params.kind === "7day"
+        ? `Reminder: your visit is ${dateLong}`
+        : `Reminder: your visit is tomorrow — ${dateLong}`;
+  return { subject, html, text };
+}
+
+async function sendReminder(params: {
+  kind: ReminderKind;
+  job: ReminderJobRow;
+  appBaseUrl: string;
+  tiers: { basePriceCents: number; commercialPriceCents: number };
+}): Promise<boolean> {
+  let brand: EmailBrand;
+  try {
+    brand = await getEmailBrand();
+  } catch (err) {
+    // Same log-and-return-false contract as every other failure here.
+    console.error("pre-visit-reminders sendReminder: business lookup failed", err);
+    return false;
+  }
+  const property = flatten(params.job.property);
+  const customer = flatten(property?.customer);
+  if (!customer?.email || !property) return false;
+
+  const cardUpdate = params.kind === "30day" ? await expiringCardUpdateLink(customer, params.job.scheduled_date, params.appBaseUrl) : null;
+  const built = buildReminderContent({ ...params, brand, cardUpdate });
+  if (!built) return false;
+  const { subject, html, text } = built;
 
   const resend = await getResend();
   if (!resend) {
@@ -213,12 +250,7 @@ async function sendReminder(params: {
         from: resend.from,
         ...(replyTo ? { replyTo } : {}),
         to: r.email,
-        subject:
-          params.kind === "30day"
-            ? `Heads-up: your annual visit is ${dateLong}`
-            : params.kind === "7day"
-              ? `Reminder: your visit is ${dateLong}`
-              : `Reminder: your visit is tomorrow — ${dateLong}`,
+        subject,
         html,
         text,
       });
@@ -336,7 +368,7 @@ export async function runPrevisitReminderSweep(): Promise<PrevisitReminderSweepR
     if (sevenDayRows.error) console.error("pre-visit-reminders: 7-day query failed", sevenDayRows.error);
     if (oneDayRows.error) console.error("pre-visit-reminders: 24hr query failed", oneDayRows.error);
 
-    const annualJobs = ((thirtyDayRows.data ?? []) as ReminderJobRow[]).filter((j) => flatten(j.property)?.service_interval_months === 12);
+    const annualJobs = selectAnnualJobs((thirtyDayRows.data ?? []) as ReminderJobRow[]);
     const [thirtyDay, sevenDay, twentyFourHour] = await Promise.all([
       processReminderBatch(annualJobs, "30day", supabase, appBaseUrl, tiers),
       processReminderBatch((sevenDayRows.data ?? []) as ReminderJobRow[], "7day", supabase, appBaseUrl, tiers),
