@@ -26,8 +26,14 @@ type PropRow = {
   pending_interval_months: number | null;
 };
 
-export async function loadCustomerAgreement(customerId: string): Promise<CustomerAgreement> {
-  const [{ data }, settings] = await Promise.all([
+// includePending: true (the default, for token pages) counts a requested switch the customer is
+// being asked to sign. The public /book flow passes false: it must never sign or apply a switch.
+export async function loadCustomerAgreement(
+  customerId: string,
+  opts: { includePending?: boolean } = {}
+): Promise<CustomerAgreement> {
+  const includePending = opts.includePending ?? true;
+  const [{ data, error }, settings] = await Promise.all([
     businessDb()
       .from("properties")
       .select("id, nickname, address, plan_status, service_interval_months, pending_interval_months")
@@ -36,9 +42,11 @@ export async function loadCustomerAgreement(customerId: string): Promise<Custome
       .order("created_at", { ascending: true }),
     getSettings(),
   ]);
+  // Never guess the text on a failed read (it would silently re-prompt for, or record, the wrong version).
+  if (error) throw new Error(`loadCustomerAgreement: ${error.message}`);
   const lines = ((data ?? []) as PropRow[]).map((p) => ({
     address: p.nickname ? `${p.nickname} (${p.address})` : p.address,
-    months: p.pending_interval_months ?? p.service_interval_months ?? settings.service_interval_months,
+    months: (includePending ? p.pending_interval_months : null) ?? p.service_interval_months ?? settings.service_interval_months,
   }));
   return { frequency: frequencyOf(lines.map((l) => l.months)), lines };
 }
@@ -47,11 +55,12 @@ export async function loadCustomerAgreement(customerId: string): Promise<Custome
 // the customer row (timestamp + version + the frequency they accepted).
 export function acceptanceFields(
   mode: string | null | undefined,
-  frequency: AgreementFrequency
+  frequency: AgreementFrequency,
+  lines: readonly FrequencyLine[]
 ): { service_agreement_accepted_at: string; service_agreement_version: string; service_agreement_frequency: AgreementFrequency } {
   return {
     service_agreement_accepted_at: new Date().toISOString(),
-    service_agreement_version: agreementVersionFor(mode, frequency),
+    service_agreement_version: agreementVersionFor(mode, frequency, lines),
     service_agreement_frequency: frequency,
   };
 }
@@ -60,8 +69,24 @@ export function acceptanceFields(
 // real interval changes, with a paper-trail row, and the pending request
 // clears). Nothing is rescheduled here - the owner is asked about the already
 // booked visit in the field app. Never throws; returns how many switched.
-export async function applyPendingSwitches(customerId: string): Promise<number> {
+// acceptedVersion is what the customer just accepted: if the pending requests changed since they
+// were shown (the owner edited them meanwhile), nothing is applied - they never saw those terms.
+export async function applyPendingSwitches(
+  customerId: string,
+  mode: string | null | undefined,
+  acceptedVersion: string
+): Promise<number> {
   const db = businessDb();
+  try {
+    const now = await loadCustomerAgreement(customerId);
+    if (agreementVersionFor(mode, now.frequency, now.lines) !== acceptedVersion) {
+      console.error("applyPendingSwitches: terms changed since shown, not applying", { customerId });
+      return 0;
+    }
+  } catch (err) {
+    console.error("applyPendingSwitches: could not re-check the terms", err, { customerId });
+    return 0;
+  }
   const { data, error } = await db
     .from("properties")
     .select("id, service_interval_months, pending_interval_months")

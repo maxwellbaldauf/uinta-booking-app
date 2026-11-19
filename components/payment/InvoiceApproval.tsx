@@ -56,8 +56,8 @@ export function InvoiceApproval({ token, job }: { token: string; job: InvoiceJob
 }
 
 function CardOnFileInvoiceApproval({ token, job }: { token: string; job: InvoiceJob }) {
-  const requiredVersion = agreementVersionFor("card_on_file", job.agreementFrequency);
-  const agreementCurrent = agreementIsCurrentFor(job.serviceAgreementVersion, "card_on_file", job.agreementFrequency);
+  const requiredVersion = agreementVersionFor("card_on_file", job.agreementFrequency, job.agreementLines);
+  const agreementCurrent = agreementIsCurrentFor(job.serviceAgreementVersion, "card_on_file", job.agreementFrequency, job.agreementLines);
   const [step, setStep] = useState<Step>("review");
   const [accepted, setAccepted] = useState(agreementCurrent);
   const [error, setError] = useState<string | null>(null);

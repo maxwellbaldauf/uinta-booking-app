@@ -70,9 +70,10 @@ function flatten<T>(v: T | T[] | null | undefined): T | null {
 const JOB_COLUMNS =
   "id, scheduled_date, arrival_block, blocks_needed, access_token, quoted_price_cents, property:properties(address, service_interval_months, service_type, custom_price_cents, customer:customers(id, full_name, email, payment_mode, stripe_customer_id, default_payment_method_id, payment_setup_token, payment_setup_token_expires_at))";
 
-// The 30-day heads-up is for annual service only: a property on the 12-month interval.
-export function selectAnnualJobs(jobs: ReminderJobRow[]): ReminderJobRow[] {
-  return jobs.filter((j) => flatten(j.property)?.service_interval_months === 12);
+// The 30-day heads-up is for annual service only: a property on the 12-month interval (a property
+// with no interval of its own follows the business default, like the agreement and the field app).
+export function selectAnnualJobs(jobs: ReminderJobRow[], defaultIntervalMonths: number): ReminderJobRow[] {
+  return jobs.filter((j) => (flatten(j.property)?.service_interval_months ?? defaultIntervalMonths) === 12);
 }
 
 export type ReminderKind = "30day" | "7day" | "24hr";
@@ -94,10 +95,12 @@ export async function expiringCardUpdateLink(
     if (!card) return null;
     const validThrough = `${card.exp_year}-${String(card.exp_month).padStart(2, "0")}`; // good through the end of this month
     if (visitDate.slice(0, 7) <= validThrough) return null;
+    // Reuse the customer's existing token (an older emailed link keeps working) and just extend it
+    // when it is close to expiring; only mint when there is none.
     const live = customer.payment_setup_token && customer.payment_setup_token_expires_at && new Date(customer.payment_setup_token_expires_at).getTime() > Date.now() + 7 * 86400000;
     let token = customer.payment_setup_token;
     if (!live || !token) {
-      token = newPaymentSetupToken();
+      token = token || newPaymentSetupToken();
       const { error } = await businessDb().from("customers").update({ payment_setup_token: token, payment_setup_token_expires_at: expiresInDays(45) }).eq("id", customer.id);
       if (error) {
         console.error("pre-visit-reminders: could not mint a card-update token", error, { customerId: customer.id });
@@ -203,6 +206,8 @@ async function sendReminder(params: {
   job: ReminderJobRow;
   appBaseUrl: string;
   tiers: { basePriceCents: number; commercialPriceCents: number };
+  // One card-update lookup per customer per sweep (two same-day jobs must not both mint a token).
+  cardLinks: Map<string, Promise<{ link: string; label: string } | null>>;
 }): Promise<boolean> {
   let brand: EmailBrand;
   try {
@@ -216,10 +221,19 @@ async function sendReminder(params: {
   const customer = flatten(property?.customer);
   if (!customer?.email || !property) return false;
 
-  const cardUpdate = params.kind === "30day" ? await expiringCardUpdateLink(customer, params.job.scheduled_date, params.appBaseUrl) : null;
+  let cardUpdate: { link: string; label: string } | null = null;
+  if (params.kind === "30day") {
+    let p = params.cardLinks.get(customer.id);
+    if (!p) {
+      p = expiringCardUpdateLink(customer, params.job.scheduled_date, params.appBaseUrl);
+      params.cardLinks.set(customer.id, p);
+    }
+    cardUpdate = await p;
+  }
+  // The card-update link is a live token: only the main address gets it, never the additional emails.
   const built = buildReminderContent({ ...params, brand, cardUpdate });
-  if (!built) return false;
-  const { subject, html, text } = built;
+  const builtForExtras = cardUpdate ? buildReminderContent({ ...params, brand, cardUpdate: null }) : built;
+  if (!built || !builtForExtras) return false;
 
   const resend = await getResend();
   if (!resend) {
@@ -246,13 +260,14 @@ async function sendReminder(params: {
     recipients,
     fresh: false,
     send: async (r) => {
+      const content = r.isMain ? built : builtForExtras;
       const res = await resend.client.emails.send({
         from: resend.from,
         ...(replyTo ? { replyTo } : {}),
         to: r.email,
-        subject,
-        html,
-        text,
+        subject: content.subject,
+        html: content.html,
+        text: content.text,
       });
       return toOutcome(res);
     },
@@ -289,12 +304,13 @@ async function processReminderBatch(
   kind: ReminderKind,
   supabase: ReturnType<typeof businessDb>,
   appBaseUrl: string,
-  tiers: { basePriceCents: number; commercialPriceCents: number }
+  tiers: { basePriceCents: number; commercialPriceCents: number },
+  cardLinks: Map<string, Promise<{ link: string; label: string } | null>>
 ): Promise<{ sent: number; failed: number }> {
   const results = await Promise.all(
     jobs.map(async (job) => {
       try {
-        const ok = await sendReminder({ kind, job, appBaseUrl, tiers });
+        const ok = await sendReminder({ kind, job, appBaseUrl, tiers, cardLinks });
         if (!ok) return false;
 
         const { error } = await supabase
@@ -368,11 +384,12 @@ export async function runPrevisitReminderSweep(): Promise<PrevisitReminderSweepR
     if (sevenDayRows.error) console.error("pre-visit-reminders: 7-day query failed", sevenDayRows.error);
     if (oneDayRows.error) console.error("pre-visit-reminders: 24hr query failed", oneDayRows.error);
 
-    const annualJobs = selectAnnualJobs((thirtyDayRows.data ?? []) as ReminderJobRow[]);
+    const annualJobs = selectAnnualJobs((thirtyDayRows.data ?? []) as ReminderJobRow[], settings.service_interval_months);
+    const cardLinks = new Map<string, Promise<{ link: string; label: string } | null>>();
     const [thirtyDay, sevenDay, twentyFourHour] = await Promise.all([
-      processReminderBatch(annualJobs, "30day", supabase, appBaseUrl, tiers),
-      processReminderBatch((sevenDayRows.data ?? []) as ReminderJobRow[], "7day", supabase, appBaseUrl, tiers),
-      processReminderBatch((oneDayRows.data ?? []) as ReminderJobRow[], "24hr", supabase, appBaseUrl, tiers),
+      processReminderBatch(annualJobs, "30day", supabase, appBaseUrl, tiers, cardLinks),
+      processReminderBatch((sevenDayRows.data ?? []) as ReminderJobRow[], "7day", supabase, appBaseUrl, tiers, cardLinks),
+      processReminderBatch((oneDayRows.data ?? []) as ReminderJobRow[], "24hr", supabase, appBaseUrl, tiers, cardLinks),
     ]);
 
     return {

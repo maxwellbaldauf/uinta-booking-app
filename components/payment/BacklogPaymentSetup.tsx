@@ -34,8 +34,8 @@ export function BacklogPaymentSetup({
   frequency: AgreementFrequency;
   lines: FrequencyLine[];
 }) {
-  const requiredVersion = agreementVersionFor("card_on_file", frequency);
-  const agreementCurrent = agreementIsCurrentFor(serviceAgreementVersion, "card_on_file", frequency);
+  const requiredVersion = agreementVersionFor("card_on_file", frequency, lines);
+  const agreementCurrent = agreementIsCurrentFor(serviceAgreementVersion, "card_on_file", frequency, lines);
   const [step, setStep] = useState<Step>("summary");
   const [error, setError] = useState<string | null>(null);
   const [paymentDisplay, setPaymentDisplay] = useState<string | null>(null);

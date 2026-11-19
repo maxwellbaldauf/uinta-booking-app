@@ -7,7 +7,7 @@ import { getResend } from "@/lib/email/resend";
 import { loadRecipients, deliverToRecipients, toOutcome } from "@/lib/email/recipients";
 import { renderEmail, detailsTable, buttonRow, escapeHtml } from "@/lib/email/shell";
 import { buildBookingIcs } from "@/lib/ics";
-import { agreementPdfFilenameFor } from "@/lib/agreement";
+import { agreementBlocksFor, agreementPdfFilenameFor } from "@/lib/agreement";
 import { loadCustomerAgreement } from "@/lib/agreementFrequency";
 import { arrivalBlockLabel, ARRIVAL_BLOCKS } from "@/lib/schedule/blocks";
 import { formatVisitDate } from "@/lib/format";
@@ -195,12 +195,16 @@ export async function buildBookingConfirmationEmail(
     { filename: brand.icsFilename, content: Buffer.from(ics, "utf-8") },
   ];
   if (opts?.attachAgreement) {
-    // Annual service: the variant PDF; a customer with mixed frequencies has no static PDF.
-    const { frequency } = await loadCustomerAgreement(customer.id);
+    // Annual service: the variant PDF. A customer with mixed frequencies has no static PDF (their
+    // text lists their own properties), so they get their exact text as a plain-text attachment.
+    const { frequency, lines } = await loadCustomerAgreement(customer.id);
     const pdfName = agreementPdfFilenameFor(customer.payment_mode, frequency);
     const pdf = pdfName ? await readAgreementPdf(pdfName) : null;
     if (pdfName && pdf) {
       attachments.push({ filename: pdfName, content: pdf });
+    } else if (frequency === "mixed") {
+      const body = agreementBlocksFor(customer.payment_mode, frequency, lines).map((b) => b.text).join(String.fromCharCode(10, 10));
+      attachments.push({ filename: "service-agreement.txt", content: Buffer.from(body, "utf-8") });
     }
   }
 
@@ -251,7 +255,7 @@ export async function sendBookingConfirmationEmail(
         subject: built.subject,
         html: built.html,
         text: built.text,
-        attachments: isMain ? built.attachments : (built.attachments ?? []).filter((a) => !/\.pdf$/i.test(a.filename)),
+        attachments: isMain ? built.attachments : (built.attachments ?? []).filter((a) => !/^service-agreement/i.test(a.filename)),
       });
       return toOutcome(res);
     };

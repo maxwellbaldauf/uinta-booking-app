@@ -35,7 +35,7 @@ export function AgreementOnly({
       const res = await fetch("/api/agreement/accept", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token, version: agreementVersionFor(payByLink ? "one_time_link" : "card_on_file", frequency) }),
+        body: JSON.stringify({ token, version: agreementVersionFor(payByLink ? "one_time_link" : "card_on_file", frequency, lines) }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data.ok) {

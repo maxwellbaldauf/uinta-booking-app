@@ -55,7 +55,7 @@ async function main() {
     const orig = data.blocks as unknown as { kind: string; text: string }[];
     const semi = A.agreementBlocksFor(mode, "semi_annual");
     check(`[${mode}] semi-annual text is IDENTICAL to today's (every block)`, JSON.stringify(semi) === JSON.stringify(orig));
-    check(`[${mode}] semi-annual version unchanged (${A.agreementVersionFor(mode, "semi_annual")})`, A.agreementVersionFor(mode, "semi_annual") === data.version);
+    check(`[${mode}] semi-annual version unchanged (${A.agreementVersionFor(mode, "semi_annual", [])})`, A.agreementVersionFor(mode, "semi_annual", []) === data.version);
 
     const annual = A.agreementBlocksFor(mode, "annual");
     const changed = annual.map((b, i) => (b.text !== orig[i].text ? i : -1)).filter((i) => i >= 0);
@@ -67,7 +67,7 @@ async function main() {
     let q = 0; while (before[before.length - 1 - q] === after[after.length - 1 - q]) q++;
     console.log(`  word diff: removed "${before.slice(p, before.length - q).join(" ")}"  added "${after.slice(p, after.length - q).join(" ")}"`);
     check(`[${mode}] the changed words are only the frequency phrase`, before.slice(p, before.length - q).join(" ") === "every six (6) months," .replace(/,$/, "") + "" || /^(every six \(6\) months)$/.test(before.slice(p, before.length - q).join(" ").replace(/,$/, "")));
-    check(`[${mode}] annual version is ${A.agreementVersionFor(mode, "annual")}`, A.agreementVersionFor(mode, "annual").startsWith("2026-11-19-annual") && A.agreementVersionFor(mode, "annual").endsWith(mode === "one_time_link" ? "-link" : "annual"));
+    check(`[${mode}] annual version is ${A.agreementVersionFor(mode, "annual", [])}`, A.agreementVersionFor(mode, "annual", []).startsWith("2026-11-19-annual") && A.agreementVersionFor(mode, "annual", []).endsWith(mode === "one_time_link" ? "-link" : "annual"));
 
     const mixed = A.agreementBlocksFor(mode, "mixed", [{ address: "12 Oak St", months: 12 }, { address: "9 Elm Ave", months: 6 }]);
     const mchanged = mixed.filter((b, k) => b.text !== orig[k]?.text).length;
@@ -86,7 +86,7 @@ async function main() {
   console.log(`\n== B. Staging rows [${slug}] ==`);
   const db = businessDb();
   const created = { customers: [] as string[], properties: [] as string[], jobs: [] as string[] };
-  const semiV = A.agreementVersionFor("card_on_file", "semi_annual");
+  const semiV = A.agreementVersionFor("card_on_file", "semi_annual", []);
   async function mk(tag: string, props: { interval: number | null; pending?: number | null }[], opts: { signed?: boolean; mode?: string } = {}) {
     const { data: c, error } = await db.from("customers").insert({
       full_name: `TEST ANNUAL ${tag}`, email: `maxwellbbaldauf+annual-${tag}@gmail.com`, source: "manual",
@@ -116,7 +116,7 @@ async function main() {
 
     const c2 = await mk("semi", [{ interval: null }], { signed: true });
     const a2 = await F.loadCustomerAgreement(c2.customerId);
-    check("semi-annual customer -> semi_annual; their signed version is still CURRENT", a2.frequency === "semi_annual" && A.agreementIsCurrentFor(semiV, "card_on_file", a2.frequency));
+    check("semi-annual customer -> semi_annual; their signed version is still CURRENT", a2.frequency === "semi_annual" && A.agreementIsCurrentFor(semiV, "card_on_file", a2.frequency, a2.lines));
 
     const c3 = await mk("mixed", [{ interval: 12 }, { interval: null }]);
     const a3 = await F.loadCustomerAgreement(c3.customerId);
@@ -128,7 +128,7 @@ async function main() {
 
     const c6 = await mk("link", [{ interval: 12 }], { mode: "one_time_link" });
     const a6 = await F.loadCustomerAgreement(c6.customerId);
-    check("annual + one-time link -> the -annual-link version, same link text apart from the frequency phrase", a6.frequency === "annual" && A.agreementVersionFor("one_time_link", a6.frequency).endsWith("annual-link") && JSON.stringify(A.agreementBlocksFor("one_time_link", "annual").filter((_, k) => k !== 8)) === JSON.stringify((oneTime.blocks as unknown as { kind: string; text: string }[]).filter((_, k) => k !== 8)));
+    check("annual + one-time link -> the -annual-link version, same link text apart from the frequency phrase", a6.frequency === "annual" && A.agreementVersionFor("one_time_link", a6.frequency, a6.lines).endsWith("annual-link") && JSON.stringify(A.agreementBlocksFor("one_time_link", "annual").filter((_, k) => k !== 8)) === JSON.stringify((oneTime.blocks as unknown as { kind: string; text: string }[]).filter((_, k) => k !== 8)));
 
     // pending switch on a signed semi-annual customer
     const c5 = await mk("switch", [{ interval: null, pending: 12 }], { signed: true });
@@ -136,24 +136,47 @@ async function main() {
     created.jobs.push(j!.id as string);
     const a5 = await F.loadCustomerAgreement(c5.customerId);
     check("pending switch: the customer is asked for the ANNUAL text", a5.frequency === "annual");
-    check("...their old semi-annual signature is not current for it (they must sign)", !A.agreementIsCurrentFor(semiV, "card_on_file", a5.frequency));
+    check("...their old semi-annual signature is not current for it (they must sign)", !A.agreementIsCurrentFor(semiV, "card_on_file", a5.frequency, a5.lines));
     const { data: pBefore } = await db.from("properties").select("service_interval_months, pending_interval_months").eq("id", c5.propertyIds[0]).single();
     check("...and until they accept, the real interval is unchanged", pBefore!.service_interval_months === null && pBefore!.pending_interval_months === 12);
 
     // acceptance
-    await db.from("customers").update(F.acceptanceFields("card_on_file", a5.frequency)).eq("id", c5.customerId);
-    const applied = await F.applyPendingSwitches(c5.customerId);
+    await db.from("customers").update(F.acceptanceFields("card_on_file", a5.frequency, a5.lines)).eq("id", c5.customerId);
+    const v5 = A.agreementVersionFor("card_on_file", a5.frequency, a5.lines);
+    const applied = await F.applyPendingSwitches(c5.customerId, "card_on_file", v5);
     const { data: cu } = await db.from("customers").select("service_agreement_version, service_agreement_frequency").eq("id", c5.customerId).single();
     const { data: pAfter } = await db.from("properties").select("service_interval_months, pending_interval_months, interval_move_prompt").eq("id", c5.propertyIds[0]).single();
     const { data: log } = await db.from("property_interval_changes").select("old_interval_months, new_interval_months").eq("property_id", c5.propertyIds[0]);
     const { data: jAfter } = await db.from("jobs").select("scheduled_date, status").eq("id", j!.id as string).single();
     console.log(`  signature record: version=${cu!.service_agreement_version} frequency=${cu!.service_agreement_frequency}`);
-    check("acceptance records the annual version AND frequency", cu!.service_agreement_version === A.agreementVersionFor("card_on_file", "annual") && cu!.service_agreement_frequency === "annual");
+    check("acceptance records the annual version AND frequency", cu!.service_agreement_version === A.agreementVersionFor("card_on_file", "annual", []) && cu!.service_agreement_frequency === "annual");
     check("...then the interval switches to 12, pending clears, owner is prompted", applied === 1 && pAfter!.service_interval_months === 12 && pAfter!.pending_interval_months === null && pAfter!.interval_move_prompt === true);
     check("...with a paper-trail row (null -> 12)", JSON.stringify(log) === JSON.stringify([{ old_interval_months: null, new_interval_months: 12 }]));
     check("...and the already-booked visit did NOT move", jAfter!.scheduled_date === "2027-05-10" && jAfter!.status === "scheduled");
-    const again = await F.applyPendingSwitches(c5.customerId);
+    const again = await F.applyPendingSwitches(c5.customerId, "card_on_file", v5);
     check("accepting twice does nothing more", again === 0);
+
+    // review fixes: the mixed version binds the listing; terms changed after display are not applied
+    const lineA = [{ address: "12 Oak St", months: 12 }, { address: "9 Elm Ave", months: 6 }];
+    const lineB = [{ address: "12 Oak St", months: 12 }, { address: "9 Elm Ave", months: 12 }, { address: "3 Pine", months: 6 }];
+    const vA = A.agreementVersionFor("card_on_file", "mixed", lineA);
+    check("mixed version changes when the listed properties change (and not when only order changes)",
+      vA !== A.agreementVersionFor("card_on_file", "mixed", lineB) && vA === A.agreementVersionFor("card_on_file", "mixed", [...lineA].reverse()));
+    check("...and a mixed acceptance is no longer current once the list changed", !A.agreementIsCurrentFor(vA, "card_on_file", "mixed", lineB));
+    const c7 = await mk("stale", [{ interval: null, pending: 12 }, { interval: 12 }], { signed: true });
+    const shown = await F.loadCustomerAgreement(c7.customerId);
+    const shownV = A.agreementVersionFor("card_on_file", shown.frequency, shown.lines);
+    check("(setup) the customer was shown the ANNUAL text", shown.frequency === "annual");
+    await db.from("properties").update({ service_interval_months: 6 }).eq("id", c7.propertyIds[1]); // owner changes another property after display
+    const skipped = await F.applyPendingSwitches(c7.customerId, "card_on_file", shownV);
+    const { data: p7 } = await db.from("properties").select("service_interval_months, pending_interval_months").eq("id", c7.propertyIds[0]).single();
+    check("terms changed between display and accept -> nothing is applied", skipped === 0 && p7!.service_interval_months === null && p7!.pending_interval_months === 12);
+    const noPending = await F.loadCustomerAgreement(c5.customerId, { includePending: false });
+    check("public-flow view (includePending:false) ignores a pending request", noPending.frequency !== undefined);
+    const c8 = await mk("nopend", [{ interval: null, pending: 12 }], { signed: true });
+    const pub = await F.loadCustomerAgreement(c8.customerId, { includePending: false });
+    const tok = await F.loadCustomerAgreement(c8.customerId);
+    check("a pending annual request: token pages say annual, the public booking flow still says semi-annual", tok.frequency === "annual" && pub.frequency === "semi_annual");
 
     // ---- C. the 30-day heads-up --------------------------------------------------
     console.log(`\n== C. 30-day heads-up [${slug}] ==`);
@@ -189,7 +212,8 @@ async function main() {
     check("one-time-link customer -> never a card link", (await expires(2027, 5, { ...expiringCustomer, payment_mode: "one_time_link" })) === null);
 
     const mine = [jobRow(12), jobRow(null), jobRow(6), jobRow(4)];
-    check("only the ANNUAL job is selected for a 30-day email (semi/default/6/4-month are not)", S.selectAnnualJobs(mine).length === 1 && S.selectAnnualJobs(mine)[0] === mine[0]);
+    check("only the ANNUAL job is selected for a 30-day email (semi/default/6/4-month are not)", S.selectAnnualJobs(mine, 6).length === 1 && S.selectAnnualJobs(mine, 6)[0] === mine[0]);
+    check("...and a business whose DEFAULT is 12 months counts a no-interval property as annual too", S.selectAnnualJobs(mine, 12).length === 2);
     const m7 = S.buildReminderContent({ kind: "7day", job: jobRow(null), appBaseUrl: "https://example.test", tiers, brand, cardUpdate: null })!;
     check("7-day / 24-hour emails keep their wording (headline, 'Reschedule' button, no heads-up copy)", /coming up next week/.test(m7.text) && /Reschedule:/.test(m7.text) && !/annual/i.test(m7.text));
 

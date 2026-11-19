@@ -57,6 +57,7 @@ export function BookingFlow({ basePriceCents }: { basePriceCents: number | null 
   // Mirrors availability.matchedCustomer.payByLink for use inside the memoized booking callback.
   const payByLinkRef = useRef(false);
   const frequencyRef = useRef<AgreementFrequency>("semi_annual");
+  const linesRef = useRef<FrequencyLine[]>([]);
   // "How did you hear about us?" - only asked of first-time bookers; the server
   // decides (sourceRequired) and re-validates on submit.
   const [heardAbout, setHeardAbout] = useState<HeardAboutAnswer | null>(null);
@@ -141,6 +142,7 @@ export function BookingFlow({ basePriceCents }: { basePriceCents: number | null 
   useEffect(() => {
     payByLinkRef.current = !!availability?.matchedCustomer?.payByLink;
     frequencyRef.current = availability?.matchedCustomer?.agreementFrequency ?? "semi_annual";
+    linesRef.current = availability?.matchedCustomer?.agreementLines ?? [];
   }, [availability]);
 
   const runCreateBooking = useCallback(
@@ -167,7 +169,7 @@ export function BookingFlow({ basePriceCents }: { basePriceCents: number | null 
         useExistingCard: choice.useExistingCard,
         payment: pay ? { setupIntentId: pay.setupIntentId, stripeCustomerId: pay.stripeCustomerId } : undefined,
         agreement: agreementAccepted
-          ? { accepted: true, version: agreementVersionFor(payByLinkRef.current ? "one_time_link" : "card_on_file", frequencyRef.current) }
+          ? { accepted: true, version: agreementVersionFor(payByLinkRef.current ? "one_time_link" : "card_on_file", frequencyRef.current, linesRef.current) }
           : undefined,
         quotesOptIn: d.quotesOptIn,
         heardAbout: answerOverride ?? heardAbout ?? undefined,

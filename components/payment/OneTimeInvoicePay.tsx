@@ -32,7 +32,7 @@ type Phase = "agreement" | "loading" | "form" | "paid" | "processing" | "error";
 
 export function OneTimeInvoicePay({ token, job }: { token: string; job: InvoiceJob }) {
   const router = useRouter();
-  const agreementCurrent = agreementIsCurrentFor(job.serviceAgreementVersion, "one_time_link", job.agreementFrequency);
+  const agreementCurrent = agreementIsCurrentFor(job.serviceAgreementVersion, "one_time_link", job.agreementFrequency, job.agreementLines);
   const [accepted, setAccepted] = useState(agreementCurrent);
   const [phase, setPhase] = useState<Phase>(agreementCurrent ? "loading" : "agreement");
   const [clientSecret, setClientSecret] = useState<string | null>(null);
@@ -52,7 +52,7 @@ export function OneTimeInvoicePay({ token, job }: { token: string; job: InvoiceJ
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             token,
-            ...(!agreementCurrent ? { agreement: { accepted: true, version: agreementVersionFor("one_time_link", job.agreementFrequency) } } : {}),
+            ...(!agreementCurrent ? { agreement: { accepted: true, version: agreementVersionFor("one_time_link", job.agreementFrequency, job.agreementLines) } } : {}),
           }),
         });
         const data = await res.json().catch(() => ({}));

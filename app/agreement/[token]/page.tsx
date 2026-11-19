@@ -40,7 +40,7 @@ export default async function AgreementPage({ params }: { params: Promise<{ toke
         frequency={frequency}
         lines={lines}
         payByLink={customer.payment_mode === "one_time_link"}
-        alreadyAccepted={agreementIsCurrentFor(customer.service_agreement_version, customer.payment_mode, frequency)}
+        alreadyAccepted={agreementIsCurrentFor(customer.service_agreement_version, customer.payment_mode, frequency, lines)}
         hadOlderVersion={customer.service_agreement_version != null}
       />
     </main>

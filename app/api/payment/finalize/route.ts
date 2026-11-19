@@ -63,11 +63,12 @@ export async function POST(req: Request) {
     // Same Service Agreement gate as finalize-backlog: required unless the
     // customer's accepted version is already current; checked before Stripe.
     // The text (and version) follows the customer's frequency, decided on the server.
-    const { frequency } = await loadCustomerAgreement(customer.id);
-    const agreementNeeded = !agreementIsCurrentFor(customer.service_agreement_version, "card_on_file", frequency);
+    const { frequency, lines } = await loadCustomerAgreement(customer.id);
+    const requiredVersion = agreementVersionFor("card_on_file", frequency, lines);
+    const agreementNeeded = !agreementIsCurrentFor(customer.service_agreement_version, "card_on_file", frequency, lines);
     if (
       agreementNeeded &&
-      !(body.agreement?.accepted && body.agreement.version === agreementVersionFor("card_on_file", frequency))
+      !(body.agreement?.accepted && body.agreement.version === requiredVersion)
     ) {
       return NextResponse.json(
         { error: "Please review and accept the current Service Agreement to continue.", agreementRequired: true },
@@ -95,7 +96,7 @@ export async function POST(req: Request) {
         payment_setup_token: null,
         payment_setup_token_expires_at: null,
         ...(agreementNeeded
-          ? acceptanceFields("card_on_file", frequency)
+          ? acceptanceFields("card_on_file", frequency, lines)
           : {}),
       })
       .eq("id", customer.id);
@@ -114,7 +115,7 @@ export async function POST(req: Request) {
     }
 
     // Accepting the updated agreement makes any requested frequency switch take effect.
-    if (agreementNeeded) await applyPendingSwitches(customer.id);
+    if (agreementNeeded) await applyPendingSwitches(customer.id, "card_on_file", requiredVersion);
 
     return NextResponse.json({ ok: true, paymentDisplay: displayLabel });
   } catch (err) {

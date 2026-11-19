@@ -19,6 +19,7 @@ export const GROUP_A_KINDS = [
   "receipt",
   "booking_confirmation",
   "cancellation",
+  "reminder_30day", // annual service heads-up (its card-update link goes to the main address only)
   "reminder_7day",
   "reminder_24hr",
 ] as const;

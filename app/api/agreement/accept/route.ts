@@ -30,26 +30,27 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "This agreement link has expired or is invalid." }, { status: 404 });
   }
   // The text shown follows the customer's frequency, decided here on the server.
-  const { frequency } = await loadCustomerAgreement(customer.id);
+  const { frequency, lines } = await loadCustomerAgreement(customer.id);
+  const requiredVersion = agreementVersionFor(customer.payment_mode, frequency, lines);
   const mode = customer.payment_mode;
-  if (body.version !== agreementVersionFor(mode, frequency)) {
+  if (body.version !== requiredVersion) {
     return NextResponse.json({ error: "Please review and accept the current Service Agreement." }, { status: 400 });
   }
 
   const db = businessDb();
-  const alreadyCurrent = agreementIsCurrentFor(customer.service_agreement_version, mode, frequency);
+  // An explicit acceptance of the page they were shown: any requested frequency switch takes
+  // effect now (the visit itself is not moved). Skipped if the terms changed since they were shown.
+  const alreadyCurrent = agreementIsCurrentFor(customer.service_agreement_version, mode, frequency, lines);
   if (!alreadyCurrent) {
     const { error } = await db
       .from("customers")
-      .update(acceptanceFields(mode, frequency))
+      .update(acceptanceFields(mode, frequency, lines))
       .eq("id", customer.id);
     if (error) {
       console.error("agreement/accept: update failed", error, { customerId: customer.id });
       return NextResponse.json({ error: "We couldn't record your agreement. Please try again." }, { status: 500 });
     }
-
-    // A requested frequency switch takes effect now (the visit itself is not moved).
-    const switched = await applyPendingSwitches(customer.id);
+    const switched = await applyPendingSwitches(customer.id, mode, requiredVersion);
 
     // Standard confirmation for the next scheduled visit, if there is one (not for a
     // frequency switch: the visit is unchanged and the owner decides whether to move it).
@@ -68,5 +69,6 @@ export async function POST(req: Request) {
       }
     }
   }
+  else await applyPendingSwitches(customer.id, mode, requiredVersion);
   return NextResponse.json({ ok: true });
 }

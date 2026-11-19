@@ -110,12 +110,26 @@ export function frequencyWords(months: number): string {
   return months === 1 ? "every month" : `every ${months} months`;
 }
 
+// A short fingerprint of the per-property listing, so the "mixed" version changes whenever the
+// list the customer is shown changes (a property added or switched): they accept the new list.
+export function linesFingerprint(lines: readonly FrequencyLine[]): string {
+  const s = lines.map((l) => `${l.address}|${l.months}`).sort().join(String.fromCharCode(10));
+  let h = 0x811c9dc5;
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i);
+    h = Math.imul(h, 0x01000193) >>> 0;
+  }
+  return h.toString(36);
+}
+
 export function agreementVersionFor(
   mode: string | null | undefined,
-  frequency: AgreementFrequency = "semi_annual"
+  frequency: AgreementFrequency,
+  lines: readonly FrequencyLine[]
 ): string {
   if (frequency === "semi_annual") return modeOf(mode) === "one_time_link" ? ONE_TIME_AGREEMENT_VERSION : SERVICE_AGREEMENT_VERSION;
-  return `${ANNUAL_VERSION_DATE}-${frequency === "annual" ? "annual" : "mixed"}${modeOf(mode) === "one_time_link" ? "-link" : ""}`;
+  const kind = frequency === "annual" ? "annual" : `mixed-${linesFingerprint(lines)}`;
+  return `${ANNUAL_VERSION_DATE}-${kind}${modeOf(mode) === "one_time_link" ? "-link" : ""}`;
 }
 
 export function agreementBlocksFor(
@@ -159,13 +173,14 @@ export function agreementPdfFilenameFor(
   mode: string | null | undefined,
   frequency: AgreementFrequency = "semi_annual"
 ): string | null {
-  return frequency === "mixed" ? null : `service-agreement-${agreementVersionFor(mode, frequency)}.pdf`;
+  return frequency === "mixed" ? null : `service-agreement-${agreementVersionFor(mode, frequency, [])}.pdf`; // never mixed here
 }
 
 export function agreementIsCurrentFor(
   storedVersion: string | null | undefined,
   mode: string | null | undefined,
-  frequency: AgreementFrequency = "semi_annual"
+  frequency: AgreementFrequency,
+  lines: readonly FrequencyLine[]
 ): boolean {
-  return storedVersion === agreementVersionFor(mode, frequency);
+  return storedVersion === agreementVersionFor(mode, frequency, lines);
 }

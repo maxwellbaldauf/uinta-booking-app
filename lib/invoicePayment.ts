@@ -128,10 +128,10 @@ export function agreementFieldsToRecord(
   agreement: { accepted?: boolean; version?: string } | undefined
 ): Record<string, string> | null {
   // The text shown (and the version that must be accepted) follows the customer's payment mode.
-  const required = agreementVersionFor(job.paymentMode, job.agreementFrequency);
-  if (agreementIsCurrentFor(job.serviceAgreementVersion, job.paymentMode, job.agreementFrequency)) return {};
+  const required = agreementVersionFor(job.paymentMode, job.agreementFrequency, job.agreementLines);
+  if (agreementIsCurrentFor(job.serviceAgreementVersion, job.paymentMode, job.agreementFrequency, job.agreementLines)) return {};
   if (!(agreement?.accepted && agreement.version === required)) return null;
-  return acceptanceFields(job.paymentMode, job.agreementFrequency);
+  return acceptanceFields(job.paymentMode, job.agreementFrequency, job.agreementLines);
 }
 
 export type ChargeInvoiceResult = { ok: true } | { ok: false; error: string };

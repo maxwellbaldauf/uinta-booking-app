@@ -46,7 +46,7 @@ export async function POST(req: Request) {
       console.error("pay-link-intent: recording agreement failed", error, { customerId: job.customerId });
       return NextResponse.json({ error: "We couldn't record your agreement. Please try again." }, { status: 500 });
     }
-    await applyPendingSwitches(job.customerId);
+    await applyPendingSwitches(job.customerId, job.paymentMode, agreementFields.service_agreement_version);
   }
 
   const result = await requestPayLinkIntent(job.id);

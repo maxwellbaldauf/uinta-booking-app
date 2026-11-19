@@ -63,11 +63,12 @@ export async function POST(req: Request) {
     // Same rule createBookingRecord uses: required unless already current —
     // never trusts the client's bare agreement.accepted flag alone.
     // The text (and version) follows the customer's frequency, decided on the server.
-    const { frequency } = await loadCustomerAgreement(customer.id);
-    const agreementNeeded = !agreementIsCurrentFor(customer.service_agreement_version, "card_on_file", frequency);
+    const { frequency, lines } = await loadCustomerAgreement(customer.id);
+    const requiredVersion = agreementVersionFor("card_on_file", frequency, lines);
+    const agreementNeeded = !agreementIsCurrentFor(customer.service_agreement_version, "card_on_file", frequency, lines);
     if (
       agreementNeeded &&
-      !(body.agreement?.accepted && body.agreement.version === agreementVersionFor("card_on_file", frequency))
+      !(body.agreement?.accepted && body.agreement.version === requiredVersion)
     ) {
       return NextResponse.json(
         {
@@ -104,7 +105,7 @@ export async function POST(req: Request) {
         payment_setup_token: null,
         payment_setup_token_expires_at: null,
         ...(agreementNeeded
-          ? acceptanceFields("card_on_file", frequency)
+          ? acceptanceFields("card_on_file", frequency, lines)
           : {}),
       })
       .eq("id", customer.id)
@@ -131,7 +132,7 @@ export async function POST(req: Request) {
     // Card is already durably saved above — a charge failure here doesn't
     // block the response. It surfaces on Project A's dashboard (Failed
     // charges) rather than needing its own owner-facing surface here.
-    if (agreementNeeded) await applyPendingSwitches(customer.id);
+    if (agreementNeeded) await applyPendingSwitches(customer.id, "card_on_file", requiredVersion);
 
     const results = await Promise.all(pending.jobs.map((job) => chargeBacklogJob(job.id)));
 

@@ -68,7 +68,7 @@ export async function POST(req: Request) {
 
   // Accepting the updated agreement makes a requested frequency switch take effect now,
   // so the next visit (scheduled when this charge succeeds) follows the new interval.
-  if (Object.keys(agreementFields).length > 0) await applyPendingSwitches(job.customerId);
+  if (Object.keys(agreementFields).length > 0) await applyPendingSwitches(job.customerId, job.paymentMode, agreementFields.service_agreement_version);
 
   const result = await chargeInvoiceJob(job.id);
   if (!result.ok) {

@@ -48,8 +48,8 @@ export function ImportPaymentSetup({
   frequency: AgreementFrequency;
   lines: FrequencyLine[];
 }) {
-  const requiredVersion = agreementVersionFor("card_on_file", frequency);
-  const agreementCurrent = agreementIsCurrentFor(serviceAgreementVersion, "card_on_file", frequency);
+  const requiredVersion = agreementVersionFor("card_on_file", frequency, lines);
+  const agreementCurrent = agreementIsCurrentFor(serviceAgreementVersion, "card_on_file", frequency, lines);
   const [phase, setPhase] = useState<"form" | "agreement" | "done">("form");
   const [accepted, setAccepted] = useState(agreementCurrent);
   useEffect(() => {

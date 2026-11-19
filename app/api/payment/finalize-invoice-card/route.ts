@@ -85,7 +85,7 @@ export async function POST(req: Request) {
       );
     }
 
-    if (Object.keys(agreementFields).length > 0) await applyPendingSwitches(job.customerId);
+    if (Object.keys(agreementFields).length > 0) await applyPendingSwitches(job.customerId, job.paymentMode, agreementFields.service_agreement_version);
 
     const result = await chargeInvoiceJob(job.id);
     if (!result.ok) {
