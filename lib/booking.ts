@@ -26,6 +26,7 @@ import {
   stripSawTimesNote,
   type LeadDetails,
 } from "@/lib/leads";
+import { reuseCustomerProperty } from "@/lib/propertyReuse";
 import {
   resolveConfirmedSetupIntent,
   setStripeDefaultPaymentMethod,
@@ -546,8 +547,30 @@ export async function createBookingRecord(
     if (res.error) console.error("lead conversion update failed; inserting a new property", res.error);
     converted = (res.data as { id: string } | null) ?? null;
   }
-  const { data: property, error: propertyError } = converted
-    ? { data: converted, error: null }
+  // A returning customer booking an address they already have (ANY plan status —
+  // active, or cancelled and now coming back) reuses THAT property instead of
+  // inserting a duplicate: normalized-address match (St/Street, case, punctuation;
+  // a different unit is a different property), geocode fallback only for unit-less
+  // addresses. Reactivates it if cancelled and refreshes the geocode / machine
+  // details; its existing price, interval, referral and notes are left alone.
+  // Scoped to this customer only — another customer at the same address still
+  // gets their own property. A read error must never fail a paid booking: log it
+  // and insert as before.
+  let reused: { id: string } | null = null;
+  if (!converted && matched) {
+    try {
+      reused = await reuseCustomerProperty({
+        customerId,
+        address: details.address,
+        coords: { lat: geo.lat, lng: geo.lng },
+        fields: propertyFields,
+      });
+    } catch (err) {
+      console.error("property reuse failed; inserting a new property", err);
+    }
+  }
+  const { data: property, error: propertyError } = converted || reused
+    ? { data: converted ?? reused, error: null }
     : await supabase
         .from("properties")
         .insert({ customer_id: customerId, source: "booking", ...propertyFields })

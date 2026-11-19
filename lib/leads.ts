@@ -2,6 +2,8 @@ import { businessDb } from "@/lib/tenant/business";
 import { matchOrCreateCustomer, normalizePhone, type MatchedCustomer } from "@/lib/customers";
 import { sendLeadAlert } from "@/lib/email/leadAlert";
 import { recordLead } from "@/lib/leadRecord";
+import { sameAddress } from "@/lib/addressMatch";
+import { findCustomerProperty } from "@/lib/propertyReuse";
 
 export type LeadDetails = {
   fullName: string;
@@ -45,15 +47,11 @@ export async function saveFlaggedLead(
     needs_followup: flags.needs_followup ?? false,
   };
 
-  const { data: existing } = await supabase
-    .from("properties")
-    .select("id, notes")
-    .eq("customer_id", customerId)
-    .eq("address", details.address)
-    .limit(1);
+  // Normalized match (St/Street, case, punctuation; a different unit never matches).
+  const existingRow = await findCustomerProperty(customerId, details.address, coords ? { lat: coords.lat, lng: coords.lng } : null);
 
-  if (existing && existing[0]) {
-    const { id: propertyId, notes } = existing[0] as { id: string; notes: string | null };
+  if (existingRow) {
+    const { id: propertyId, notes } = existingRow;
     // A dead end now describes this property, so drop a stale "saw open times"
     // marker (keeping any text the owner added after it).
     const { error } = await supabase
@@ -210,7 +208,7 @@ async function captureInAreaLead(
     if (state.real) return false;
     // Insert-only: a second submit (or any property already at this address)
     // leaves the record exactly as it is.
-    if (state.addresses.includes(details.address)) return false;
+    if (state.addresses.some((a) => sameAddress(a, details.address))) return false;
     if (state.addresses.length >= MAX_LEAD_PROPERTIES_PER_CUSTOMER) return false;
     customerId = matched.id;
   }
@@ -340,14 +338,15 @@ export async function findConvertibleLeadProperty(
   const supabase = businessDb();
   const { data, error } = await supabase
     .from("properties")
-    .select("id, notes, jobs(id)")
+    .select("id, address, notes, jobs(id)")
     .eq("customer_id", customerId)
-    .eq("address", address)
     .eq("plan_status", "pending")
-    .like("notes", `${SAW_TIMES_NOTE}%`)
-    .limit(1);
+    .like("notes", `${SAW_TIMES_NOTE}%`);
   if (error) throw new Error(`lead: find convertible property failed: ${error.message}`);
-  const row = data?.[0] as { id: string; notes: string | null; jobs: { id: string }[] | null } | undefined;
+  // Normalized match (St/Street, case, punctuation; a different unit never matches).
+  const row = ((data ?? []) as unknown as { id: string; address: string | null; notes: string | null; jobs: { id: string }[] | null }[]).find(
+    (r) => sameAddress(r.address, address)
+  );
   if (!row || (row.jobs ?? []).length > 0) return null;
   return { id: row.id, notes: row.notes };
 }

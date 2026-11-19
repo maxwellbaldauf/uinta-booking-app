@@ -4,6 +4,7 @@ import { matchOrCreateCustomer } from "@/lib/customers";
 import { sendLeadAlert } from "@/lib/email/leadAlert";
 import { recordLead } from "@/lib/leadRecord";
 import { isRealCustomer } from "@/lib/leads";
+import { findCustomerProperty } from "@/lib/propertyReuse";
 
 export type ContactInput = {
   fullName: string;
@@ -47,15 +48,11 @@ export async function submitContact(
       needs_followup: true,
     };
 
-    const { data: existing } = await supabase
-      .from("properties")
-      .select("id, plan_status, source")
-      .eq("customer_id", customerId)
-      .eq("address", input.address.trim())
-      .limit(1);
-
-    if (existing && existing[0]) {
-      const row = existing[0] as { id: string; plan_status: string; source: string };
+    // The customer's own property at this address — normalized (St/Street, case,
+    // punctuation; a different unit is a different property), never exact-string.
+    const existingRow = await findCustomerProperty(customerId, input.address.trim(), geo ? { lat: geo.lat, lng: geo.lng } : null);
+    if (existingRow) {
+      const row = existingRow;
       propertyId = row.id;
       // An existing CLIENT property writing in needs a human (field app: needs_attention); the lead flag
       // only means anything while the property is still a lead (pending + booking/contact_form).
