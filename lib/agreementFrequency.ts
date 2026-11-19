@@ -24,6 +24,7 @@ type PropRow = {
   plan_status: string;
   service_interval_months: number | null;
   pending_interval_months: number | null;
+  one_time_service: boolean | null;
 };
 
 // includePending: true (the default, for token pages) counts a requested switch the customer is
@@ -36,7 +37,7 @@ export async function loadCustomerAgreement(
   const [{ data, error }, settings] = await Promise.all([
     businessDb()
       .from("properties")
-      .select("id, nickname, address, plan_status, service_interval_months, pending_interval_months")
+      .select("id, nickname, address, plan_status, service_interval_months, pending_interval_months, one_time_service")
       .eq("customer_id", customerId)
       .neq("plan_status", "cancelled")
       .order("created_at", { ascending: true }),
@@ -46,7 +47,7 @@ export async function loadCustomerAgreement(
   if (error) throw new Error(`loadCustomerAgreement: ${error.message}`);
   const lines = ((data ?? []) as PropRow[]).map((p) => ({
     address: p.nickname ? `${p.nickname} (${p.address})` : p.address,
-    months: (includePending ? p.pending_interval_months : null) ?? p.service_interval_months ?? settings.service_interval_months,
+    months: (includePending ? p.pending_interval_months : null) ?? (p.one_time_service ? 0 : (p.service_interval_months ?? settings.service_interval_months)),
   }));
   return { frequency: frequencyOf(lines.map((l) => l.months)), lines };
 }
@@ -89,7 +90,7 @@ export async function applyPendingSwitches(
   }
   const { data, error } = await db
     .from("properties")
-    .select("id, service_interval_months, pending_interval_months")
+    .select("id, service_interval_months, pending_interval_months, one_time_service, rebook_plan")
     .eq("customer_id", customerId)
     .not("pending_interval_months", "is", null);
   if (error) {
@@ -97,15 +98,26 @@ export async function applyPendingSwitches(
     return 0;
   }
   let applied = 0;
-  for (const p of (data ?? []) as { id: string; service_interval_months: number | null; pending_interval_months: number }[]) {
+  for (const p of (data ?? []) as {
+    id: string;
+    service_interval_months: number | null;
+    pending_interval_months: number;
+    one_time_service: boolean | null;
+    rebook_plan: string | null;
+  }[]) {
+    // 0 = One-time service: the real interval column is never set to 0.
+    const toOnce = p.pending_interval_months === 0;
+    const fromOnce = p.one_time_service === true;
     const { data: updated, error: upErr } = await db
       .from("properties")
       .update({
-        service_interval_months: p.pending_interval_months,
+        ...(toOnce
+          ? { one_time_service: true, rebook_plan: p.rebook_plan ?? "six_and_twelve", rebook_due_on: null, rebook_step: 0 }
+          : { service_interval_months: p.pending_interval_months, one_time_service: false }),
         pending_interval_months: null,
         pending_interval_requested_at: null,
-        // Asks the owner (field app) whether to also move the already-booked visit.
-        interval_move_prompt: true,
+        // Asks the owner (field app) whether to also move the already-booked visit (a recurring change only).
+        interval_move_prompt: !toOnce && !fromOnce,
       })
       .eq("id", p.id)
       .eq("pending_interval_months", p.pending_interval_months)
@@ -116,7 +128,7 @@ export async function applyPendingSwitches(
     }
     const { error: logErr } = await db.from("property_interval_changes").insert({
       property_id: p.id,
-      old_interval_months: p.service_interval_months,
+      old_interval_months: fromOnce ? 0 : p.service_interval_months,
       new_interval_months: p.pending_interval_months,
     });
     if (logErr) console.error("applyPendingSwitches: paper-trail insert failed", logErr, { propertyId: p.id });

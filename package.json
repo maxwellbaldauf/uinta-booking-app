@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "agreement:pdf": "node scripts/generate-agreement-pdf.mjs && node scripts/generate-agreement-pdf.mjs agreement.one-time.data.json && node scripts/generate-agreement-pdf.mjs agreement.data.json annual && node scripts/generate-agreement-pdf.mjs agreement.one-time.data.json annual",
+    "agreement:pdf": "node scripts/generate-agreement-pdf.mjs && node scripts/generate-agreement-pdf.mjs agreement.one-time.data.json && node scripts/generate-agreement-pdf.mjs agreement.data.json annual && node scripts/generate-agreement-pdf.mjs agreement.one-time.data.json annual && node scripts/generate-agreement-pdf.mjs agreement.data.json once && node scripts/generate-agreement-pdf.mjs agreement.one-time.data.json once",
     "prepare": "git config core.hooksPath .githooks || exit 0"
   },
   "dependencies": {

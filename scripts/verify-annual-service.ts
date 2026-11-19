@@ -12,6 +12,7 @@
 //   C. The 30-day heads-up: content, annual-only selection, once-only selection, expiring-card link.
 // Everything it creates is deleted at the end (CLAUDE.md standing rule).
 import { createRequire } from "node:module";
+import fs from "node:fs";
 import path from "node:path";
 
 const require_ = createRequire(path.resolve("../uinta-field-app/package.json"));
@@ -87,7 +88,7 @@ async function main() {
   const db = businessDb();
   const created = { customers: [] as string[], properties: [] as string[], jobs: [] as string[] };
   const semiV = A.agreementVersionFor("card_on_file", "semi_annual", []);
-  async function mk(tag: string, props: { interval: number | null; pending?: number | null }[], opts: { signed?: boolean; mode?: string } = {}) {
+  async function mk(tag: string, props: { interval: number | null; pending?: number | null; once?: boolean }[], opts: { signed?: boolean; mode?: string } = {}) {
     const { data: c, error } = await db.from("customers").insert({
       full_name: `TEST ANNUAL ${tag}`, email: `maxwellbbaldauf+annual-${tag}@gmail.com`, source: "manual",
       payment_mode: opts.mode ?? "card_on_file",
@@ -100,7 +101,7 @@ async function main() {
       const { data: p, error: pe } = await db.from("properties").insert({
         customer_id: c!.id, nickname: `TEST ANNUAL ${tag} ${k}`, address: `${100 + k} Test Rd (TEST)`, latitude: 39.7106, longitude: -111.838,
         geocoded_at: new Date().toISOString(), source: "manual", plan_status: "active",
-        service_interval_months: pr.interval, pending_interval_months: pr.pending ?? null,
+        service_interval_months: pr.interval, pending_interval_months: pr.pending ?? null, one_time_service: pr.once ?? false,
       }).select("id").single();
       if (pe) throw new Error(pe.message);
       created.properties.push(p!.id as string);
@@ -227,6 +228,58 @@ async function main() {
     check("sent-at stamp: selected once, then never again", first.length === 1 && second.length === 0);
     await db.from("jobs").update({ scheduled_date: "2031-03-10", reminder_30day_sent_at: null }).eq("id", j30!.id as string);
     check("a reschedule clears the stamp path (new date selectable again)", ((await db.from("jobs").select("id").eq("scheduled_date", "2031-03-10").is("reminder_30day_sent_at", null)).data ?? []).length === 1);
+
+    // ---- D. One-time service -----------------------------------------------------
+    console.log(`\n== D. One-time service [${slug}] ==`);
+    for (const [mode, data] of [["card_on_file", cardData], ["one_time_link", oneTime]] as const) {
+      const orig = data.blocks as unknown as { kind: string; text: string }[];
+      const once = A.agreementBlocksFor(mode, "one_time");
+      const changed = once.map((b, i) => (b.text !== orig[i].text ? i : -1)).filter((i) => i >= 0);
+      console.log(`  [${mode}] ${changed.length} block(s) differ from today's text:`);
+      for (const i of changed) console.log(`    BEFORE: ${orig[i].text.length > 150 ? "..." + orig[i].text.slice(-150) : orig[i].text}\n    AFTER : ${once[i].text.length > 150 ? "..." + once[i].text.slice(-150) : once[i].text}`);
+      check(`[${mode}] one-time keeps every block and changes only Section 2 (${mode === "one_time_link" ? "+ the Section 6 next-visit sentence" : ""})`, once.length === orig.length && changed.length === (mode === "one_time_link" ? 4 : 3));
+      check(`[${mode}] semi-annual text still identical to today's`, JSON.stringify(A.agreementBlocksFor(mode, "semi_annual")) === JSON.stringify(orig));
+      check(`[${mode}] no mention of recurring service or a next visit left in the one-time text`, !/every six \(6\) months|continues automatically from visit to visit/.test(text(once)) && (mode === "card_on_file" || !/next visit is scheduled/.test(text(once))));
+      check(`[${mode}] no ${slug === "uinta" ? "Camelback" : "Uinta"} wording in the one-time text`, !other.test(text(once)));
+      const v = A.agreementVersionFor(mode, "one_time", []);
+      check(`[${mode}] one-time version is ${v}, and its PDF is committed`, v === (mode === "one_time_link" ? "2026-11-19-once-link" : "2026-11-19-once") && fs.existsSync(`content/${A.agreementPdfFilenameFor(mode, "one_time")}`));
+    }
+    check("helper: [0] one_time; [0,0] one_time; [0,6] mixed; [0,12] mixed; [12,12] annual; [6,4] semi", A.frequencyOf([0]) === "one_time" && A.frequencyOf([0, 0]) === "one_time" && A.frequencyOf([0, 6]) === "mixed" && A.frequencyOf([0, 12]) === "mixed" && A.frequencyOf([12, 12]) === "annual" && A.frequencyOf([6, 4]) === "semi_annual");
+    const stepSrc = fs.readFileSync("components/booking/AgreementStep.tsx", "utf8");
+    check("pay-by-link consent line says the card details are not saved", stepSrc.includes("emailed to me after the visit (my card details are not saved), and the $50 fee"));
+    check("one-time consent line says 'a one-time service visit'", stepSrc.includes("a one-time service visit"));
+
+    const q1 = await mk("once-prop", [{ interval: null, once: true }]);
+    const aq1 = await F.loadCustomerAgreement(q1.customerId);
+    check("a one-time customer is shown the one-time agreement", aq1.frequency === "one_time" && text(A.agreementBlocksFor("card_on_file", aq1.frequency, aq1.lines)).includes("single visit"));
+    const q1l = await mk("once-link", [{ interval: null, once: true }], { mode: "one_time_link" });
+    const aq1l = await F.loadCustomerAgreement(q1l.customerId);
+    check("...pay-by-link too (-once-link version)", aq1l.frequency === "one_time" && A.agreementVersionFor("one_time_link", aq1l.frequency, aq1l.lines) === "2026-11-19-once-link");
+
+    const q2 = await mk("once-switch", [{ interval: null, pending: 0 }], { signed: true });
+    const aq2 = await F.loadCustomerAgreement(q2.customerId);
+    check("signed semi-annual customer with a pending one-time request is asked for the one-time text", aq2.frequency === "one_time" && !A.agreementIsCurrentFor(semiV, "card_on_file", aq2.frequency, aq2.lines));
+    const pubq2 = await F.loadCustomerAgreement(q2.customerId, { includePending: false });
+    check("...but the public booking flow still shows semi-annual (never signs or applies it)", pubq2.frequency === "semi_annual");
+    const vq2 = A.agreementVersionFor("card_on_file", aq2.frequency, aq2.lines);
+    await db.from("customers").update(F.acceptanceFields("card_on_file", aq2.frequency, aq2.lines)).eq("id", q2.customerId);
+    const nq2 = await F.applyPendingSwitches(q2.customerId, "card_on_file", vq2);
+    const { data: pq2 } = await db.from("properties").select("service_interval_months, pending_interval_months, one_time_service, interval_move_prompt, rebook_plan").eq("id", q2.propertyIds[0]).single();
+    const { data: lq2 } = await db.from("property_interval_changes").select("old_interval_months, new_interval_months").eq("property_id", q2.propertyIds[0]);
+    check("acceptance applies it: flag set, real interval untouched, pending cleared, default reminder plan, NO move prompt", nq2 === 1 && pq2!.one_time_service === true && pq2!.service_interval_months === null && pq2!.pending_interval_months === null && pq2!.interval_move_prompt === false && pq2!.rebook_plan === "six_and_twelve");
+    check("...with a paper-trail row (null -> 0)", JSON.stringify(lq2) === JSON.stringify([{ old_interval_months: null, new_interval_months: 0 }]));
+
+    const q3 = await mk("once-leave", [{ interval: null, once: true, pending: 6 }], { signed: true });
+    const aq3 = await F.loadCustomerAgreement(q3.customerId);
+    check("one-time customer asked to move to a recurring plan sees the semi-annual text", aq3.frequency === "semi_annual");
+    const nq3 = await F.applyPendingSwitches(q3.customerId, "card_on_file", A.agreementVersionFor("card_on_file", aq3.frequency, aq3.lines));
+    const { data: pq3 } = await db.from("properties").select("service_interval_months, one_time_service, interval_move_prompt").eq("id", q3.propertyIds[0]).single();
+    check("...acceptance clears the one-time flag and sets 6 months, no move prompt", nq3 === 1 && pq3!.one_time_service === false && pq3!.service_interval_months === 6 && pq3!.interval_move_prompt === false);
+
+    const q4 = await mk("once-finished", [{ interval: null, once: true }]);
+    await db.from("properties").update({ plan_status: "cancelled" }).eq("id", q4.propertyIds[0]);
+    const aq4 = await F.loadCustomerAgreement(q4.customerId);
+    check("a FINISHED one-time property is ignored (a returning customer is back to the normal agreement)", aq4.frequency === "semi_annual" && aq4.lines.length === 0);
   } finally {
     if (created.jobs.length) await db.from("jobs").delete().in("id", created.jobs);
     if (created.properties.length) {

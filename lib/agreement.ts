@@ -88,7 +88,7 @@ function modeOf(mode: string | null | undefined): AgreementMode {
 // (e.g. every 4 months) does not trigger a variant: a customer with NO annual
 // property keeps the semi-annual text exactly as it was.
 // ---------------------------------------------------------------------------
-export type AgreementFrequency = "semi_annual" | "annual" | "mixed";
+export type AgreementFrequency = "semi_annual" | "annual" | "mixed" | "one_time";
 export type FrequencyLine = { address: string; months: number };
 
 const ANNUAL_VERSION_DATE = "2026-11-19";
@@ -98,13 +98,16 @@ const MIXED_PHRASE = "approximately as listed for each property below,";
 
 // annual = every property is on 12 months; mixed = some are and some aren't;
 // anything else (no annual property at all) = the unchanged semi-annual text.
+// 0 months means One-time service (a single visit, no recurring plan).
 export function frequencyOf(months: number[]): AgreementFrequency {
-  const annual = months.filter((m) => m === 12).length;
-  if (annual === 0) return "semi_annual";
-  return annual === months.length ? "annual" : "mixed";
+  if (months.length > 0 && months.every((m) => m === 0)) return "one_time";
+  const special = months.filter((m) => m === 12 || m === 0).length;
+  if (special === 0) return "semi_annual";
+  return months.every((m) => m === 12) ? "annual" : "mixed";
 }
 
 export function frequencyWords(months: number): string {
+  if (months === 0) return "one visit only";
   if (months === 12) return "once a year";
   if (months === 6) return "every six (6) months";
   return months === 1 ? "every month" : `every ${months} months`;
@@ -128,7 +131,7 @@ export function agreementVersionFor(
   lines: readonly FrequencyLine[]
 ): string {
   if (frequency === "semi_annual") return modeOf(mode) === "one_time_link" ? ONE_TIME_AGREEMENT_VERSION : SERVICE_AGREEMENT_VERSION;
-  const kind = frequency === "annual" ? "annual" : `mixed-${linesFingerprint(lines)}`;
+  const kind = frequency === "annual" ? "annual" : frequency === "one_time" ? "once" : `mixed-${linesFingerprint(lines)}`;
   return `${ANNUAL_VERSION_DATE}-${kind}${modeOf(mode) === "one_time_link" ? "-link" : ""}`;
 }
 
@@ -147,6 +150,7 @@ export function applyFrequency(
   lines: readonly FrequencyLine[] = []
 ): readonly AgreementBlock[] {
   if (frequency === "semi_annual") return base;
+  if (frequency === "one_time") return applyOneTime(base);
   const out: AgreementBlock[] = [];
   for (const block of base) {
     if (block.kind === "paragraph" && block.text.includes(SEMI_PHRASE)) {
@@ -165,6 +169,28 @@ export function applyFrequency(
     }
   }
   return out;
+}
+
+// One-time service: a single visit. Only Section 2 changes (and, in the pay-by-link text, one
+// sentence in Section 6 about the next visit); keep in sync with scripts/generate-agreement-pdf.mjs.
+const ONE_TIME_REPLACEMENTS: readonly [string, string][] = [
+  ["2. Recurring Service & Term", "2. Service & Term"],
+  [
+    "Service is provided on a recurring basis, approximately every six (6) months, for as long as this Agreement remains in effect.",
+    "Service is provided as a single visit, with no recurring visits.",
+  ],
+  [
+    "This Agreement continues automatically from visit to visit until cancelled by either party as described in Section 4.",
+    "This Agreement ends once the visit is completed and paid.",
+  ],
+  [" Your next visit is scheduled after you pay an invoice, so an unpaid invoice may delay it, and Section 4 applies to continued non-payment.", ""],
+];
+function applyOneTime(base: readonly AgreementBlock[]): readonly AgreementBlock[] {
+  return base.map((block) => {
+    let text = block.text;
+    for (const [from, to] of ONE_TIME_REPLACEMENTS) text = text.split(from).join(to);
+    return text === block.text ? block : { ...block, text };
+  });
 }
 
 // The committed static PDF for a variant, or null when none can exist (the

@@ -37,6 +37,17 @@ if (frequency === "annual") {
       : b
   );
 }
+if (frequency === "once") {
+  // One-time service (keep in sync with ONE_TIME_REPLACEMENTS in lib/agreement.ts).
+  version = `2026-11-19-once${dataFile.includes("one-time") ? "-link" : ""}`;
+  const reps = [
+    ["2. Recurring Service & Term", "2. Service & Term"],
+    ["Service is provided on a recurring basis, approximately every six (6) months, for as long as this Agreement remains in effect.", "Service is provided as a single visit, with no recurring visits."],
+    ["This Agreement continues automatically from visit to visit until cancelled by either party as described in Section 4.", "This Agreement ends once the visit is completed and paid."],
+    [" Your next visit is scheduled after you pay an invoice, so an unpaid invoice may delay it, and Section 4 applies to continued non-payment.", ""],
+  ];
+  blocks = blocks.map((b) => ({ ...b, text: reps.reduce((t, [from, to]) => t.split(from).join(to), b.text) }));
+}
 const pdfFilename = `service-agreement-${version}.pdf`;
 const outPath = path.join(root, "content", pdfFilename);
 

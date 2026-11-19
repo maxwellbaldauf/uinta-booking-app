@@ -17,7 +17,7 @@ const CONSENT_LABEL =
 const CONSENT_LABEL_PAY_BY_LINK =
   "I have read and agree to the Uinta Ice Co. Service Agreement, including " +
   "recurring semi-annual service, paying for each visit by card through the payment link " +
-  "emailed to me after the visit, and the $50 fee if we cannot safely get in.";
+  "emailed to me after the visit (my card details are not saved), and the $50 fee if we cannot safely get in.";
 
 export function AgreementStep({
   staleAcceptance,
@@ -146,7 +146,11 @@ export function AgreementStep({
             {(payByLink ? CONSENT_LABEL_PAY_BY_LINK : CONSENT_LABEL).replace(
               // Only the semi-annual wording names a frequency; annual/mixed say just "recurring service".
               "recurring semi-annual service",
-              frequency === "semi_annual" ? "recurring semi-annual service" : "recurring service"
+              frequency === "semi_annual"
+                ? "recurring semi-annual service"
+                : frequency === "one_time"
+                  ? "a one-time service visit"
+                  : "recurring service"
             )}
           </span>
         </label>
