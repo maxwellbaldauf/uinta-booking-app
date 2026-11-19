@@ -39,7 +39,8 @@ export default async function AgreementPage({ params }: { params: Promise<{ toke
         customerName={customer.full_name}
         frequency={frequency}
         lines={lines}
-        alreadyAccepted={agreementIsCurrentFor(customer.service_agreement_version, "one_time_link", frequency)}
+        payByLink={customer.payment_mode === "one_time_link"}
+        alreadyAccepted={agreementIsCurrentFor(customer.service_agreement_version, customer.payment_mode, frequency)}
         hadOlderVersion={customer.service_agreement_version != null}
       />
     </main>

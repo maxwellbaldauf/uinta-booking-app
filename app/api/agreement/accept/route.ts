@@ -31,16 +31,17 @@ export async function POST(req: Request) {
   }
   // The text shown follows the customer's frequency, decided here on the server.
   const { frequency } = await loadCustomerAgreement(customer.id);
-  if (body.version !== agreementVersionFor("one_time_link", frequency)) {
+  const mode = customer.payment_mode;
+  if (body.version !== agreementVersionFor(mode, frequency)) {
     return NextResponse.json({ error: "Please review and accept the current Service Agreement." }, { status: 400 });
   }
 
   const db = businessDb();
-  const alreadyCurrent = agreementIsCurrentFor(customer.service_agreement_version, "one_time_link", frequency);
+  const alreadyCurrent = agreementIsCurrentFor(customer.service_agreement_version, mode, frequency);
   if (!alreadyCurrent) {
     const { error } = await db
       .from("customers")
-      .update(acceptanceFields("one_time_link", frequency))
+      .update(acceptanceFields(mode, frequency))
       .eq("id", customer.id);
     if (error) {
       console.error("agreement/accept: update failed", error, { customerId: customer.id });

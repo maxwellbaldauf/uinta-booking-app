@@ -79,8 +79,8 @@ export async function applyPendingSwitches(customerId: string): Promise<number> 
         service_interval_months: p.pending_interval_months,
         pending_interval_months: null,
         pending_interval_requested_at: null,
-        // Surfaces the "move the already-booked visit?" question in the field app.
-        needs_attention: true,
+        // Asks the owner (field app) whether to also move the already-booked visit.
+        interval_move_prompt: true,
       })
       .eq("id", p.id)
       .eq("pending_interval_months", p.pending_interval_months)

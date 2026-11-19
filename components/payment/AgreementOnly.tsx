@@ -14,6 +14,7 @@ export function AgreementOnly({
   hadOlderVersion,
   frequency,
   lines,
+  payByLink,
 }: {
   token: string;
   customerName: string | null;
@@ -21,6 +22,8 @@ export function AgreementOnly({
   hadOlderVersion: boolean;
   frequency: AgreementFrequency;
   lines: FrequencyLine[];
+  // false = a card-on-file customer (updated agreement, e.g. a frequency switch): no payment wording.
+  payByLink: boolean;
 }) {
   const router = useRouter();
   const [done, setDone] = useState(alreadyAccepted);
@@ -32,7 +35,7 @@ export function AgreementOnly({
       const res = await fetch("/api/agreement/accept", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token, version: agreementVersionFor("one_time_link", frequency) }),
+        body: JSON.stringify({ token, version: agreementVersionFor(payByLink ? "one_time_link" : "card_on_file", frequency) }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data.ok) {
@@ -50,8 +53,9 @@ export function AgreementOnly({
       <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
         <h1 style={{ fontSize: 22, margin: 0 }}>Thank you{customerName ? `, ${customerName.split(" ")[0]}` : ""}</h1>
         <p style={{ margin: 0 }}>
-          Your service agreement is recorded. There&apos;s nothing to pay now and no card to enter. After each
-          visit we&apos;ll email you an invoice with a link to pay.
+          {payByLink
+            ? "Your service agreement is recorded. There's nothing to pay now and no card to enter. After each visit we'll email you an invoice with a link to pay."
+            : "Your updated service agreement is recorded. Nothing else to do, and your card on file is unchanged."}
         </p>
       </div>
     );
@@ -61,7 +65,7 @@ export function AgreementOnly({
     <AgreementStep
       staleAcceptance={hadOlderVersion}
       error={error}
-      payByLink
+      payByLink={payByLink}
       frequency={frequency}
       lines={lines}
       onBack={() => {

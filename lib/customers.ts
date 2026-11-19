@@ -152,6 +152,7 @@ export type AgreementCustomer = {
   id: string;
   full_name: string | null;
   service_agreement_version: string | null;
+  payment_mode: "card_on_file" | "one_time_link";
 };
 
 // Resolve the customer behind an agreement_token (the agreement-only page used
@@ -166,8 +167,12 @@ export async function findCustomerByAgreementToken(token: string): Promise<Agree
     .eq("agreement_token", token)
     .maybeSingle();
   if (error || !data) return null;
-  if (data.payment_mode !== "one_time_link") return null;
   const expiresAt = data.agreement_token_expires_at as string | null;
   if (expiresAt && new Date(expiresAt).getTime() < Date.now()) return null;
-  return { id: data.id, full_name: data.full_name, service_agreement_version: data.service_agreement_version };
+  return {
+    id: data.id,
+    full_name: data.full_name,
+    service_agreement_version: data.service_agreement_version,
+    payment_mode: data.payment_mode === "one_time_link" ? "one_time_link" : "card_on_file",
+  };
 }
