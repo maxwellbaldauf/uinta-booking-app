@@ -8,7 +8,7 @@ import { formatVisitDate } from "@/lib/format";
 import { arrivalBlockLabel } from "@/lib/schedule/blocks";
 import type { InvoiceJob } from "@/lib/invoicePayment";
 import { AgreementStep } from "@/components/booking/AgreementStep";
-import { agreementIsCurrent, SERVICE_AGREEMENT_VERSION } from "@/lib/agreement";
+import { agreementIsCurrentFor, agreementVersionFor } from "@/lib/agreement";
 import { OneTimeInvoicePay } from "@/components/payment/OneTimeInvoicePay";
 
 type Step = "review" | "agreement" | "charging" | "failed" | "done";
@@ -21,14 +21,14 @@ type Step = "review" | "agreement" | "charging" | "failed" | "done";
 function acceptedStorageKey(token: string) {
   return `agreement-accepted:${token}`;
 }
-function rememberAcceptance(token: string) {
+function rememberAcceptance(token: string, version: string) {
   try {
-    sessionStorage.setItem(acceptedStorageKey(token), SERVICE_AGREEMENT_VERSION);
+    sessionStorage.setItem(acceptedStorageKey(token), version);
   } catch {}
 }
-function wasAccepted(token: string): boolean {
+function wasAccepted(token: string, version: string): boolean {
   try {
-    return sessionStorage.getItem(acceptedStorageKey(token)) === SERVICE_AGREEMENT_VERSION;
+    return sessionStorage.getItem(acceptedStorageKey(token)) === version;
   } catch {
     return false;
   }
@@ -56,7 +56,8 @@ export function InvoiceApproval({ token, job }: { token: string; job: InvoiceJob
 }
 
 function CardOnFileInvoiceApproval({ token, job }: { token: string; job: InvoiceJob }) {
-  const agreementCurrent = agreementIsCurrent(job.serviceAgreementVersion);
+  const requiredVersion = agreementVersionFor("card_on_file", job.agreementFrequency);
+  const agreementCurrent = agreementIsCurrentFor(job.serviceAgreementVersion, "card_on_file", job.agreementFrequency);
   const [step, setStep] = useState<Step>("review");
   const [accepted, setAccepted] = useState(agreementCurrent);
   const [error, setError] = useState<string | null>(null);
@@ -67,12 +68,12 @@ function CardOnFileInvoiceApproval({ token, job }: { token: string; job: Invoice
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- sessionStorage is client-only; reading it post-hydration avoids an SSR mismatch.
-    if (!agreementCurrent && wasAccepted(token)) setAccepted(true);
-  }, [agreementCurrent, token]);
+    if (!agreementCurrent && wasAccepted(token, requiredVersion)) setAccepted(true);
+  }, [agreementCurrent, token, requiredVersion]);
 
   const agreementPayload =
     accepted && !agreementCurrent
-      ? { agreement: { accepted: true, version: SERVICE_AGREEMENT_VERSION } }
+      ? { agreement: { accepted: true, version: requiredVersion } }
       : {};
 
   function requireAgreement(message: string) {
@@ -194,13 +195,15 @@ function CardOnFileInvoiceApproval({ token, job }: { token: string; job: Invoice
     return (
       <AgreementStep
         staleAcceptance={job.serviceAgreementVersion != null}
+        frequency={job.agreementFrequency}
+        lines={job.agreementLines}
         error={error}
         onBack={() => {
           setError(null);
           setStep(afterAgreement);
         }}
         onContinue={() => {
-          rememberAcceptance(token);
+          rememberAcceptance(token, requiredVersion);
           setAccepted(true);
           setError(null);
           setStep(afterAgreement);

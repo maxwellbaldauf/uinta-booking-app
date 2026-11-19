@@ -5,6 +5,7 @@ import {
   resolveConfirmedSetupIntent,
   setStripeDefaultPaymentMethod,
 } from "@/lib/stripe/payments";
+import { applyPendingSwitches } from "@/lib/agreementFrequency";
 import { findJobByInvoiceToken, chargeInvoiceJob, agreementFieldsToRecord } from "@/lib/invoicePayment";
 
 export const runtime = "nodejs";
@@ -83,6 +84,8 @@ export async function POST(req: Request) {
         { status: 500 }
       );
     }
+
+    if (Object.keys(agreementFields).length > 0) await applyPendingSwitches(job.customerId);
 
     const result = await chargeInvoiceJob(job.id);
     if (!result.ok) {

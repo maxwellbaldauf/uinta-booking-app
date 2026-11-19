@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { findJobByInvoiceToken, agreementFieldsToRecord, requestPayLinkIntent } from "@/lib/invoicePayment";
 import { businessDb } from "@/lib/tenant/business";
+import { applyPendingSwitches } from "@/lib/agreementFrequency";
 
 export const runtime = "nodejs";
 
@@ -45,6 +46,7 @@ export async function POST(req: Request) {
       console.error("pay-link-intent: recording agreement failed", error, { customerId: job.customerId });
       return NextResponse.json({ error: "We couldn't record your agreement. Please try again." }, { status: 500 });
     }
+    await applyPendingSwitches(job.customerId);
   }
 
   const result = await requestPayLinkIntent(job.id);

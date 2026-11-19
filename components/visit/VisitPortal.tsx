@@ -20,6 +20,8 @@ export type VisitView = {
   arrivalWindowLabel: string;
   address: string;
   canModify: boolean;
+  // The visit is further out than the online picker reaches (annual service).
+  beyondHorizon?: boolean;
 };
 
 type Mode = "view" | "reschedule" | "cancel" | "rescheduled" | "cancelled";
@@ -108,7 +110,7 @@ export function VisitPortal({ visit }: { visit: VisitView }) {
         <p style={{ color: "var(--color-fg-muted)", margin: 0 }}>
           {cancelScope === "property"
             ? "This visit is cancelled and we've stopped the plan for this property. Your card stays on file — no charge."
-            : "This visit is cancelled. Your semi-annual plan is still active and your next visit will schedule as usual."}
+            : "This visit is cancelled. Your recurring plan is still active and your next visit will schedule as usual."}
         </p>
         <p style={{ color: "var(--color-fg-muted)", margin: 0, fontSize: 13 }}>
           A confirmation email is on its way.
@@ -225,7 +227,7 @@ export function VisitPortal({ visit }: { visit: VisitView }) {
       </div>
 
       {visit.canModify ? (
-        <div style={{ display: "flex", gap: "var(--space-2)" }}>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-2)" }}>
           <button type="button" onClick={openReschedule} style={{ ...buttonStyle }}>
             Reschedule
           </button>
@@ -239,6 +241,12 @@ export function VisitPortal({ visit }: { visit: VisitView }) {
           >
             Cancel
           </button>
+          {visit.beyondHorizon && (
+            <p style={{ color: "var(--color-fg-muted)", margin: 0, fontSize: 14, flexBasis: "100%" }}>
+              Online rescheduling only offers dates in the next few months. To move this visit to a
+              date closer to its current one, please contact us.
+            </p>
+          )}
         </div>
       ) : (
         <p style={{ color: "var(--color-fg-muted)", margin: 0 }}>

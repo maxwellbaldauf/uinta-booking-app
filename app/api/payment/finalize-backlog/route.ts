@@ -6,7 +6,8 @@ import {
   setStripeDefaultPaymentMethod,
 } from "@/lib/stripe/payments";
 import { findPendingBacklogJobsForToken } from "@/lib/backlogPayment";
-import { agreementIsCurrent, SERVICE_AGREEMENT_VERSION } from "@/lib/agreement";
+import { agreementIsCurrentFor, agreementVersionFor } from "@/lib/agreement";
+import { acceptanceFields, applyPendingSwitches, loadCustomerAgreement } from "@/lib/agreementFrequency";
 import { chargeInvoiceJob } from "@/lib/invoicePayment";
 
 export const runtime = "nodejs";
@@ -61,10 +62,12 @@ export async function POST(req: Request) {
 
     // Same rule createBookingRecord uses: required unless already current —
     // never trusts the client's bare agreement.accepted flag alone.
-    const agreementNeeded = !agreementIsCurrent(customer.service_agreement_version);
+    // The text (and version) follows the customer's frequency, decided on the server.
+    const { frequency } = await loadCustomerAgreement(customer.id);
+    const agreementNeeded = !agreementIsCurrentFor(customer.service_agreement_version, "card_on_file", frequency);
     if (
       agreementNeeded &&
-      !(body.agreement?.accepted && body.agreement.version === SERVICE_AGREEMENT_VERSION)
+      !(body.agreement?.accepted && body.agreement.version === agreementVersionFor("card_on_file", frequency))
     ) {
       return NextResponse.json(
         {
@@ -101,10 +104,7 @@ export async function POST(req: Request) {
         payment_setup_token: null,
         payment_setup_token_expires_at: null,
         ...(agreementNeeded
-          ? {
-              service_agreement_accepted_at: new Date().toISOString(),
-              service_agreement_version: SERVICE_AGREEMENT_VERSION,
-            }
+          ? acceptanceFields("card_on_file", frequency)
           : {}),
       })
       .eq("id", customer.id)
@@ -131,6 +131,8 @@ export async function POST(req: Request) {
     // Card is already durably saved above — a charge failure here doesn't
     // block the response. It surfaces on Project A's dashboard (Failed
     // charges) rather than needing its own owner-facing surface here.
+    if (agreementNeeded) await applyPendingSwitches(customer.id);
+
     const results = await Promise.all(pending.jobs.map((job) => chargeBacklogJob(job.id)));
 
     return NextResponse.json({ ok: true, paymentDisplay: displayLabel, results });

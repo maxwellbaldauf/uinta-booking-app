@@ -73,21 +73,99 @@ export const ONE_TIME_AGREEMENT_PDF_FILENAME = `service-agreement-${ONE_TIME_AGR
 function modeOf(mode: string | null | undefined): AgreementMode {
   return mode === "one_time_link" ? "one_time_link" : "card_on_file";
 }
-export function agreementVersionFor(mode: string | null | undefined): string {
-  return modeOf(mode) === "one_time_link" ? ONE_TIME_AGREEMENT_VERSION : SERVICE_AGREEMENT_VERSION;
+
+// ---------------------------------------------------------------------------
+// Annual service: the agreement states the customer's visit frequency.
+//
+// The ONLY wording that varies is the "approximately every six (6) months"
+// phrase in the Recurring Service section (see applyFrequency below):
+//   semi_annual -> text unchanged, version unchanged (so every existing
+//                  acceptance stays current and nobody is re-prompted)
+//   annual      -> "approximately once a year"
+//   mixed       -> "approximately as listed for each property below" plus one
+//                  extra paragraph listing each property's frequency
+// Every property of a customer counts; a property on any other interval
+// (e.g. every 4 months) does not trigger a variant: a customer with NO annual
+// property keeps the semi-annual text exactly as it was.
+// ---------------------------------------------------------------------------
+export type AgreementFrequency = "semi_annual" | "annual" | "mixed";
+export type FrequencyLine = { address: string; months: number };
+
+const ANNUAL_VERSION_DATE = "2026-11-19";
+const SEMI_PHRASE = "approximately every six (6) months,";
+const ANNUAL_PHRASE = "approximately once a year,";
+const MIXED_PHRASE = "approximately as listed for each property below,";
+
+// annual = every property is on 12 months; mixed = some are and some aren't;
+// anything else (no annual property at all) = the unchanged semi-annual text.
+export function frequencyOf(months: number[]): AgreementFrequency {
+  const annual = months.filter((m) => m === 12).length;
+  if (annual === 0) return "semi_annual";
+  return annual === months.length ? "annual" : "mixed";
 }
-export function agreementBlocksFor(mode: string | null | undefined): readonly AgreementBlock[] {
-  return modeOf(mode) === "one_time_link" ? ONE_TIME_AGREEMENT_BLOCKS : SERVICE_AGREEMENT_BLOCKS;
+
+export function frequencyWords(months: number): string {
+  if (months === 12) return "once a year";
+  if (months === 6) return "every six (6) months";
+  return months === 1 ? "every month" : `every ${months} months`;
 }
-export function agreementPdfFilenameFor(mode: string | null | undefined): string {
-  return modeOf(mode) === "one_time_link" ? ONE_TIME_AGREEMENT_PDF_FILENAME : SERVICE_AGREEMENT_PDF_FILENAME;
+
+export function agreementVersionFor(
+  mode: string | null | undefined,
+  frequency: AgreementFrequency = "semi_annual"
+): string {
+  if (frequency === "semi_annual") return modeOf(mode) === "one_time_link" ? ONE_TIME_AGREEMENT_VERSION : SERVICE_AGREEMENT_VERSION;
+  return `${ANNUAL_VERSION_DATE}-${frequency === "annual" ? "annual" : "mixed"}${modeOf(mode) === "one_time_link" ? "-link" : ""}`;
 }
-// A customer's acceptance is current only for the text THEIR mode shows. Someone who
-// accepted the card-on-file text and is later switched to one-time link (or back) is
-// asked to accept the other text; their earlier record is kept as is.
+
+export function agreementBlocksFor(
+  mode: string | null | undefined,
+  frequency: AgreementFrequency = "semi_annual",
+  lines: readonly FrequencyLine[] = []
+): readonly AgreementBlock[] {
+  const base = modeOf(mode) === "one_time_link" ? ONE_TIME_AGREEMENT_BLOCKS : SERVICE_AGREEMENT_BLOCKS;
+  return applyFrequency(base, frequency, lines);
+}
+
+export function applyFrequency(
+  base: readonly AgreementBlock[],
+  frequency: AgreementFrequency,
+  lines: readonly FrequencyLine[] = []
+): readonly AgreementBlock[] {
+  if (frequency === "semi_annual") return base;
+  const out: AgreementBlock[] = [];
+  for (const block of base) {
+    if (block.kind === "paragraph" && block.text.includes(SEMI_PHRASE)) {
+      out.push({
+        ...block,
+        text: block.text.replace(SEMI_PHRASE, frequency === "annual" ? ANNUAL_PHRASE : MIXED_PHRASE),
+      });
+      if (frequency === "mixed") {
+        out.push({
+          kind: "paragraph",
+          text: `Frequency by property: ${lines.map((l) => `${l.address} — ${frequencyWords(l.months)}`).join("; ")}.`,
+        });
+      }
+    } else {
+      out.push(block);
+    }
+  }
+  return out;
+}
+
+// The committed static PDF for a variant, or null when none can exist (the
+// mixed text lists the customer's own properties, so it has no static PDF).
+export function agreementPdfFilenameFor(
+  mode: string | null | undefined,
+  frequency: AgreementFrequency = "semi_annual"
+): string | null {
+  return frequency === "mixed" ? null : `service-agreement-${agreementVersionFor(mode, frequency)}.pdf`;
+}
+
 export function agreementIsCurrentFor(
   storedVersion: string | null | undefined,
-  mode: string | null | undefined
+  mode: string | null | undefined,
+  frequency: AgreementFrequency = "semi_annual"
 ): boolean {
-  return storedVersion === agreementVersionFor(mode);
+  return storedVersion === agreementVersionFor(mode, frequency);
 }

@@ -1,5 +1,6 @@
 import { businessDb } from "@/lib/tenant/business";
-import { agreementIsCurrentFor, agreementVersionFor } from "@/lib/agreement";
+import { agreementIsCurrentFor, agreementVersionFor, type AgreementFrequency, type FrequencyLine } from "@/lib/agreement";
+import { acceptanceFields, loadCustomerAgreement } from "@/lib/agreementFrequency";
 
 export type InvoiceJob = {
   id: string;
@@ -19,6 +20,10 @@ export type InvoiceJob = {
   // never). Manually-entered customers first reach a payment page here, after
   // their first visit, so this page is where they accept it.
   serviceAgreementVersion: string | null;
+  // The frequency the agreement they must have accepted states (annual service), and the
+  // per-property lines shown when frequencies differ.
+  agreementFrequency: AgreementFrequency;
+  agreementLines: FrequencyLine[];
 };
 
 type JobRow = {
@@ -91,6 +96,8 @@ export async function findJobByInvoiceToken(token: string): Promise<InvoiceJob |
   const amountCents = job.final_price_cents ?? 0;
   if (amountCents <= 0) return null;
 
+  const agreement = await loadCustomerAgreement(customer.id);
+
   return {
     id: job.id,
     scheduledDate: job.scheduled_date,
@@ -105,6 +112,8 @@ export async function findJobByInvoiceToken(token: string): Promise<InvoiceJob |
     hasDefaultPaymentMethod: customer.default_payment_method_id != null,
     paymentMode: customer.payment_mode === "one_time_link" ? "one_time_link" : "card_on_file",
     serviceAgreementVersion: customer.service_agreement_version,
+    agreementFrequency: agreement.frequency,
+    agreementLines: agreement.lines,
   };
 }
 
@@ -119,13 +128,10 @@ export function agreementFieldsToRecord(
   agreement: { accepted?: boolean; version?: string } | undefined
 ): Record<string, string> | null {
   // The text shown (and the version that must be accepted) follows the customer's payment mode.
-  const required = agreementVersionFor(job.paymentMode);
-  if (agreementIsCurrentFor(job.serviceAgreementVersion, job.paymentMode)) return {};
+  const required = agreementVersionFor(job.paymentMode, job.agreementFrequency);
+  if (agreementIsCurrentFor(job.serviceAgreementVersion, job.paymentMode, job.agreementFrequency)) return {};
   if (!(agreement?.accepted && agreement.version === required)) return null;
-  return {
-    service_agreement_accepted_at: new Date().toISOString(),
-    service_agreement_version: required,
-  };
+  return acceptanceFields(job.paymentMode, job.agreementFrequency);
 }
 
 export type ChargeInvoiceResult = { ok: true } | { ok: false; error: string };

@@ -4,13 +4,21 @@
 //
 // Heading levels start at <h2>: the booking step owns the page <h1>.
 
-import { agreementBlocksFor, type AgreementMode } from "@/lib/agreement";
+import { agreementBlocksFor, type AgreementFrequency, type AgreementMode, type FrequencyLine } from "@/lib/agreement";
 
 const displayFont =
   'var(--font-display), "Trebuchet MS", "Gill Sans", system-ui, sans-serif';
 
-export function AgreementText({ mode = "card_on_file" }: { mode?: AgreementMode }) {
-  const blocks = agreementBlocksFor(mode);
+export function AgreementText({
+  mode = "card_on_file",
+  frequency = "semi_annual",
+  lines = [],
+}: {
+  mode?: AgreementMode;
+  frequency?: AgreementFrequency;
+  lines?: readonly FrequencyLine[];
+}) {
+  const blocks = agreementBlocksFor(mode, frequency, lines);
   return (
     <div
       style={{

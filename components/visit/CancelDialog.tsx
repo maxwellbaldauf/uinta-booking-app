@@ -68,7 +68,7 @@ export function CancelDialog({
         <Option
           value="visit"
           title="Just this visit"
-          body="Your semi-annual plan stays active — we'll schedule the next visit as usual."
+          body="Your recurring plan stays active — we'll schedule the next visit as usual."
           selected={scope === "visit"}
           onSelect={setScope}
         />

@@ -30,6 +30,8 @@ import { formatVisitDate } from "../format";
 import { renderEmail, detailsTable, buttonRow, escapeHtml } from "../email/shell";
 import { getResend } from "../email/resend";
 import { loadRecipients, deliverToRecipients, toOutcome } from "../email/recipients";
+import { getStripe } from "../stripe/client";
+import { newPaymentSetupToken, expiresInDays } from "../tokens";
 
 type ReminderJobRow = {
   id: string;
@@ -43,9 +45,19 @@ type ReminderJobRow = {
     | ReminderProperty[]
     | null;
 };
-type SweepCustomer = { id: string; full_name: string | null; email: string | null };
+type SweepCustomer = {
+  id: string;
+  full_name: string | null;
+  email: string | null;
+  payment_mode: string | null;
+  stripe_customer_id: string | null;
+  default_payment_method_id: string | null;
+  payment_setup_token: string | null;
+  payment_setup_token_expires_at: string | null;
+};
 type ReminderProperty = {
   address: string;
+  service_interval_months: number | null;
   service_type: "residential" | "commercial";
   custom_price_cents: number | null;
   customer: SweepCustomer | SweepCustomer[] | null;
@@ -56,9 +68,37 @@ function flatten<T>(v: T | T[] | null | undefined): T | null {
 }
 
 const JOB_COLUMNS =
-  "id, scheduled_date, arrival_block, blocks_needed, access_token, quoted_price_cents, property:properties(address, service_type, custom_price_cents, customer:customers(id, full_name, email))";
+  "id, scheduled_date, arrival_block, blocks_needed, access_token, quoted_price_cents, property:properties(address, service_interval_months, service_type, custom_price_cents, customer:customers(id, full_name, email, payment_mode, stripe_customer_id, default_payment_method_id, payment_setup_token, payment_setup_token_expires_at))";
 
-type ReminderKind = "7day" | "24hr";
+type ReminderKind = "30day" | "7day" | "24hr";
+
+// Annual service: the 30-day heads-up. If the saved card will have expired by the visit date,
+// returns a link to update it (the existing /pay/[token] card page, with a token minted or
+// reused here); null when no link is needed (or Stripe could not be read - the email still goes).
+async function expiringCardUpdateLink(customer: SweepCustomer, visitDate: string, appBaseUrl: string): Promise<{ link: string; label: string } | null> {
+  if (customer.payment_mode === "one_time_link" || !customer.default_payment_method_id) return null;
+  try {
+    const pm = await getStripe().paymentMethods.retrieve(customer.default_payment_method_id);
+    const card = pm.card;
+    if (!card) return null;
+    const validThrough = `${card.exp_year}-${String(card.exp_month).padStart(2, "0")}`; // good through the end of this month
+    if (visitDate.slice(0, 7) <= validThrough) return null;
+    const live = customer.payment_setup_token && customer.payment_setup_token_expires_at && new Date(customer.payment_setup_token_expires_at).getTime() > Date.now() + 7 * 86400000;
+    let token = customer.payment_setup_token;
+    if (!live || !token) {
+      token = newPaymentSetupToken();
+      const { error } = await businessDb().from("customers").update({ payment_setup_token: token, payment_setup_token_expires_at: expiresInDays(45) }).eq("id", customer.id);
+      if (error) {
+        console.error("pre-visit-reminders: could not mint a card-update token", error, { customerId: customer.id });
+        return null;
+      }
+    }
+    return { link: `${appBaseUrl}/pay/${token}`, label: `${card.brand.charAt(0).toUpperCase()}${card.brand.slice(1)} •••• ${card.last4}` };
+  } catch (err) {
+    console.error("pre-visit-reminders: card expiry check failed (sending without it)", err, { customerId: customer.id });
+    return null;
+  }
+}
 
 async function sendReminder(params: {
   kind: ReminderKind;
@@ -95,9 +135,12 @@ async function sendReminder(params: {
     : params.appBaseUrl;
 
   const headline =
-    params.kind === "7day"
-      ? "Your cleaning is coming up next week."
-      : "Your cleaning is tomorrow.";
+    params.kind === "30day"
+      ? "Your annual cleaning is coming up in about a month."
+      : params.kind === "7day"
+        ? "Your cleaning is coming up next week."
+        : "Your cleaning is tomorrow.";
+  const cardUpdate = params.kind === "30day" ? await expiringCardUpdateLink(customer, params.job.scheduled_date, params.appBaseUrl) : null;
 
   const inner = `
     <p style="margin:0 0 12px;">Hi ${escapeHtml(name)},</p>
@@ -108,7 +151,12 @@ async function sendReminder(params: {
       { label: "Address", value: property.address },
       { label: "Price", value: `${priceText} per visit` },
     ])}
-    ${buttonRow(manageUrl, "Reschedule", brand.accent)}
+    ${buttonRow(manageUrl, params.kind === "30day" ? "Manage this visit" : "Reschedule", brand.accent)}
+    ${
+      cardUpdate
+        ? `<p style="margin:16px 0 8px;color:#5b6470;">The card we have on file (${escapeHtml(cardUpdate.label)}) expires before this visit. To avoid a failed payment afterwards, please update it:</p>${buttonRow(cardUpdate.link, "Update my card", brand.accent)}`
+        : ""
+    }
   `;
 
   const html = renderEmail({
@@ -128,7 +176,10 @@ async function sendReminder(params: {
     `Address:        ${property.address}`,
     `Price:          ${priceText} per visit`,
     ``,
-    `Reschedule: ${manageUrl}`,
+    `${params.kind === "30day" ? "Manage this visit" : "Reschedule"}: ${manageUrl}`,
+    ...(cardUpdate
+      ? [``, `The card we have on file (${cardUpdate.label}) expires before this visit. Please update it: ${cardUpdate.link}`]
+      : []),
     ``,
     `— ${brand.name}`,
   ].join("\n");
@@ -151,7 +202,7 @@ async function sendReminder(params: {
   const recipients = await loadRecipients(supabase, customer.id, customer.email);
   const result = await deliverToRecipients({
     supabase,
-    kind: params.kind === "7day" ? "reminder_7day" : "reminder_24hr",
+    kind: params.kind === "30day" ? "reminder_30day" : params.kind === "7day" ? "reminder_7day" : "reminder_24hr",
     refId: params.job.id,
     // Keyed by the visit date: a reschedule resets the sent-at stamps and must get fresh reminders.
     logKey: params.job.scheduled_date,
@@ -163,9 +214,11 @@ async function sendReminder(params: {
         ...(replyTo ? { replyTo } : {}),
         to: r.email,
         subject:
-          params.kind === "7day"
-            ? `Reminder: your visit is ${dateLong}`
-            : `Reminder: your visit is tomorrow — ${dateLong}`,
+          params.kind === "30day"
+            ? `Heads-up: your annual visit is ${dateLong}`
+            : params.kind === "7day"
+              ? `Reminder: your visit is ${dateLong}`
+              : `Reminder: your visit is tomorrow — ${dateLong}`,
         html,
         text,
       });
@@ -179,13 +232,16 @@ async function sendReminder(params: {
 }
 
 export type PrevisitReminderSweepResult = {
+  thirtyDaySent: number;
+  thirtyDayFailed: number;
   sevenDaySent: number;
   sevenDayFailed: number;
   twentyFourHourSent: number;
   twentyFourHourFailed: number;
 };
 
-const REMINDER_COLUMN: Record<ReminderKind, "reminder_7day_sent_at" | "reminder_24hr_sent_at"> = {
+const REMINDER_COLUMN: Record<ReminderKind, "reminder_30day_sent_at" | "reminder_7day_sent_at" | "reminder_24hr_sent_at"> = {
+  "30day": "reminder_30day_sent_at",
   "7day": "reminder_7day_sent_at",
   "24hr": "reminder_24hr_sent_at",
 };
@@ -232,7 +288,7 @@ async function processReminderBatch(
 }
 
 export async function runPrevisitReminderSweep(): Promise<PrevisitReminderSweepResult> {
-  const empty = { sevenDaySent: 0, sevenDayFailed: 0, twentyFourHourSent: 0, twentyFourHourFailed: 0 };
+  const empty = { thirtyDaySent: 0, thirtyDayFailed: 0, sevenDaySent: 0, sevenDayFailed: 0, twentyFourHourSent: 0, twentyFourHourFailed: 0 };
 
   try {
     const supabase = businessDb();
@@ -250,10 +306,18 @@ export async function runPrevisitReminderSweep(): Promise<PrevisitReminderSweepR
       commercialPriceCents: settings.commercial_price_cents,
     };
 
+    const thirtyDayTarget = addDaysToISODate(today, 30);
     const sevenDayTarget = addDaysToISODate(today, 7);
     const oneDayTarget = addDaysToISODate(today, 1);
 
-    const [sevenDayRows, oneDayRows] = await Promise.all([
+    const [thirtyDayRows, sevenDayRows, oneDayRows] = await Promise.all([
+      // Annual service only (filtered to 12-month properties below); never sends twice (own sent-at stamp).
+      supabase
+        .from("jobs")
+        .select(JOB_COLUMNS)
+        .eq("status", "scheduled")
+        .eq("scheduled_date", thirtyDayTarget)
+        .is("reminder_30day_sent_at", null),
       supabase
         .from("jobs")
         .select(JOB_COLUMNS)
@@ -268,15 +332,20 @@ export async function runPrevisitReminderSweep(): Promise<PrevisitReminderSweepR
         .is("reminder_24hr_sent_at", null),
     ]);
 
+    if (thirtyDayRows.error) console.error("pre-visit-reminders: 30-day query failed", thirtyDayRows.error);
     if (sevenDayRows.error) console.error("pre-visit-reminders: 7-day query failed", sevenDayRows.error);
     if (oneDayRows.error) console.error("pre-visit-reminders: 24hr query failed", oneDayRows.error);
 
-    const [sevenDay, twentyFourHour] = await Promise.all([
+    const annualJobs = ((thirtyDayRows.data ?? []) as ReminderJobRow[]).filter((j) => flatten(j.property)?.service_interval_months === 12);
+    const [thirtyDay, sevenDay, twentyFourHour] = await Promise.all([
+      processReminderBatch(annualJobs, "30day", supabase, appBaseUrl, tiers),
       processReminderBatch((sevenDayRows.data ?? []) as ReminderJobRow[], "7day", supabase, appBaseUrl, tiers),
       processReminderBatch((oneDayRows.data ?? []) as ReminderJobRow[], "24hr", supabase, appBaseUrl, tiers),
     ]);
 
     return {
+      thirtyDaySent: thirtyDay.sent,
+      thirtyDayFailed: thirtyDay.failed,
       sevenDaySent: sevenDay.sent,
       sevenDayFailed: sevenDay.failed,
       twentyFourHourSent: twentyFourHour.sent,

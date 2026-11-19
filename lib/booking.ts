@@ -14,7 +14,8 @@ import { signBookingContext } from "@/lib/bookingContext";
 import { matchCustomerByEmailOrPhone, normalizePhone, type MatchedCustomer } from "@/lib/customers";
 import { parseHeardAbout, type HeardAboutAnswer } from "@/lib/heardAbout";
 import { getEffectivePriceCents } from "@/lib/pricing";
-import { agreementIsCurrentFor, agreementVersionFor } from "@/lib/agreement";
+import { agreementIsCurrentFor, agreementVersionFor, type AgreementFrequency, type FrequencyLine } from "@/lib/agreement";
+import { acceptanceFields, applyPendingSwitches, loadCustomerAgreement } from "@/lib/agreementFrequency";
 import { firstContactError } from "@/lib/contactValidation";
 import {
   captureInAreaLeadBestEffort,
@@ -81,7 +82,14 @@ export type AvailabilityResult =
       // Present only when the business has a booking horizon set: the month
       // picker's signed context + the month `slots` belongs to + its range.
       monthly?: { ctx: string; month: string; minMonth: string; maxMonth: string };
-      matchedCustomer: { hasPaymentMethod: boolean; paymentDisplay: string | null; payByLink: boolean } | null;
+      matchedCustomer: {
+        hasPaymentMethod: boolean;
+        paymentDisplay: string | null;
+        payByLink: boolean;
+        // Annual service: the frequency the agreement this customer signs states.
+        agreementFrequency: AgreementFrequency;
+        agreementLines: FrequencyLine[];
+      } | null;
       // true = show the service-agreement step. Once-per-customer: false only for
       // a matched customer who has already accepted the current version.
       agreementRequired: boolean;
@@ -155,12 +163,14 @@ export async function checkAvailability(
   // Once-per-customer agreement: required for a brand-new customer, or a matched
   // one whose stored version isn't the current text. Compared by version string,
   // not just "has a timestamp" — a wording change re-prompts everyone.
+  const matchedAgreement = matched ? await loadCustomerAgreement(matched.id) : null;
+  const matchedFrequency = matchedAgreement?.frequency ?? "semi_annual";
   const agreementRequired =
-    !matched || !agreementIsCurrentFor(matched.service_agreement_version, matched.payment_mode);
+    !matched || !agreementIsCurrentFor(matched.service_agreement_version, matched.payment_mode, matchedFrequency);
   const agreementStale =
     !!matched &&
     matched.service_agreement_accepted_at != null &&
-    !agreementIsCurrentFor(matched.service_agreement_version, matched.payment_mode);
+    !agreementIsCurrentFor(matched.service_agreement_version, matched.payment_mode, matchedFrequency);
 
   // If the lookup itself hiccups, ask anyway: the server re-decides at booking
   // and ignores an answer it doesn't need, so over-asking is the safe default.
@@ -186,6 +196,8 @@ export async function checkAvailability(
           paymentDisplay: matched.payment_display,
           // One-time payment link: no card step, ever. They pay each visit by link.
           payByLink: matched.payment_mode === "one_time_link",
+          agreementFrequency: matchedFrequency,
+          agreementLines: matchedAgreement?.lines ?? [],
         }
       : null,
     agreementRequired,
@@ -300,9 +312,11 @@ export async function createBookingRecord(
   const priorAgreementAcceptedAt = matched?.service_agreement_accepted_at ?? null;
   // The version required follows the matched customer's payment mode (one-time link
   // customers accept the variant text); a brand-new booker always gets the standard one.
+  const matchedAgreement = matched ? await loadCustomerAgreement(matched.id) : null;
+  const matchedFrequency = matchedAgreement?.frequency ?? "semi_annual";
   const agreementNeeded =
-    !matched || !agreementIsCurrentFor(matched.service_agreement_version, matched.payment_mode);
-  const requiredAgreementVersion = agreementVersionFor(matched?.payment_mode);
+    !matched || !agreementIsCurrentFor(matched.service_agreement_version, matched.payment_mode, matchedFrequency);
+  const requiredAgreementVersion = agreementVersionFor(matched?.payment_mode, matchedFrequency);
   if (
     agreementNeeded &&
     !(input.agreement?.accepted && input.agreement.version === requiredAgreementVersion)
@@ -320,10 +334,7 @@ export async function createBookingRecord(
   const firstAgreementAcceptance =
     agreementNeeded && priorAgreementAcceptedAt === null;
   const agreementStamp = agreementNeeded
-    ? {
-        service_agreement_accepted_at: new Date().toISOString(),
-        service_agreement_version: requiredAgreementVersion,
-      }
+    ? acceptanceFields(matched?.payment_mode, matchedFrequency)
     : null;
 
   // Resolve the card up front (before any DB writes) so a bad SetupIntent
@@ -595,6 +606,7 @@ export async function createBookingRecord(
   // stamped acceptance that would suppress the one-time PDF on the retry.
   if (agreementStamp) {
     await supabase.from("customers").update(agreementStamp).eq("id", customerId);
+    await applyPendingSwitches(customerId);
   }
 
   // Confirmation email + .ics (spec §8.1), owner alert and Kit signup are

@@ -13,7 +13,7 @@ import path from "node:path";
 const TENANT_TABLES = [
   "app_users", "arrival_blocks", "blackout_dates", "cluster_suggestion_jobs",
   "cluster_suggestions", "contact_submissions", "content_drafts", "customers", "expenses",
-  "job_notes", "job_photos", "jobs", "leads", "payments", "properties",
+  "job_notes", "job_photos", "jobs", "leads", "payments", "properties", "property_interval_changes",
   "referral_partners", "settings",
 ];
 const ROOTS = ["app", "lib", "netlify", "components"];

@@ -115,6 +115,7 @@ export async function acceptClusterSuggestion(token: string): Promise<ClusterCon
         access_token_expires_at: accessTokenExpiryISO(await businessTz(), consent.proposedDate),
         reminder_7day_sent_at: null,
         reminder_24hr_sent_at: null,
+        reminder_30day_sent_at: null,
       })
       .eq("id", consent.jobId);
 

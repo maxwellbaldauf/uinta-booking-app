@@ -22,10 +22,21 @@ import PDFDocument from "pdfkit";
 const root = fileURLToPath(new URL("..", import.meta.url));
 // Usage: node scripts/generate-agreement-pdf.mjs [data-file]  (default agreement.data.json;
 // the one-time-link variant is agreement.one-time.data.json - `npm run agreement:pdf` runs both).
+// Optional 2nd arg "annual": the annual-service variant (only the frequency phrase differs - keep in
+// sync with applyFrequency in lib/agreement.ts). The mixed variant lists a customer's own properties,
+// so it has no static PDF.
 const dataFile = process.argv[2] ?? "agreement.data.json";
-const { version, blocks } = JSON.parse(
-  fs.readFileSync(path.join(root, "lib", dataFile), "utf8")
-);
+const frequency = process.argv[3] ?? "semi_annual";
+const data = JSON.parse(fs.readFileSync(path.join(root, "lib", dataFile), "utf8"));
+let { version, blocks } = data;
+if (frequency === "annual") {
+  version = `2026-11-19-annual${dataFile.includes("one-time") ? "-link" : ""}`;
+  blocks = blocks.map((b) =>
+    b.kind === "paragraph" && b.text.includes("approximately every six (6) months,")
+      ? { ...b, text: b.text.replace("approximately every six (6) months,", "approximately once a year,") }
+      : b
+  );
+}
 const pdfFilename = `service-agreement-${version}.pdf`;
 const outPath = path.join(root, "content", pdfFilename);
 

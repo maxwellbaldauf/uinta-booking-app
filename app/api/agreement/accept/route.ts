@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { businessDb } from "@/lib/tenant/business";
 import { findCustomerByAgreementToken } from "@/lib/customers";
-import { ONE_TIME_AGREEMENT_VERSION, agreementIsCurrentFor } from "@/lib/agreement";
+import { agreementVersionFor, agreementIsCurrentFor } from "@/lib/agreement";
+import { acceptanceFields, applyPendingSwitches, loadCustomerAgreement } from "@/lib/agreementFrequency";
 import { sendBookingConfirmationEmail } from "@/lib/email/bookingConfirmation";
 
 export const runtime = "nodejs";
@@ -28,26 +29,29 @@ export async function POST(req: Request) {
   if (!customer) {
     return NextResponse.json({ error: "This agreement link has expired or is invalid." }, { status: 404 });
   }
-  if (body.version !== ONE_TIME_AGREEMENT_VERSION) {
+  // The text shown follows the customer's frequency, decided here on the server.
+  const { frequency } = await loadCustomerAgreement(customer.id);
+  if (body.version !== agreementVersionFor("one_time_link", frequency)) {
     return NextResponse.json({ error: "Please review and accept the current Service Agreement." }, { status: 400 });
   }
 
   const db = businessDb();
-  const alreadyCurrent = agreementIsCurrentFor(customer.service_agreement_version, "one_time_link");
+  const alreadyCurrent = agreementIsCurrentFor(customer.service_agreement_version, "one_time_link", frequency);
   if (!alreadyCurrent) {
     const { error } = await db
       .from("customers")
-      .update({
-        service_agreement_accepted_at: new Date().toISOString(),
-        service_agreement_version: ONE_TIME_AGREEMENT_VERSION,
-      })
+      .update(acceptanceFields("one_time_link", frequency))
       .eq("id", customer.id);
     if (error) {
       console.error("agreement/accept: update failed", error, { customerId: customer.id });
       return NextResponse.json({ error: "We couldn't record your agreement. Please try again." }, { status: 500 });
     }
 
-    // Standard confirmation for the next scheduled visit, if there is one.
+    // A requested frequency switch takes effect now (the visit itself is not moved).
+    const switched = await applyPendingSwitches(customer.id);
+
+    // Standard confirmation for the next scheduled visit, if there is one (not for a
+    // frequency switch: the visit is unchanged and the owner decides whether to move it).
     const { data: next } = await db
       .from("jobs")
       .select("id, scheduled_date, property:properties!inner(customer_id)")
@@ -56,7 +60,7 @@ export async function POST(req: Request) {
       .order("scheduled_date", { ascending: true })
       .limit(1)
       .maybeSingle();
-    if (next?.id) {
+    if (next?.id && switched === 0) {
       const sent = await sendBookingConfirmationEmail(next.id, { attachAgreement: true });
       if (sent) {
         await db.from("jobs").update({ confirmation_sent_at: new Date().toISOString() }).eq("id", next.id);

@@ -11,7 +11,7 @@ import type { HeardAboutAnswer } from "@/lib/heardAbout";
 import { SlotStep, type OfferedSlotView } from "./SlotStep";
 import { DeadEndNotice, type DeadEndKind } from "./DeadEndNotice";
 import { BookedConfirmation } from "./BookedConfirmation";
-import { agreementVersionFor } from "@/lib/agreement";
+import { agreementVersionFor, type AgreementFrequency, type FrequencyLine } from "@/lib/agreement";
 
 // New public bookings are residential, one block - the server enforces the same.
 const SERVICE_TYPE = "residential" as const;
@@ -30,7 +30,13 @@ type Availability = {
   slots: OfferedSlotView[];
   // Set when the business has a booking horizon: month picker + its signed context.
   monthly?: { ctx: string; month: string; minMonth: string; maxMonth: string };
-  matchedCustomer: { hasPaymentMethod: boolean; paymentDisplay: string | null; payByLink?: boolean } | null;
+  matchedCustomer: {
+    hasPaymentMethod: boolean;
+    paymentDisplay: string | null;
+    payByLink?: boolean;
+    agreementFrequency?: AgreementFrequency;
+    agreementLines?: FrequencyLine[];
+  } | null;
   agreementRequired: boolean;
   agreementStale: boolean;
   sourceRequired: boolean;
@@ -50,6 +56,7 @@ export function BookingFlow({ basePriceCents }: { basePriceCents: number | null 
   const [agreementAccepted, setAgreementAccepted] = useState(false);
   // Mirrors availability.matchedCustomer.payByLink for use inside the memoized booking callback.
   const payByLinkRef = useRef(false);
+  const frequencyRef = useRef<AgreementFrequency>("semi_annual");
   // "How did you hear about us?" - only asked of first-time bookers; the server
   // decides (sourceRequired) and re-validates on submit.
   const [heardAbout, setHeardAbout] = useState<HeardAboutAnswer | null>(null);
@@ -133,6 +140,7 @@ export function BookingFlow({ basePriceCents }: { basePriceCents: number | null 
 
   useEffect(() => {
     payByLinkRef.current = !!availability?.matchedCustomer?.payByLink;
+    frequencyRef.current = availability?.matchedCustomer?.agreementFrequency ?? "semi_annual";
   }, [availability]);
 
   const runCreateBooking = useCallback(
@@ -159,7 +167,7 @@ export function BookingFlow({ basePriceCents }: { basePriceCents: number | null 
         useExistingCard: choice.useExistingCard,
         payment: pay ? { setupIntentId: pay.setupIntentId, stripeCustomerId: pay.stripeCustomerId } : undefined,
         agreement: agreementAccepted
-          ? { accepted: true, version: agreementVersionFor(payByLinkRef.current ? "one_time_link" : "card_on_file") }
+          ? { accepted: true, version: agreementVersionFor(payByLinkRef.current ? "one_time_link" : "card_on_file", frequencyRef.current) }
           : undefined,
         quotesOptIn: d.quotesOptIn,
         heardAbout: answerOverride ?? heardAbout ?? undefined,
@@ -316,6 +324,8 @@ export function BookingFlow({ basePriceCents }: { basePriceCents: number | null 
     return (
       <AgreementStep
         payByLink={!!availability.matchedCustomer?.payByLink}
+        frequency={availability.matchedCustomer?.agreementFrequency}
+        lines={availability.matchedCustomer?.agreementLines}
         staleAcceptance={availability.agreementStale}
         error={error}
         onBack={() => {

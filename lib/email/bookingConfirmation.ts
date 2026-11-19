@@ -8,6 +8,7 @@ import { loadRecipients, deliverToRecipients, toOutcome } from "@/lib/email/reci
 import { renderEmail, detailsTable, buttonRow, escapeHtml } from "@/lib/email/shell";
 import { buildBookingIcs } from "@/lib/ics";
 import { agreementPdfFilenameFor } from "@/lib/agreement";
+import { loadCustomerAgreement } from "@/lib/agreementFrequency";
 import { arrivalBlockLabel, ARRIVAL_BLOCKS } from "@/lib/schedule/blocks";
 import { formatVisitDate } from "@/lib/format";
 import { localToUtc } from "@/lib/time/zone";
@@ -194,9 +195,11 @@ export async function buildBookingConfirmationEmail(
     { filename: brand.icsFilename, content: Buffer.from(ics, "utf-8") },
   ];
   if (opts?.attachAgreement) {
-    const pdfName = agreementPdfFilenameFor(customer.payment_mode);
-    const pdf = await readAgreementPdf(pdfName);
-    if (pdf) {
+    // Annual service: the variant PDF; a customer with mixed frequencies has no static PDF.
+    const { frequency } = await loadCustomerAgreement(customer.id);
+    const pdfName = agreementPdfFilenameFor(customer.payment_mode, frequency);
+    const pdf = pdfName ? await readAgreementPdf(pdfName) : null;
+    if (pdfName && pdf) {
       attachments.push({ filename: pdfName, content: pdf });
     }
   }

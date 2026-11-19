@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { findJobByInvoiceToken, chargeInvoiceJob, agreementFieldsToRecord } from "@/lib/invoicePayment";
 import { businessDb } from "@/lib/tenant/business";
+import { applyPendingSwitches } from "@/lib/agreementFrequency";
 
 export const runtime = "nodejs";
 
@@ -64,6 +65,10 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "We couldn't record your agreement. Please try again." }, { status: 500 });
     }
   }
+
+  // Accepting the updated agreement makes a requested frequency switch take effect now,
+  // so the next visit (scheduled when this charge succeeds) follows the new interval.
+  if (Object.keys(agreementFields).length > 0) await applyPendingSwitches(job.customerId);
 
   const result = await chargeInvoiceJob(job.id);
   if (!result.ok) {

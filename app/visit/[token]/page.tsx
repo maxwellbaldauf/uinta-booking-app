@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getVisitByToken } from "@/lib/visit";
+import { getBookingHorizon } from "@/lib/scheduling";
 import { VisitPortal } from "@/components/visit/VisitPortal";
 
 export const dynamic = "force-dynamic";
@@ -26,6 +27,9 @@ export default async function VisitPage({ params }: { params: Promise<{ token: s
     );
   }
 
+  // An annual visit can be booked ~12 months out, past the online picker's reach.
+  const beyondHorizon = visit.scheduledDate > (await getBookingHorizon()).maxDate;
+
   return (
     <main className="page">
       <VisitPortal
@@ -36,6 +40,7 @@ export default async function VisitPage({ params }: { params: Promise<{ token: s
           arrivalWindowLabel: visit.arrivalWindowLabel,
           address: visit.address,
           canModify: visit.canModify,
+          beyondHorizon,
         }}
       />
     </main>

@@ -100,6 +100,7 @@ export async function rescheduleVisit(
         // silently inheriting (or skipping) reminders keyed to the old one.
         reminder_7day_sent_at: null,
         reminder_24hr_sent_at: null,
+        reminder_30day_sent_at: null,
       })
       .eq("id", visit.jobId);
 

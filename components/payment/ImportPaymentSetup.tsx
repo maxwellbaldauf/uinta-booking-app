@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { PaymentSetup, type PaymentSetupResult } from "@/components/payment/PaymentSetup";
 import { ErrorBanner, buttonStyle } from "@/components/ui/form";
 import { AgreementStep } from "@/components/booking/AgreementStep";
-import { agreementIsCurrent, SERVICE_AGREEMENT_VERSION } from "@/lib/agreement";
+import { agreementIsCurrentFor, agreementVersionFor, type AgreementFrequency, type FrequencyLine } from "@/lib/agreement";
 
 // Survive the 3DS redirect: Stripe's bank-verification step reloads this page
 // (PaymentSetup then finishes from the URL), which would drop the in-memory
@@ -14,14 +14,14 @@ import { agreementIsCurrent, SERVICE_AGREEMENT_VERSION } from "@/lib/agreement";
 function acceptedStorageKey(token: string) {
   return `agreement-accepted:${token}`;
 }
-function rememberAcceptance(token: string) {
+function rememberAcceptance(token: string, version: string) {
   try {
-    sessionStorage.setItem(acceptedStorageKey(token), SERVICE_AGREEMENT_VERSION);
+    sessionStorage.setItem(acceptedStorageKey(token), version);
   } catch {}
 }
-function wasAccepted(token: string): boolean {
+function wasAccepted(token: string, version: string): boolean {
   try {
-    return sessionStorage.getItem(acceptedStorageKey(token)) === SERVICE_AGREEMENT_VERSION;
+    return sessionStorage.getItem(acceptedStorageKey(token)) === version;
   } catch {
     return false;
   }
@@ -38,19 +38,24 @@ export function ImportPaymentSetup({
   customerName,
   existingCard,
   serviceAgreementVersion,
+  frequency,
+  lines,
 }: {
   token: string;
   customerName: string | null;
   existingCard: string | null;
   serviceAgreementVersion: string | null;
+  frequency: AgreementFrequency;
+  lines: FrequencyLine[];
 }) {
-  const agreementCurrent = agreementIsCurrent(serviceAgreementVersion);
+  const requiredVersion = agreementVersionFor("card_on_file", frequency);
+  const agreementCurrent = agreementIsCurrentFor(serviceAgreementVersion, "card_on_file", frequency);
   const [phase, setPhase] = useState<"form" | "agreement" | "done">("form");
   const [accepted, setAccepted] = useState(agreementCurrent);
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- sessionStorage is client-only; reading it post-hydration avoids an SSR mismatch.
-    if (!agreementCurrent && wasAccepted(token)) setAccepted(true);
-  }, [agreementCurrent, token]);
+    if (!agreementCurrent && wasAccepted(token, requiredVersion)) setAccepted(true);
+  }, [agreementCurrent, token, requiredVersion]);
   const [savedCard, setSavedCard] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -65,7 +70,7 @@ export function ImportPaymentSetup({
         setupIntentId: result.setupIntentId,
         authorized: true,
         ...(accepted && !agreementCurrent
-          ? { agreement: { accepted: true, version: SERVICE_AGREEMENT_VERSION } }
+          ? { agreement: { accepted: true, version: requiredVersion } }
           : {}),
       }),
     });
@@ -99,6 +104,8 @@ export function ImportPaymentSetup({
   if (phase === "agreement") {
     return (
       <AgreementStep
+        frequency={frequency}
+        lines={lines}
         staleAcceptance={serviceAgreementVersion != null}
         error={error}
         onBack={() => {
@@ -106,7 +113,7 @@ export function ImportPaymentSetup({
           setPhase("form");
         }}
         onContinue={() => {
-          rememberAcceptance(token);
+          rememberAcceptance(token, requiredVersion);
           setAccepted(true);
           setError(null);
           setPhase("form");

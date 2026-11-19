@@ -2,6 +2,7 @@ import Link from "next/link";
 import { findPendingBacklogJobsForToken } from "@/lib/backlogPayment";
 import { ImportPaymentSetup } from "@/components/payment/ImportPaymentSetup";
 import { BacklogPaymentSetup } from "@/components/payment/BacklogPaymentSetup";
+import { loadCustomerAgreement } from "@/lib/agreementFrequency";
 
 export const dynamic = "force-dynamic";
 
@@ -38,6 +39,7 @@ export default async function PayPage({ params }: { params: Promise<{ token: str
   }
 
   const { customer, jobs } = pending;
+  const { frequency, lines } = await loadCustomerAgreement(customer.id);
 
   if (jobs.length === 0) {
     return (
@@ -47,6 +49,8 @@ export default async function PayPage({ params }: { params: Promise<{ token: str
           customerName={customer.full_name}
           existingCard={customer.payment_display}
           serviceAgreementVersion={customer.service_agreement_version}
+          frequency={frequency}
+          lines={lines}
         />
       </main>
     );
@@ -59,6 +63,8 @@ export default async function PayPage({ params }: { params: Promise<{ token: str
         customerName={customer.full_name}
         jobs={jobs}
         serviceAgreementVersion={customer.service_agreement_version}
+        frequency={frequency}
+        lines={lines}
       />
     </main>
   );

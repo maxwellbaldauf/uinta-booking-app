@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { buttonStyle, secondaryButtonStyle, ErrorBanner } from "@/components/ui/form";
 import { AgreementText } from "./AgreementText";
+import type { AgreementFrequency, FrequencyLine } from "@/lib/agreement";
 
 // Wording lives here (not lib/agreement.data.json) — it's UI consent copy that
 // summarizes the agreement, not part of the agreement text itself.
@@ -24,6 +25,8 @@ export function AgreementStep({
   onBack,
   onContinue,
   payByLink = false,
+  frequency = "semi_annual",
+  lines = [],
 }: {
   // true = a matched customer who accepted an older version and must re-accept.
   staleAcceptance: boolean;
@@ -32,6 +35,10 @@ export function AgreementStep({
   onContinue: () => void;
   // One-time payment link customer: no card on file, so different consent wording.
   payByLink?: boolean;
+  // The frequency the customer is signing for (see lib/agreement.ts). Defaults to
+  // semi-annual, which is the text and consent wording every existing flow shows.
+  frequency?: AgreementFrequency;
+  lines?: readonly FrequencyLine[];
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
   // Latched: set once the user has actually scrolled the text to the bottom.
@@ -113,7 +120,7 @@ export function AgreementStep({
           background: "var(--color-bg)",
         }}
       >
-        <AgreementText mode={payByLink ? "one_time_link" : "card_on_file"} />
+        <AgreementText mode={payByLink ? "one_time_link" : "card_on_file"} frequency={frequency} lines={lines} />
       </div>
 
       <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
@@ -135,7 +142,13 @@ export function AgreementStep({
             onChange={(e) => setAgreed(e.target.checked)}
             style={{ marginTop: 3, width: 18, height: 18, flexShrink: 0 }}
           />
-          <span>{payByLink ? CONSENT_LABEL_PAY_BY_LINK : CONSENT_LABEL}</span>
+          <span>
+            {(payByLink ? CONSENT_LABEL_PAY_BY_LINK : CONSENT_LABEL).replace(
+              // Only the semi-annual wording names a frequency; annual/mixed say just "recurring service".
+              "recurring semi-annual service",
+              frequency === "semi_annual" ? "recurring semi-annual service" : "recurring service"
+            )}
+          </span>
         </label>
         {!canConsent && (
           <p style={{ margin: "0 0 0 28px", fontSize: 13, color: "var(--color-fg-muted)" }}>

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { AgreementStep } from "@/components/booking/AgreementStep";
-import { ONE_TIME_AGREEMENT_VERSION } from "@/lib/agreement";
+import { agreementVersionFor, type AgreementFrequency, type FrequencyLine } from "@/lib/agreement";
 
 // One-time-payment-link customers sign here: the same AgreementStep, then a plain
 // confirmation. No card form anywhere on this page.
@@ -12,11 +12,15 @@ export function AgreementOnly({
   customerName,
   alreadyAccepted,
   hadOlderVersion,
+  frequency,
+  lines,
 }: {
   token: string;
   customerName: string | null;
   alreadyAccepted: boolean;
   hadOlderVersion: boolean;
+  frequency: AgreementFrequency;
+  lines: FrequencyLine[];
 }) {
   const router = useRouter();
   const [done, setDone] = useState(alreadyAccepted);
@@ -28,7 +32,7 @@ export function AgreementOnly({
       const res = await fetch("/api/agreement/accept", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token, version: ONE_TIME_AGREEMENT_VERSION }),
+        body: JSON.stringify({ token, version: agreementVersionFor("one_time_link", frequency) }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data.ok) {
@@ -58,6 +62,8 @@ export function AgreementOnly({
       staleAcceptance={hadOlderVersion}
       error={error}
       payByLink
+      frequency={frequency}
+      lines={lines}
       onBack={() => {
         router.push("/");
       }}

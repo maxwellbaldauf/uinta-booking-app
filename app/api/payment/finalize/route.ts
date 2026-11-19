@@ -6,7 +6,8 @@ import {
   setStripeDefaultPaymentMethod,
 } from "@/lib/stripe/payments";
 import { findCustomerByPaymentSetupToken } from "@/lib/customers";
-import { agreementIsCurrent, SERVICE_AGREEMENT_VERSION } from "@/lib/agreement";
+import { agreementIsCurrentFor, agreementVersionFor } from "@/lib/agreement";
+import { acceptanceFields, applyPendingSwitches, loadCustomerAgreement } from "@/lib/agreementFrequency";
 
 export const runtime = "nodejs";
 
@@ -61,10 +62,12 @@ export async function POST(req: Request) {
 
     // Same Service Agreement gate as finalize-backlog: required unless the
     // customer's accepted version is already current; checked before Stripe.
-    const agreementNeeded = !agreementIsCurrent(customer.service_agreement_version);
+    // The text (and version) follows the customer's frequency, decided on the server.
+    const { frequency } = await loadCustomerAgreement(customer.id);
+    const agreementNeeded = !agreementIsCurrentFor(customer.service_agreement_version, "card_on_file", frequency);
     if (
       agreementNeeded &&
-      !(body.agreement?.accepted && body.agreement.version === SERVICE_AGREEMENT_VERSION)
+      !(body.agreement?.accepted && body.agreement.version === agreementVersionFor("card_on_file", frequency))
     ) {
       return NextResponse.json(
         { error: "Please review and accept the current Service Agreement to continue.", agreementRequired: true },
@@ -92,10 +95,7 @@ export async function POST(req: Request) {
         payment_setup_token: null,
         payment_setup_token_expires_at: null,
         ...(agreementNeeded
-          ? {
-              service_agreement_accepted_at: new Date().toISOString(),
-              service_agreement_version: SERVICE_AGREEMENT_VERSION,
-            }
+          ? acceptanceFields("card_on_file", frequency)
           : {}),
       })
       .eq("id", customer.id);
@@ -112,6 +112,9 @@ export async function POST(req: Request) {
         { status: 500 }
       );
     }
+
+    // Accepting the updated agreement makes any requested frequency switch take effect.
+    if (agreementNeeded) await applyPendingSwitches(customer.id);
 
     return NextResponse.json({ ok: true, paymentDisplay: displayLabel });
   } catch (err) {

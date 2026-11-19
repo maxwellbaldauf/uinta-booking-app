@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { findCustomerByAgreementToken } from "@/lib/customers";
 import { agreementIsCurrentFor } from "@/lib/agreement";
+import { loadCustomerAgreement } from "@/lib/agreementFrequency";
 import { AgreementOnly } from "@/components/payment/AgreementOnly";
 
 export const dynamic = "force-dynamic";
@@ -30,12 +31,15 @@ export default async function AgreementPage({ params }: { params: Promise<{ toke
     );
   }
 
+  const { frequency, lines } = await loadCustomerAgreement(customer.id);
   return (
     <main className="page">
       <AgreementOnly
         token={token}
         customerName={customer.full_name}
-        alreadyAccepted={agreementIsCurrentFor(customer.service_agreement_version, "one_time_link")}
+        frequency={frequency}
+        lines={lines}
+        alreadyAccepted={agreementIsCurrentFor(customer.service_agreement_version, "one_time_link", frequency)}
         hadOlderVersion={customer.service_agreement_version != null}
       />
     </main>

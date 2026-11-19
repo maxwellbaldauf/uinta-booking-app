@@ -76,7 +76,7 @@ export async function buildCancellationEmail(
   });
 
   const planLine = opts.planCancelled
-    ? `<p style="margin:12px 0 0;color:#5b6470;">We&rsquo;ve also stopped the semi-annual plan for this property. Your card stays on file — no charge.</p>`
+    ? `<p style="margin:12px 0 0;color:#5b6470;">We&rsquo;ve also stopped the recurring plan for this property. Your card stays on file — no charge.</p>`
     : `<p style="margin:12px 0 0;color:#5b6470;">Your plan for this property is still active; the next visit will schedule as normal. Your card stays on file.</p>`;
 
   const inner = `
@@ -105,7 +105,7 @@ export async function buildCancellationEmail(
     `Address:  ${address}`,
     ``,
     opts.planCancelled
-      ? `We've also stopped the semi-annual plan for this property. Your card stays on file — no charge.`
+      ? `We've also stopped the recurring plan for this property. Your card stays on file — no charge.`
       : `Your plan for this property is still active; the next visit will schedule as normal. Your card stays on file.`,
     ``,
     `— ${brand.name}`,

@@ -4,7 +4,7 @@ import { useState } from "react";
 import { PaymentSetup, type PaymentSetupResult } from "@/components/payment/PaymentSetup";
 import { AgreementStep } from "@/components/booking/AgreementStep";
 import { ErrorBanner, buttonStyle } from "@/components/ui/form";
-import { agreementIsCurrent, SERVICE_AGREEMENT_VERSION } from "@/lib/agreement";
+import { agreementIsCurrentFor, agreementVersionFor, type AgreementFrequency, type FrequencyLine } from "@/lib/agreement";
 import { formatUsd } from "@/lib/settings";
 import { formatVisitDate } from "@/lib/format";
 import type { PendingBacklogJob } from "@/lib/backlogPayment";
@@ -24,13 +24,18 @@ export function BacklogPaymentSetup({
   customerName,
   jobs,
   serviceAgreementVersion,
+  frequency,
+  lines,
 }: {
   token: string;
   customerName: string | null;
   jobs: PendingBacklogJob[];
   serviceAgreementVersion: string | null;
+  frequency: AgreementFrequency;
+  lines: FrequencyLine[];
 }) {
-  const agreementCurrent = agreementIsCurrent(serviceAgreementVersion);
+  const requiredVersion = agreementVersionFor("card_on_file", frequency);
+  const agreementCurrent = agreementIsCurrentFor(serviceAgreementVersion, "card_on_file", frequency);
   const [step, setStep] = useState<Step>("summary");
   const [error, setError] = useState<string | null>(null);
   const [paymentDisplay, setPaymentDisplay] = useState<string | null>(null);
@@ -48,7 +53,7 @@ export function BacklogPaymentSetup({
         setupIntentId: result.setupIntentId,
         authorized: true,
         ...(!agreementCurrent
-          ? { agreement: { accepted: true, version: SERVICE_AGREEMENT_VERSION } }
+          ? { agreement: { accepted: true, version: requiredVersion } }
           : {}),
       }),
     });
@@ -94,6 +99,8 @@ export function BacklogPaymentSetup({
   if (step === "agreement") {
     return (
       <AgreementStep
+        frequency={frequency}
+        lines={lines}
         staleAcceptance={serviceAgreementVersion != null}
         error={error}
         onBack={() => setStep("summary")}

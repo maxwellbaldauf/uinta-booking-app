@@ -43,6 +43,7 @@ export const TENANT_TABLES = [
   "leads",
   "payments",
   "properties",
+  "property_interval_changes",
   "referral_partners",
   "settings",
 ] as const;
