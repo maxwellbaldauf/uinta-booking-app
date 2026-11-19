@@ -76,7 +76,7 @@ export function OneTimeInvoicePay({ token, job }: { token: string; job: InvoiceJ
         setPhase("error");
       }
     })();
-  }, [accepted, agreementCurrent, token, job.agreementFrequency]);
+  }, [accepted, agreementCurrent, token, job.agreementFrequency, job.agreementLines]);
 
   const summary = (
     <>
